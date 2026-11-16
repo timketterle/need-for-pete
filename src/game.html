@@ -1412,7 +1412,8 @@ function drawPreview(id){
 /* ---------- Flow ---------- */
 function showMenuStats(){
   {const di=dailyInfo(),db=dailyBest(),base='Heute: '+TRACKS[di.trk].name+(db.score?' · '+db.score+' Pkt':'');$('dailySub').textContent=base;
-    loadBoard(di.date).then(l=>{if(l&&l.length){const me=l.findIndex(e=>e.k===pKey());$('dailySub').textContent=base+(me===0?' · Du führst! 👑':' · 👑 '+l[0].n+(me>0?' · Du: Platz '+(me+1):''));}});}
+    loadBoard(di.date).then(l=>{if(l&&db.score){const mine=l.find(e=>e.k===pKey());if(!mine||mine.s<db.score){submitDaily(di.date,db.best,db.score);l=l.filter(e=>e!==mine).concat({k:pKey(),n:pName(),m:db.best,s:db.score}).sort((a,b)=>b.s-a.s);}}
+    if(l&&l.length){const me=l.findIndex(e=>e.k===pKey());$('dailySub').textContent=base+(me===0?' · Du führst! 👑':' · 👑 '+l[0].n+(me>0?' · Du: Platz '+(me+1):''));}});}
   $('pName').value=save.pname||'';$('pName').placeholder=myInfo().name;
   const need=xpNeed(save.level);
   $('lvlTxt').textContent='Level '+save.level;$('mCoins').textContent=save.coins;$('xpTxt').textContent=save.xp+' / '+need+' XP';$('lvlBar').style.width=Math.min(100,save.xp/need*100)+'%';
