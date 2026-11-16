@@ -160,6 +160,19 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 input#codeIn{background:rgba(255,255,255,.9)}
 .coin-ico{background:radial-gradient(circle at 35% 30%,#fff3a8,#ffc83a 45%,#d48a00);border:2px solid #8a5200}
 
+/* Leaderboard */
+.lb{list-style:none;margin:8px auto;padding:0;max-width:440px;display:flex;flex-direction:column;gap:6px}
+.lb li{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:7px 12px;font-weight:900;color:var(--txt)}
+.lb li::before{content:attr(data-r);font-family:var(--hd);font-size:20px;width:26px;text-align:center;color:var(--mute)}
+.lb li[data-r="1"]::before{content:"👑";font-size:20px}
+.lb li .nm{flex:1;font-family:var(--hd);font-size:19px;letter-spacing:.02em}
+.lb li .pt{font-family:var(--hd);font-size:19px;color:var(--gold)}
+.lb li small{color:var(--mute);font-weight:700}
+.lb li.me{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,200,58,.35) inset}
+.lb li.empty{justify-content:center;color:var(--mute)}.lb li.empty::before{content:none}
+.lb.small li{padding:4px 10px}.lb.small li .nm,.lb.small li .pt{font-size:16px}
+.namein{width:100%;box-sizing:border-box;font:inherit;font-family:var(--hd);font-size:22px;padding:6px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.92);color:#14204a}
+
 /* Hub layout (main menu) */
 .hub{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;color:var(--txt)}
 .hub::before{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:-1;
@@ -260,6 +273,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <h1 class="hublogo">NEED FOR <em>PETE</em></h1>
     <div class="lvlpill"><span class="lvlbadge" id="lvlTxt">Level 1</span><div class="bar"><i id="lvlBar" style="width:0%"></i></div><span id="xpTxt">0 / 250 XP</span></div>
     <div class="coinpill"><span class="coin-ico"></span><span id="mCoins">0</span></div>
+    <button class="iconbtn" id="openBoard" aria-label="Bestenliste">🏆</button>
     <button class="iconbtn" id="openSettings" aria-label="Einstellungen">⚙</button>
   </div>
   <div class="hubmain">
@@ -301,7 +315,22 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <label class="chk"><input type="checkbox" id="tiltInv"> Neigung umkehren</label>
       <p class="note" id="ctlNote">Gas rechts, Bremse links. In der Luft: Gas dreht nach hinten, Bremse nach vorne. Am Rechner gehen auch die Pfeiltasten.</p>
     </div>
+    <div class="card glass">
+      <h3>Dein Name</h3>
+      <input id="pName" maxlength="16" autocomplete="off" placeholder="z. B. Tim" class="namein">
+      <p class="note">So erscheinst du in der Tages-Bestenliste und als Geist bei deinen Freunden.</p>
+    </div>
     <div class="row"><button class="gbtn play mid" id="closeSettings">FERTIG</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="board" hidden>
+  <div class="panel">
+    <h2 class="logo" style="font-size:40px">Tages-Bestenliste</h2>
+    <p class="tag" id="boardSub"></p>
+    <ol class="lb" id="boardList"></ol>
+    <p class="note" id="boardYest"></p>
+    <div class="row"><button class="gbtn orange mid" id="boardPlay">DAILY FAHREN</button><button class="gbtn blue mid" id="boardBack">ZURÜCK</button></div>
   </div>
 </div>
 
@@ -351,6 +380,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     </div>
     <div class="lvl"><span id="lvlTxt2">Level 1</span><div class="bar"><i id="lvlBar2" style="width:0%"></i></div></div>
     <p class="tag" id="lvlUp" hidden></p>
+    <ol class="lb small" id="overBoard" hidden></ol>
     <div class="row"><button class="big" id="again">NOCHMAL</button><button class="big alt" id="toMenu">MENÜ</button></div>
   </div>
 </div>
@@ -489,19 +519,42 @@ function dailyInfo(){const ds=todayStr();let h=0;for(const ch of ds)h=(h*31+ch.c
 function dailyBest(){const d=save.daily;return d&&d.date===todayStr()?d:{date:todayStr(),best:0,score:0};}
 let playDaily=false, ghost=null;
 function ghostKey(){return playDaily?'daily-'+dailyInfo().date:TRK.id+'-'+save.veh;}
-function loadGhost(){ghost=null;if(curLevel())return;try{const g=JSON.parse(localStorage.getItem('nfp-ghost-'+ghostKey())||'null');if(g&&g.f&&g.f.length)ghost=g;}catch(e){}}
+/* ---------- Online (Firebase Realtime Database, REST, free Spark plan) ---------- */
+const DBU='https://need-for-pete-default-rtdb.europe-west1.firebasedatabase.app';
+function pName(){return String(save.pname||myInfo().name).trim().slice(0,16)||'Spieler';}
+function pKey(){return pName().toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9_-]/g,'').slice(0,16)||'spieler';}
+async function dbGet(path){try{const r=await fetch(DBU+path+'.json',{cache:'no-store'});return r.ok?await r.json():null;}catch(e){return null;}}
+async function dbSend(path,method,body){try{const r=await fetch(DBU+path+'.json',{method,body:JSON.stringify(body)});return r.ok;}catch(e){return false;}}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+async function loadBoard(date){const d=await dbGet('/daily/'+date);if(!d||typeof d!=='object')return d===null?[]:null;
+  return Object.entries(d).map(([k,v])=>({k,...v})).filter(e=>typeof e.s==='number').sort((a,b)=>b.s-a.s);}
+function boardHTML(list,max){if(!list)return '<li class="empty">Keine Verbindung zur Bestenliste.</li>';if(!list.length)return '<li class="empty">Noch niemand gefahren. Sei der Erste!</li>';
+  const me=pKey(),esc=t=>String(t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  let rows=list.slice(0,max);const mi=list.findIndex(e=>e.k===me);if(mi>=max)rows=[...rows.slice(0,max-1),list[mi]];
+  return rows.map(e=>'<li data-r="'+(list.indexOf(e)+1)+'"'+(e.k===me?' class="me"':'')+'><span class="nm">'+esc(e.n)+' <small>'+(e.m|0)+' m</small></span><span class="pt">'+(e.s|0)+'</span></li>').join('');}
+async function submitDaily(date,m,pts){return dbSend('/daily/'+date+'/'+pKey(),'PUT',{n:pName(),m,s:pts,v:save.veh,dr:save.driver||'pete',t:{'.sv':'timestamp'}});}
+async function uploadGhost(key,m,rec){const d=JSON.stringify(rec);if(d.length>390000)return false;const p=pKey();
+  return dbSend('/','PATCH',{['gd/'+key+'/'+p]:d,['gm/'+key+'/'+p]:{n:pName(),m,v:save.veh,dr:save.driver||'pete',t:{'.sv':'timestamp'}}});}
+let rival=null,ghostTok=0;
+async function loadRival(key,tok){const gm=await dbGet('/gm/'+key);if(tok!==ghostTok||!gm||typeof gm!=='object')return;const me=pKey();
+  const best=Object.entries(gm).filter(([k,v])=>k!==me&&v&&VEH[v.v]).sort((a,b)=>b[1].m-a[1].m)[0];if(!best)return;
+  const d=await dbGet('/gd/'+key+'/'+best[0]);if(tok!==ghostTok||typeof d!=='string')return;
+  try{const f=JSON.parse(d);if(Array.isArray(f)&&f.length)rival={m:best[1].m,veh:best[1].v,driver:best[1].dr,name:String(best[1].n).toUpperCase()+' · '+best[1].m+' M',f,rival:true};}catch(e){}}
+function loadGhost(){ghost=null;rival=null;const tok=++ghostTok;if(curLevel()||duel.active)return;try{const g=JSON.parse(localStorage.getItem('nfp-ghost-'+ghostKey())||'null');if(g&&g.f&&g.f.length)ghost=g;}catch(e){}
+  loadRival(ghostKey(),tok);}
 function saveGhost(m){if(curLevel()||!state.rec||state.rec.length<20)return;try{const k='nfp-ghost-'+ghostKey(),old=JSON.parse(localStorage.getItem(k)||'null');
   if(!old||m>old.m){if(playDaily)for(const kk of Object.keys(localStorage))if(kk.startsWith('nfp-ghost-daily-')&&kk!==k)localStorage.removeItem(kk);
-    localStorage.setItem(k,JSON.stringify({m,veh:save.veh,driver:save.driver||'pete',name:'DEIN REKORD',f:state.rec}));}}catch(e){}}
+    localStorage.setItem(k,JSON.stringify({m,veh:save.veh,driver:save.driver||'pete',name:'DEIN REKORD',f:state.rec}));uploadGhost(ghostKey(),m,state.rec);}}catch(e){}}
 function recGhost(dt){state.rt+=dt;state.recT=(state.recT||0)+dt;if(state.recT<.05)return;state.recT=0;const b=car.body,w=car.wheels,r=v=>Math.round(v*10)/10;
   state.rec.push([r(b.x),r(b.y),Math.round(b.a*100)/100,...w.flatMap(q=>[r(q.x),r(q.y),Math.round(q.a*10)/10])]);}
-function drawGhost(){
-  if(!ghost||!state||duel.active)return;const i=Math.min(ghost.f.length-1,Math.floor(state.rt/.05)),f=ghost.f[i];if(!f||!VEH[ghost.veh])return;
+function drawGhost(){if(!state||duel.active)return;if(rival)drawOneGhost(rival);if(ghost)drawOneGhost(ghost);}
+function drawOneGhost(ghost){
+  const i=Math.min(ghost.f.length-1,Math.floor(state.rt/.05)),f=ghost.f[i];if(!f||!VEH[ghost.veh])return;
   const sC=CAR,sc=car,sd=save.driver;CAR=buildCar(ghost.veh);
   car={body:{x:f[0],y:f[1],a:f[2]},wheels:CAR.wheels.map((w,k)=>({...w,x:f[3+k*3],y:f[4+k*3],a:f[5+k*3]}))};
   save.driver=ghost.driver;drawingGhost=true;ctx.globalAlpha=.42;drawCar();ctx.globalAlpha=1;
   ctx.font='16px "Lilita One", Bangers, sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='rgba(10,14,40,.8)';
-  ctx.strokeText(ghost.name,f[0],f[1]-95);ctx.fillStyle='#bfe3ff';ctx.fillText(ghost.name,f[0],f[1]-95);
+  ctx.strokeText(ghost.name,f[0],f[1]-95);ctx.fillStyle=ghost.rival?'#ffd36b':'#bfe3ff';ctx.fillText(ghost.name,f[0],f[1]-95);
   drawingGhost=false;CAR=sC;car=sc;save.driver=sd;
 }
 function newRun(){
@@ -1371,7 +1424,9 @@ function drawPreview(id){
 
 /* ---------- Flow ---------- */
 function showMenuStats(){
-  {const di=dailyInfo(),db=dailyBest();$('dailySub').textContent='Heute: '+TRACKS[di.trk].name+(db.score?' · '+db.score+' Pkt':'');}
+  {const di=dailyInfo(),db=dailyBest(),base='Heute: '+TRACKS[di.trk].name+(db.score?' · '+db.score+' Pkt':'');$('dailySub').textContent=base;
+    loadBoard(di.date).then(l=>{if(l&&l.length){const me=l.findIndex(e=>e.k===pKey());$('dailySub').textContent=base+(me===0?' · Du führst! 👑':' · 👑 '+l[0].n+(me>0?' · Du: Platz '+(me+1):''));}});}
+  $('pName').value=save.pname||'';$('pName').placeholder=myInfo().name;
   const need=xpNeed(save.level);
   $('lvlTxt').textContent='Level '+save.level;$('mCoins').textContent=save.coins;$('xpTxt').textContent=save.xp+' / '+need+' XP';$('lvlBar').style.width=Math.min(100,save.xp/need*100)+'%';
   $('ctlBtn').setAttribute('aria-pressed',String(!tiltOn));$('ctlTilt').setAttribute('aria-pressed',String(tiltOn));$('tiltInv').checked=!!save.inv;
@@ -1443,7 +1498,8 @@ function gameOver(){
   if(lv&&state.reason==='finish'){const st=starsOf(TRK.id);st[save.mode-1]=Math.max(st[save.mode-1],state.stars);lvBonus=30*state.stars;state.coins+=lvBonus;}
   const rec=!lv&&!playDaily&&m>bestOf(TRK.id); if(rec){save.bests=save.bests||{};save.bests[TRK.id]=m;}
   saveGhost(m);
-  let dRec=false;if(playDaily){const db=dailyBest(),pts=m*10+state.score;if(pts>db.score){save.daily={date:db.date,best:m,score:pts};dRec=true;}}
+  let dRec=false;$('overBoard').hidden=true;if(playDaily){const db=dailyBest(),pts=m*10+state.score;if(pts>db.score){save.daily={date:db.date,best:m,score:pts};dRec=true;}
+    const dd=db.date;(dRec?submitDaily(dd,m,pts):Promise.resolve()).then(()=>loadBoard(dd)).then(l=>{if(!$('over').hidden&&playDaily){$('overBoard').innerHTML=boardHTML(l,5);$('overBoard').hidden=false;}});}
   save.coins+=state.coins;save.xp+=xp;let ups=0;
   while(save.xp>=xpNeed(save.level)){save.xp-=xpNeed(save.level);save.level++;ups++;}
   persist();
@@ -1459,6 +1515,14 @@ function gameOver(){
 }
 $('start').addEventListener('click',()=>{playDaily=false;startRun();});
 $('dailyBtn').addEventListener('click',()=>{playDaily=true;startRun();});
+async function showBoard(){const di=dailyInfo();$('menu').hidden=true;$('board').hidden=false;
+  $('boardSub').textContent='Heute: '+TRACKS[di.trk].name+'. Wer um Mitternacht vorne liegt, gewinnt den Tag.';$('boardList').innerHTML='<li class="empty">Lade …</li>';$('boardYest').textContent='';
+  const y=new Date();y.setDate(y.getDate()-1);const [l,ly]=await Promise.all([loadBoard(di.date),loadBoard(ymd(y))]);
+  $('boardList').innerHTML=boardHTML(l,10);$('boardYest').textContent=ly&&ly.length?'Gestern gewann '+ly[0].n+' mit '+ly[0].s+' Punkten.':'';}
+$('openBoard').addEventListener('click',showBoard);
+$('boardBack').addEventListener('click',()=>{$('board').hidden=true;$('menu').hidden=false;showMenuStats();});
+$('boardPlay').addEventListener('click',()=>{$('board').hidden=true;playDaily=true;startRun();});
+$('pName').addEventListener('change',()=>{save.pname=$('pName').value.trim().slice(0,16);persist();});
 $('again').addEventListener('click',startRun);
 $('toMenu').addEventListener('click',()=>{$('over').hidden=true;newRun();showMenuStats();$('menu').hidden=false;});
 $('pause').addEventListener('click',()=>{running=false;setPlayUI(false);newRun();showMenuStats();$('menu').hidden=false;});
