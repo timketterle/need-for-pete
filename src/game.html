@@ -216,6 +216,11 @@ input#codeIn{background:rgba(255,255,255,.9)}
 .trk-i.lost{color:#ff8a8a;text-shadow:0 3px 0 #7a1010}
 @keyframes trkpop{0%{opacity:0;transform:scale(.4)}12%{opacity:1;transform:scale(1.15)}22%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
 @media (prefers-reduced-motion:reduce){.trk-i{animation:none}}
+
+.gbtn.orange{background:linear-gradient(180deg,#ffb35c,#ff7a1a 55%,#e85d0c);box-shadow:0 6px 0 #8f3a06,0 12px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35)}
+#dailyBtn{display:flex;flex-direction:column;align-items:center;line-height:1.05;gap:1px}
+#dailyBtn small{white-space:nowrap;font-family:var(--body);font-weight:900;font-size:11px;letter-spacing:0;opacity:.95;text-shadow:none}
+.hubbtns{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr}
 </style>
 
 <canvas id="game" aria-label="Spielfeld"></canvas>
@@ -263,6 +268,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       </div>
       <div class="hubbtns">
         <button class="gbtn blue" id="openGarage">GARAGE</button>
+        <button class="gbtn orange" id="dailyBtn"><span>DAILY</span><small id="dailySub"></small></button>
         <button class="gbtn purple" id="duelBtn" hidden>DUELL</button>
       </div>
       <button class="gbtn play" id="start">LOS GEHT'S!</button>
@@ -464,22 +470,44 @@ let CAR=buildCar('f1');
 let car, state, items, popups, parts, cam={x:0,y:0,z:1,shake:0};
 let running=false, overShown=false, thrNow=0, time=0;
 
+/* ---------- Daily challenge + ghost ---------- */
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function dailyInfo(){const ds=todayStr();let h=0;for(const ch of ds)h=(h*31+ch.charCodeAt(0))>>>0;return {date:ds,trk:TORDER[h%TORDER.length],seed:100+h%9000};}
+function dailyBest(){const d=save.daily;return d&&d.date===todayStr()?d:{date:todayStr(),best:0,score:0};}
+let playDaily=false, ghost=null;
+function ghostKey(){return playDaily?'daily-'+dailyInfo().date:TRK.id+'-'+save.veh;}
+function loadGhost(){ghost=null;if(curLevel())return;try{const g=JSON.parse(localStorage.getItem('nfp-ghost-'+ghostKey())||'null');if(g&&g.f&&g.f.length)ghost=g;}catch(e){}}
+function saveGhost(m){if(curLevel()||!state.rec||state.rec.length<20)return;try{const k='nfp-ghost-'+ghostKey(),old=JSON.parse(localStorage.getItem(k)||'null');
+  if(!old||m>old.m){if(playDaily)for(const kk of Object.keys(localStorage))if(kk.startsWith('nfp-ghost-daily-')&&kk!==k)localStorage.removeItem(kk);
+    localStorage.setItem(k,JSON.stringify({m,veh:save.veh,driver:save.driver||'pete',name:'DEIN REKORD',f:state.rec}));}}catch(e){}}
+function recGhost(dt){state.rt+=dt;state.recT=(state.recT||0)+dt;if(state.recT<.05)return;state.recT=0;const b=car.body,w=car.wheels,r=v=>Math.round(v*10)/10;
+  state.rec.push([r(b.x),r(b.y),Math.round(b.a*100)/100,...w.flatMap(q=>[r(q.x),r(q.y),Math.round(q.a*10)/10])]);}
+function drawGhost(){
+  if(!ghost||!state||duel.active)return;const i=Math.min(ghost.f.length-1,Math.floor(state.rt/.05)),f=ghost.f[i];if(!f||!VEH[ghost.veh])return;
+  const sC=CAR,sc=car,sd=save.driver;CAR=buildCar(ghost.veh);
+  car={body:{x:f[0],y:f[1],a:f[2]},wheels:CAR.wheels.map((w,k)=>({...w,x:f[3+k*3],y:f[4+k*3],a:f[5+k*3]}))};
+  save.driver=ghost.driver;drawingGhost=true;ctx.globalAlpha=.42;drawCar();ctx.globalAlpha=1;
+  ctx.font='16px "Lilita One", Bangers, sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='rgba(10,14,40,.8)';
+  ctx.strokeText(ghost.name,f[0],f[1]-95);ctx.fillStyle='#bfe3ff';ctx.fillText(ghost.name,f[0],f[1]-95);
+  drawingGhost=false;CAR=sC;car=sc;save.driver=sd;
+}
 function newRun(){
   if(!VEH[save.veh]||VEH[save.veh].unlock>save.level)save.veh='f1';
   CAR=buildCar(save.veh);
   if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>save.level)save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
+  if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
-  car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}
-  state={fuel:100,coins:0,score:0,combo:{n:0,t:0,sum:0},wheelie:0,xpBonus:0,crashed:false,crashT:0,air:0,airRot:0,saltos:0,stillT:0,reason:'',maxX:START_X,t:0,item:null,turbo:0,shield:0,magnet:0,finished:false,stars:0};
+  car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}setTimeout(loadGhost,0);
+  state={rt:0,rec:[],fuel:100,coins:0,score:0,combo:{n:0,t:0,sum:0},wheelie:0,xpBonus:0,crashed:false,crashT:0,air:0,airRot:0,saltos:0,stillT:0,reason:'',maxX:START_X,t:0,item:null,turbo:0,shield:0,magnet:0,finished:false,stars:0};
   items=[];popups=[];parts=[];hazards=[];nextCoinX=700;nextFuelX=2300;fuelGap=2300;nextBoxX=1100;nextHazX=1400;
   cam.x=b.x;cam.y=b.y;cam.shake=0;
 }
 let nextCoinX=700,nextFuelX=2300,fuelGap=2300,nextBoxX=1100,nextHazX=1400,hazards=[];
 const LEVELS=[null,{goal:300,time:35,drain:1,haz:.25},{goal:600,time:70,drain:1.15,haz:.6},{goal:1000,time:120,drain:1.3,haz:1}];
 const ITEMS={oil:{name:'ÖLFLECK',col:'#c9a0ff'},logs:{name:'HOLZSTAPEL',col:'#d7a46a'},zap:{name:'BLITZ',col:'#ffe066'},turbo:{name:'TURBO',col:'#ff7a2b'},shield:{name:'SCHILD',col:'#7fe0ff'},magnet:{name:'MAGNET',col:'#ff5a8a'},fuel:{name:'+SPRIT',col:'#9be15d'}};
-function curLevel(){if(duel.active)return duel.lv;return LEVELS[save.mode||0]||null;}
+function curLevel(){if(duel.active)return duel.lv;if(playDaily)return null;return LEVELS[save.mode||0]||null;}
 let drawingGhost=false;
 const duel={active:false,lv:null,conn:null,peer:null,opp:null,oppCar:null,oppCAR:null,host:false,goal:800,result:null};
 function starsOf(t){save.stars=save.stars||{};return save.stars[t]=save.stars[t]||[0,0,0];}
@@ -707,6 +735,7 @@ function update(dt){
         if(state.shield>0){h.dead=true;popup('GEBLOCKT!',h.x,groundY(h.x)-60,'#7fe0ff');blip(900,300,.2,'square',.07);continue;}
         if(!h.warned&&Math.abs(h.x-b.x)<50){h.warned=true;if(h.t==='oil'){popup('RUTSCHIG!',h.x,groundY(h.x)-50,'#c9a0ff');}}}}
     acc+=dt;let n=0;while(acc>=DT&&n<40){step(DT);acc-=DT;n++;}
+    if(!state.crashed)recGhost(dt);
     const b=car.body;
     for(const h of hazards){if(h.hit&&!h.popped){h.popped=true;popup('RUMMS!',h.x,groundY(h.x)-50,'#ffcf1f');cam.shake=8;blip(140,60,.2,'sawtooth',.08);}}
     for(const k of ['turbo','shield','magnet','zap'])state[k]=Math.max(0,(state[k]||0)-dt);
@@ -757,7 +786,7 @@ function update(dt){
 }
 function hud(){
   const m=Math.max(0,Math.floor((state.maxX-START_X)/PX_PER_M));
-  $('dist').textContent=m+' m';{const sc=state.score+' PUNKTE';if($('score').textContent!==sc)$('score').textContent=sc;}$('best').textContent='Rekord '+Math.max(bestOf(TRK.id),m)+' m';
+  $('dist').textContent=m+' m';{const sc=state.score+' PUNKTE';if($('score').textContent!==sc)$('score').textContent=sc;}$('best').textContent=playDaily?'Tagesrekord '+dailyBest().best+' m':'Rekord '+Math.max(bestOf(TRK.id),m)+' m';
   $('coinN').textContent=state.coins;$('fuel').style.width=state.fuel+'%';
   $('speed').textContent=Math.round(Math.abs(car.body.vx)/PX_PER_M*3.6)+' km/h';
   const lv=curLevel();$('goal').hidden=!lv;
@@ -783,7 +812,7 @@ function render(){
   for(const p of parts){const a=1-p.t/p.life;ctx.globalAlpha=a*.8;ctx.fillStyle=p.fire?(p.t<.12?'#ffe066':'#ff7a2b'):p.wood?'#9a6431':'#d9b27c';ctx.strokeStyle=INK;ctx.lineWidth=1.5;
     ctx.beginPath();ctx.arc(p.x,p.y,p.r*(1+p.t*1.5),0,7);ctx.fill();ctx.stroke();}
   ctx.globalAlpha=1;
-  drawOpponent();
+  drawGhost();drawOpponent();
   drawCar();
   for(const p of popups){
     const k=p.t/1.3, s=Math.min(1,p.t*8)*(1+(1-Math.min(1,p.t*8))*.6);
@@ -1329,6 +1358,7 @@ function drawPreview(id){
 
 /* ---------- Flow ---------- */
 function showMenuStats(){
+  {const di=dailyInfo(),db=dailyBest();$('dailySub').textContent='Heute: '+TRACKS[di.trk].name+(db.score?' · '+db.score+' Pkt':'');}
   const need=xpNeed(save.level);
   $('lvlTxt').textContent='Level '+save.level;$('mCoins').textContent=save.coins;$('xpTxt').textContent=save.xp+' / '+need+' XP';$('lvlBar').style.width=Math.min(100,save.xp/need*100)+'%';
   $('ctlBtn').setAttribute('aria-pressed',String(!tiltOn));$('ctlTilt').setAttribute('aria-pressed',String(tiltOn));$('tiltInv').checked=!!save.inv;
@@ -1398,21 +1428,24 @@ function gameOver(){
   const xp=m+state.coins*2+Math.round(state.score/10)+state.xpBonus;
   const lv=curLevel();let lvBonus=0;
   if(lv&&state.reason==='finish'){const st=starsOf(TRK.id);st[save.mode-1]=Math.max(st[save.mode-1],state.stars);lvBonus=30*state.stars;state.coins+=lvBonus;}
-  const rec=!lv&&m>bestOf(TRK.id); if(rec){save.bests=save.bests||{};save.bests[TRK.id]=m;}
+  const rec=!lv&&!playDaily&&m>bestOf(TRK.id); if(rec){save.bests=save.bests||{};save.bests[TRK.id]=m;}
+  saveGhost(m);
+  let dRec=false;if(playDaily){const db=dailyBest(),pts=m*10+state.score;if(pts>db.score){save.daily={date:db.date,best:m,score:pts};dRec=true;}}
   save.coins+=state.coins;save.xp+=xp;let ups=0;
   while(save.xp>=xpNeed(save.level)){save.xp-=xpNeed(save.level);save.level++;ups++;}
   persist();
   const T={fuel:'SPRIT LEER!',time:'ZEIT UM!',finish:'ZIEL!',crash:'AUTSCH!'};$('overTitle').textContent=T[state.reason]||'AUTSCH!';
   const tt=Math.floor(state.t/60)+':'+String(Math.floor(state.t%60)).padStart(2,'0');
   $('overSub').textContent=state.reason==='finish'?'★'.repeat(state.stars)+'☆'.repeat(3-state.stars)+'  in '+tt+'. Bonus: '+lvBonus+' Münzen.'+(save.mode<3&&state.stars?' Nächstes Level ist offen!':''):
-    rec?'Neuer Rekord! '+m+' Meter.':state.reason==='time'?'Die Zeit ist abgelaufen. Mehr Gas!':state.reason==='fuel'?'Der Tank ist leer.':'Der Fahrer liegt auf dem Helm.';
+    playDaily?(dRec?'Neuer Tagesrekord: '+(m*10+state.score)+' Punkte!':'Tagesrekord: '+dailyBest().score+' Punkte. Heute schaffst du mehr!'):rec?'Neuer Rekord! '+m+' Meter.':state.reason==='time'?'Die Zeit ist abgelaufen. Mehr Gas!':state.reason==='fuel'?'Der Tank ist leer.':'Der Fahrer liegt auf dem Helm.';
   $('rDist').textContent=m;$('rScore').textContent=state.score;$('rCoins').textContent=state.coins;$('rXp').textContent='+'+xp;
   $('lvlTxt2').textContent='Level '+save.level;$('lvlBar2').style.width=Math.min(100,save.xp/xpNeed(save.level)*100)+'%';
   const unl=[...VORDER.map(k=>VEH[k]),...TORDER.map(k=>TRACKS[k])].filter(v=>v.unlock>save.level-ups&&v.unlock<=save.level).map(v=>v.name);
   $('lvlUp').hidden=!ups;$('lvlUp').textContent=ups?'LEVEL UP! Du bist jetzt Level '+save.level+'.'+(unl.length?' Neu freigeschaltet: '+unl.join(', ')+'!':''):'';
   $('over').hidden=false;
 }
-$('start').addEventListener('click',startRun);
+$('start').addEventListener('click',()=>{playDaily=false;startRun();});
+$('dailyBtn').addEventListener('click',()=>{playDaily=true;startRun();});
 $('again').addEventListener('click',startRun);
 $('toMenu').addEventListener('click',()=>{$('over').hidden=true;newRun();showMenuStats();$('menu').hidden=false;});
 $('pause').addEventListener('click',()=>{running=false;setPlayUI(false);newRun();showMenuStats();$('menu').hidden=false;});
