@@ -606,12 +606,56 @@ function misFmt(i){const mi=MIS[i],v=Math.min(mi.v,misVal(mi,false)),done=misDon
   return '<li class="mis'+(done?' done':'')+'"><span class="md">'+mi.d+'</span><span class="mr">+'+r.c+' 🪙</span><i style="width:'+Math.round(fr*100)+'%"></i></li>';}
 function showMissions(){$('misRank').textContent='Rang: '+misRank()+' · '+misDone().length+' von '+MIS.length+' Aufgaben';
   const a=misActive();$('misList').innerHTML=a.length?a.map(misFmt).join(''):'<li class="mis done"><span class="md">Alles geschafft! Du bist eine Legende.</span></li>';}
+/* ---------- Meme events ("Yahu-Momente"): absurd word-salad captions + own Bohni creatures ---------- */
+const MEMEW={
+  a:['SEVERIN','TIM','PETE','DER GROSSE BOHNI','KLEINE','SCHMALE','VERSPROCHENE','HEILIGE','VERBOTENE','GOLDENE','FEUCHTE','SEVIS'],
+  n:['BEERDIGUNG','EISSOLDATEN','ZAUBER','KARTOFFEL','STEUERERKLÄRUNG','BANANE','TRAKTOR','LEBERKÄS','HAMSTER','DÖNER','WASCHMASCHINE','OMA','TUBA','DINOSAURIER','BAUSPARVERTRAG','GURKE'],
+  v:['ERZÄHLTE','VERSPRACH','FRISST','HEIRATET','VERKLAGT','TANZT','EXPLODIERT','RIECHT','BEERDIGT','VERZAUBERT','UNTERSCHREIBT'],
+  f:['ZU','VON','ALLE','WELCHE','DER','UND DANN','NIEMALS','IN VIETNAM','IM ALDI','BEI MONDSCHEIN','OHNE HOSE','HEIMLICH','SCHON WIEDER']};
+const MEME_MARKS=[200,300,400,650,900,1200,1500,1800,2100,2400];
+let meme=null,memeNext=0,memeCount=0;
+function mpick(k){return MEMEW[k][Math.floor(Math.random()*MEMEW[k].length)];}
+function memeWords(){const P=[['a','n','f','v','a','n'],['a','f','n','v','f','n','f'],['n','a','v','f','a','n','f'],['a','n','v','n','f','a','n']];
+  const pat=P[Math.floor(Math.random()*P.length)];return pat.map(mpick).join(' ').split(' ');}
+function memeStart(){const words=memeWords();meme={t:0,kind:memeCount%3,words,dur:Math.max(5,.6+words.length*.42+1)};memeCount++;
+  if(!muted){try{if(window.speechSynthesis){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(words.join(' ').toLowerCase());u.lang='de-DE';u.pitch=1.6+Math.random()*.4;u.rate=1.05;speechSynthesis.speak(u);}}catch(e){}
+    [523,659,784,1046].forEach((f,i)=>setTimeout(()=>blip(f,f*1.01,.14,'square',.05),i*110));}}
+function memeTick(dt){if(duel.active||!state)return;if(meme){meme.t+=dt;if(meme.t>meme.dur)meme=null;return;}
+  const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(memeNext<MEME_MARKS.length&&m>=MEME_MARKS[memeNext]){memeNext++;if(!state.crashed)memeStart();}}
+function drawBohni(x,y,s,ph,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(ph*1.3)*.12+(o.rot||0));
+  const w=s*.36,h=s*.5,lw=Math.max(1.5,s*.03);ctx.lineWidth=lw;ctx.strokeStyle=INK;ctx.lineJoin='round';
+  // legs
+  const lg=Math.sin(ph*8)*s*.05;ctx.beginPath();ctx.moveTo(-w*.4,h*.8);ctx.lineTo(-w*.45,h*1.05+lg);ctx.moveTo(w*.4,h*.8);ctx.lineTo(w*.45,h*1.05-lg);ctx.stroke();
+  // body
+  const g=ctx.createLinearGradient(-w,-h,w,h);g.addColorStop(0,o.c1||'#ffd25a');g.addColorStop(1,o.c2||'#ff9a1f');ctx.fillStyle=g;
+  ctx.beginPath();ctx.ellipse(0,0,w,h,0,0,7);ctx.fill();ctx.stroke();
+  // sprout
+  ctx.beginPath();ctx.moveTo(0,-h);ctx.quadraticCurveTo(s*.02,-h-s*.12,s*.1,-h-s*.14);ctx.stroke();ctx.fillStyle='#5fd14a';ctx.beginPath();ctx.ellipse(s*.12,-h-s*.15,s*.07,s*.035,-.5,0,7);ctx.fill();ctx.stroke();
+  // googly eyes
+  for(const ex of [-w*.42,w*.42]){const er=s*.13;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex,-h*.3,er,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle=INK;ctx.beginPath();ctx.arc(ex+Math.sin(ph*5+ex)*er*.45,-h*.3+Math.cos(ph*4.3+ex)*er*.45,er*.45,0,7);ctx.fill();}
+  // cheeks + mouth
+  ctx.fillStyle='rgba(255,90,90,.45)';ctx.beginPath();ctx.ellipse(-w*.62,h*.08,s*.05,s*.03,0,0,7);ctx.ellipse(w*.62,h*.08,s*.05,s*.03,0,0,7);ctx.fill();
+  const mo=s*(.05+.06*Math.abs(Math.sin(ph*6)));ctx.fillStyle='#7a1d1d';ctx.beginPath();ctx.ellipse(0,h*.22,s*.11,mo,0,0,Math.PI);ctx.lineTo(-s*.11,h*.22);ctx.fill();ctx.stroke();
+  if(o.tuba){ctx.fillStyle='#f2c230';ctx.beginPath();ctx.arc(w*.9,h*.1,s*.14,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(w*.9,h*.1-s*.14);ctx.lineTo(w*.7,-h*.9);ctx.lineTo(w*1.3,-h*1.2);ctx.closePath();ctx.fill();ctx.stroke();}
+  ctx.restore();}
+function drawMemeBG(){if(!meme)return;const t=meme.t,d=meme.dur,io=Math.min(1,t/.8,(d-t)/.8),e=io<0?0:io*io*(3-2*io);
+  ctx.save();
+  if(meme.kind===0){const s=H*.62,x=W*.66,y=H*.98-s*.42*e;drawBohni(x,y,s,time,{rot:Math.sin(time*2)*.08});}
+  else if(meme.kind===1){const s=H*.13,y=H*.5;for(let i=0;i<7;i++){const x=W*1.1-(t*W*.22)+i*s*.9,bob=Math.abs(Math.sin(time*7+i))*s*.12;ctx.globalAlpha=Math.max(0,e);drawBohni(x,y-bob,s,time+i,{tuba:i%2===0,c1:i===3?'#ffe9a8':undefined});}}
+  else{const px=W*.66,py=H*.3,r=H*.16*e;ctx.globalAlpha=Math.max(0,e);for(let k=0;k<4;k++){ctx.strokeStyle=['#43ff9a','#21d4ff','#b06bff','#43ff9a'][k];ctx.lineWidth=H*.02;ctx.beginPath();ctx.ellipse(px,py,r*(1-k*.18),r*(1-k*.18)*.9,time*(k%2?-2:2),0,5.2);ctx.stroke();}
+    for(let i=0;i<6;i++){const a=time*2+i*1.05,rr=r*(.4+((t*.6+i*.17)%1)*2.2);drawBohni(px+Math.cos(a)*rr,py+Math.sin(a)*rr*.7,H*.08,time+i,{rot:a});}}
+  ctx.restore();}
+function drawMemeCaption(){if(!meme)return;const i=Math.floor((meme.t-.5)/.42);if(i<0||i>=meme.words.length)return;const w=meme.words[i],k=((meme.t-.5)/.42)%1,sc=1+Math.max(0,.25-k)*1.2;
+  ctx.save();ctx.translate(W/2,H*.36);ctx.scale(sc,sc);const fs=Math.min(64,W*.075);ctx.font='900 '+fs+'px "Arial Black", Impact, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  ctx.lineWidth=fs*.22;ctx.strokeStyle='#000';ctx.strokeText(w,0,0);ctx.fillStyle='#fff';ctx.fillText(w,0,0);ctx.restore();}
 function newRun(){
   if(!VEH[save.veh]||VEH[save.veh].unlock>save.level)save.veh='f1';
   CAR=buildCar(save.veh);
   if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>save.level)save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
+  meme=null;memeNext=0;try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
   car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}setTimeout(loadGhost,0);
@@ -852,6 +896,7 @@ function update(dt){
         if(!h.warned&&Math.abs(h.x-b.x)<50){h.warned=true;if(h.t==='oil'){popup('RUTSCHIG!',h.x,groundY(h.x)-50,'#c9a0ff');}}}}
     acc+=dt;let n=0;while(acc>=DT&&n<40){step(DT);acc-=DT;n++;}
     if(!state.crashed)recGhost(dt);
+    memeTick(dt);
     state.misT+=dt;if(state.misT>.25){state.misT=0;if(!state.crashed)misCheck();}
     const b=car.body;
     for(const h of hazards){if(h.hit&&!h.popped){h.popped=true;popup('RUMMS!',h.x,groundY(h.x)-50,'#ffcf1f');cam.shake=8;blip(140,60,.2,'sawtooth',.08);}}
@@ -918,6 +963,7 @@ const INK='#151515';
 function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(BIOMES[TRK.id])drawBG();else{drawSky();drawMountains();drawClouds();}
+  drawMemeBG();
   const z=cam.z, sx=(Math.random()-.5)*cam.shake, sy=(Math.random()-.5)*cam.shake;
   const ox=W*.36-cam.x*z+sx, oy=H*.6-cam.y*z+sy;
   ctx.setTransform(DPR*z,0,0,DPR*z,DPR*ox,DPR*oy);
@@ -943,6 +989,7 @@ function render(){
   const sp=Math.abs(car.body.vx);
   if(sp>1100){const a=Math.min(.5,(sp-1100)/1200);ctx.strokeStyle='rgba(255,255,255,'+a+')';ctx.lineWidth=3;
     for(let i=0;i<10;i++){const y=hash(i*13+Math.floor(time*20))*H,x=hash(i*7+Math.floor(time*20))*W;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-80-sp*.05,y);ctx.stroke();}}
+  drawMemeCaption();
 }
 /* ---------- HD background v9: layered silhouettes with haze, biomes change with distance ---------- */
 const BIOMES={
