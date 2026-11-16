@@ -218,12 +218,23 @@ input#codeIn{background:rgba(255,255,255,.9)}
 .itembtn{border:0;font-family:var(--hd);font-weight:400;background:rgba(14,20,46,.7);color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.4)}
 .itembtn.ready{background:linear-gradient(180deg,#ffe066,#ffb21e);color:#3a2300;box-shadow:0 5px 0 #a75f00}
 #toast{background:rgba(14,20,46,.85);border:1px solid rgba(255,255,255,.2);border-radius:14px}
+
+/* tricks */
+.result{grid-template-columns:repeat(4,1fr)}
+#score{font-family:var(--hd);font-size:15px;color:var(--gold);margin-top:2px;font-variant-numeric:tabular-nums}
+#trickfeed{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 64px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;z-index:5}
+.trk-i{font-family:var(--hd);font-size:30px;color:#fff;letter-spacing:.02em;text-shadow:0 3px 0 #1f3a8f,0 0 18px rgba(80,160,255,.8);animation:trkpop 1.7s ease-out forwards;white-space:nowrap}
+.trk-i b{color:var(--gold);font-weight:400;text-shadow:0 3px 0 #b86b00,0 0 18px rgba(255,200,58,.8)}
+.trk-i.combo{font-size:22px;color:var(--gold);text-shadow:0 3px 0 #b86b00}
+.trk-i.lost{color:#ff8a8a;text-shadow:0 3px 0 #7a1010}
+@keyframes trkpop{0%{opacity:0;transform:scale(.4)}12%{opacity:1;transform:scale(1.15)}22%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
+@media (prefers-reduced-motion:reduce){.trk-i{animation:none}}
 </style>
 
 <canvas id="game" aria-label="Spielfeld"></canvas>
 
 <div id="hud" hidden>
-  <div class="hudbox"><div id="dist">0 m</div><div id="best">Rekord 0 m</div><div id="goal" hidden></div></div>
+  <div class="hudbox"><div id="dist">0 m</div><div id="best">Rekord 0 m</div><div id="goal" hidden></div><div id="score">0 PUNKTE</div></div>
   <div id="right">
     <div id="topbtns"><button class="small" id="mute" aria-label="Ton an oder aus">TON AN</button><button class="small" id="pause" aria-label="Zum Menü">MENÜ</button></div>
     <div class="hudbox" id="coins"><span class="coin-ico"></span><span id="coinN">0</span></div>
@@ -236,6 +247,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
 <button class="pedal" id="gas" hidden aria-label="Gas"><span>GAS</span></button>
 <button class="itembtn" id="itemBtn" hidden aria-label="Item benutzen">KEIN ITEM</button>
 <div id="toast" hidden></div>
+<div id="trickfeed" aria-live="polite"></div>
 <div id="rotate" hidden>Tipp: Handy quer halten</div>
 
 <div class="overlay hub" id="menu">
@@ -327,6 +339,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <p class="tag" id="overSub">Pete liegt auf dem Helm.</p>
     <div class="result">
       <div><b id="rDist">0</b><span>Meter</span></div>
+      <div><b id="rScore">0</b><span>Punkte</span></div>
       <div><b id="rCoins">0</b><span>Münzen</span></div>
       <div><b id="rXp">0</b><span>XP</span></div>
     </div>
@@ -471,8 +484,8 @@ function newRun(){
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
-  car={body:b,wheels};car.rider=makeRider(b);
-  state={fuel:100,coins:0,crashed:false,crashT:0,air:0,airRot:0,saltos:0,stillT:0,reason:'',maxX:START_X,t:0,item:null,turbo:0,shield:0,magnet:0,finished:false,stars:0};
+  car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}
+  state={fuel:100,coins:0,score:0,combo:{n:0,t:0,sum:0},wheelie:0,xpBonus:0,crashed:false,crashT:0,air:0,airRot:0,saltos:0,stillT:0,reason:'',maxX:START_X,t:0,item:null,turbo:0,shield:0,magnet:0,finished:false,stars:0};
   items=[];popups=[];parts=[];hazards=[];nextCoinX=700;nextFuelX=2300;fuelGap=2300;nextBoxX=1100;nextHazX=1400;
   cam.x=b.x;cam.y=b.y;cam.shake=0;
 }
@@ -667,14 +680,29 @@ function step(dt){
     if(state.air>.35&&!state.crashed)land();
     state.air=0;state.airRot=0;
   }
+  {const ws=car.wheels,rear=ws.reduce((a,w)=>w.ax<a.ax?w:a),front=ws.reduce((a,w)=>w.ax>a.ax?w:a);
+   if(rear.contact&&!front.contact&&b.vx>150&&!state.crashed)state.wheelie+=dt;
+   else{if(state.wheelie>1.2&&(!car.rider||car.rider.on)&&!state.crashed){const sec=Math.floor(state.wheelie);addTrick('WHEELIE '+sec+' S',120*sec);}state.wheelie=0;}}
+  comboStep(dt,grounded);
 }
 function land(){
-  const b=car.body, flips=Math.floor((Math.abs(state.airRot)+.7)/(Math.PI*2));
-  const imp=Math.max(...car.wheels.map(w=>w.impact));
-  if(flips>0){const bonus=25*flips;state.coins+=bonus;state.saltos+=flips;popup((flips>1?flips+'-FACH ':'')+'SALTO! +'+bonus,b.x,b.y-70,'#ffcf1f');blip(500,1400,.3,'square',.08);}
-  else if(state.air>1.3){state.coins+=10;popup('AIRTIME! +10',b.x,b.y-70,'#7fe0ff');blip(600,1100,.2,'triangle',.08);}
+  const b=car.body, rot=state.airRot, flips=Math.floor((Math.abs(rot)+.7)/(Math.PI*2));
+  const imp=Math.max(...car.wheels.map(w=>w.impact)), clean=imp<520&&(!car.rider||car.rider.on);
+  if(flips>0){const bonus=25*flips;state.coins+=bonus;state.saltos+=flips;addTrick((flips>1?flips+'× ':'')+(rot<0?'BACKFLIP':'FRONTFLIP'),Math.round(300*flips*(flips>1?1.5:1)));blip(500,1400,.3,'square',.08);}
+  if(state.air>2.6)addTrick('MEGA AIR',250);else if(state.air>1.3){state.coins+=10;addTrick('AIRTIME',100);blip(600,1100,.2,'triangle',.08);}
+  if((flips>0||state.air>1.3)&&clean)addTrick('SAUBER GELANDET',150);
   if(imp>650){popup(imp>1000?'KAWUMM!':'BAMM!',b.x+30,b.y-30,'#ff7a5c');cam.shake=Math.min(14,imp/90);blip(160,60,.18,'sawtooth',.09);}
   car.wheels.forEach(w=>w.impact=0);
+}
+function trickMsg(html,cls){const el=document.createElement('div');el.className='trk-i'+(cls?' '+cls:'');el.innerHTML=html;const f=$('trickfeed');f.appendChild(el);while(f.children.length>3)f.firstChild.remove();setTimeout(()=>el.remove(),1700);}
+function addTrick(name,pts){
+  if(drawingGhost)return;const c=state.combo;c.n++;c.t=3;const mult=Math.min(5,c.n),p=pts*mult;state.score+=p;c.sum+=p;
+  trickMsg(name+' <b>+'+p+'</b>');if(c.n>1)trickMsg('COMBO ×'+mult,'combo');
+}
+function comboStep(dt,grounded){
+  const c=state.combo;if(!c.n)return;
+  if(state.crashed||(car.rider&&!car.rider.on)){trickMsg('COMBO VERLOREN','lost');c.n=0;c.sum=0;return;}
+  if(grounded){c.t-=dt;if(c.t<=0){if(c.n>=2){const xb=Math.round(c.sum/15);state.xpBonus+=xb;trickMsg('COMBO-BONUS <b>+'+xb+' XP</b>','combo');blip(700,1600,.25,'triangle',.08);}c.n=0;c.sum=0;}}
 }
 function crash(x,y){
   state.crashed=true;state.crashT=0;state.reason='crash';
@@ -742,7 +770,7 @@ function update(dt){
 }
 function hud(){
   const m=Math.max(0,Math.floor((state.maxX-START_X)/PX_PER_M));
-  $('dist').textContent=m+' m';$('best').textContent='Rekord '+Math.max(bestOf(TRK.id),m)+' m';
+  $('dist').textContent=m+' m';{const sc=state.score+' PUNKTE';if($('score').textContent!==sc)$('score').textContent=sc;}$('best').textContent='Rekord '+Math.max(bestOf(TRK.id),m)+' m';
   $('coinN').textContent=state.coins;$('fuel').style.width=state.fuel+'%';
   $('speed').textContent=Math.round(Math.abs(car.body.vx)/PX_PER_M*3.6)+' km/h';
   const lv=curLevel();$('goal').hidden=!lv;
@@ -1145,7 +1173,8 @@ function riderStep(dt,roofHit){
       const k=i===0?1500:i===2?700:i>=5?1100:900, cd=i===0?55:i===2?22:30;
       q.vx+=(k*(w[0]-q.x)+cd*(tvx-q.vx))*dt; q.vy+=(k*(w[1]-q.y)+cd*(tvy-q.vy)+G)*dt;
     }
-    if(roofHit||Math.cos(b.a)<-.2)r.inv+=dt;else r.inv=Math.max(0,r.inv-dt*2);
+    // upside down only counts near the ground, so saltos in the air are possible
+    if(roofHit||(Math.cos(b.a)<-.2&&(car.wheels.some(w=>w.contact)||groundY(b.x)-b.y<75)))r.inv+=dt;else r.inv=Math.max(0,r.inv-dt*2);
   }else{for(const q of P){q.vy+=G*dt;q.vx*=1-.2*dt;}}
   for(const q of P){q.x+=q.vx*dt;q.y+=q.vy*dt;}
   // bones (position based, velocity corrected)
@@ -1379,7 +1408,7 @@ function gameOver(){
   overShown=true;running=false;setPlayUI(false);
   if(duel.active)return duelOver();
   const m=Math.max(0,Math.floor((state.maxX-START_X)/PX_PER_M));
-  const xp=m+state.coins*2+state.saltos*25;
+  const xp=m+state.coins*2+Math.round(state.score/10)+state.xpBonus;
   const lv=curLevel();let lvBonus=0;
   if(lv&&state.reason==='finish'){const st=starsOf(TRK.id);st[save.mode-1]=Math.max(st[save.mode-1],state.stars);lvBonus=30*state.stars;state.coins+=lvBonus;}
   const rec=!lv&&m>bestOf(TRK.id); if(rec){save.bests=save.bests||{};save.bests[TRK.id]=m;}
@@ -1390,7 +1419,7 @@ function gameOver(){
   const tt=Math.floor(state.t/60)+':'+String(Math.floor(state.t%60)).padStart(2,'0');
   $('overSub').textContent=state.reason==='finish'?'★'.repeat(state.stars)+'☆'.repeat(3-state.stars)+'  in '+tt+'. Bonus: '+lvBonus+' Münzen.'+(save.mode<3&&state.stars?' Nächstes Level ist offen!':''):
     rec?'Neuer Rekord! '+m+' Meter.':state.reason==='time'?'Die Zeit ist abgelaufen. Mehr Gas!':state.reason==='fuel'?'Der Tank ist leer.':'Der Fahrer liegt auf dem Helm.';
-  $('rDist').textContent=m;$('rCoins').textContent=state.coins;$('rXp').textContent='+'+xp;
+  $('rDist').textContent=m;$('rScore').textContent=state.score;$('rCoins').textContent=state.coins;$('rXp').textContent='+'+xp;
   $('lvlTxt2').textContent='Level '+save.level;$('lvlBar2').style.width=Math.min(100,save.xp/xpNeed(save.level)*100)+'%';
   const unl=[...VORDER.map(k=>VEH[k]),...TORDER.map(k=>TRACKS[k])].filter(v=>v.unlock>save.level-ups&&v.unlock<=save.level).map(v=>v.name);
   $('lvlUp').hidden=!ups;$('lvlUp').textContent=ups?'LEVEL UP! Du bist jetzt Level '+save.level+'.'+(unl.length?' Neu freigeschaltet: '+unl.join(', ')+'!':''):'';
