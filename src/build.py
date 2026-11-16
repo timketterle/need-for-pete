@@ -16,7 +16,9 @@ head='''<!doctype html><html lang="de"><head><meta charset="utf-8">
 </head><body>
 '''
 tail='''
-<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
+<script>if('serviceWorker' in navigator){let had=!!navigator.serviceWorker.controller,rl=false;
+addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{const up=()=>r.update().catch(()=>{});setInterval(up,120000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)up();});}).catch(()=>{}));
+navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had){had=true;return;}if(rl)return;rl=true;const go=()=>{const m=document.getElementById('menu');if(!m||!m.hidden)location.reload();else setTimeout(go,3000);};go();});}</script>
 </body></html>'''
 open('../index.html','w').write(head+src+tail)
 ver=time.strftime('%Y%m%d%H%M%S')
