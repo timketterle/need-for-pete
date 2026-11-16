@@ -147,6 +147,7 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 input#codeIn{background:rgba(255,255,255,.9)}
 .coin-ico{background:radial-gradient(circle at 35% 30%,#fff3a8,#ffc83a 45%,#d48a00);border:2px solid #8a5200}
 
+#settings,#missions,#board,#garage,#duel,#over{align-items:flex-start}#settings>.panel,#missions>.panel,#board>.panel,#garage>.panel,#duel>.panel,#over>.panel{margin-top:auto;margin-bottom:auto}
 /* Leaderboard */
 .lb{list-style:none;margin:8px auto;padding:0;max-width:440px;display:flex;flex-direction:column;gap:6px}
 .lb li{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:7px 12px;font-weight:900;color:var(--txt)}
@@ -305,6 +306,12 @@ input#codeIn{background:rgba(255,255,255,.9)}
       </div>
       <label class="chk"><input type="checkbox" id="tiltInv"> Neigung umkehren</label>
       <p class="note" id="ctlNote">Gas rechts, Bremse links. In der Luft: Gas dreht nach hinten, Bremse nach vorne. Am Rechner gehen auch die Pfeiltasten.</p>
+    </div>
+    <div class="card glass">
+      <h3>Yahu-Clip</h3>
+      <p class="note" style="margin-top:0">Eigenes Video von diesem Handy, z. B. euer Lieblings-Reel. Es läuft bei den Yahu-Momenten am Himmel, Stück für Stück, mit Ton. Es bleibt nur auf diesem Gerät.</p>
+      <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0"><label class="gbtn orange mid" style="cursor:pointer">VIDEO WÄHLEN<input type="file" id="clipIn" accept="video/*,audio/*" hidden></label><button class="gbtn blue mid" id="clipDel">ENTFERNEN</button></div>
+      <p class="note" id="clipInfo"></p>
     </div>
     <div class="card glass">
       <h3>Dein Name</h3>
@@ -617,10 +624,20 @@ let meme=null,memeNext=0,memeCount=0;
 function mpick(k){return MEMEW[k][Math.floor(Math.random()*MEMEW[k].length)];}
 function memeWords(){const P=[['a','n','f','v','a','n'],['a','f','n','v','f','n','f'],['n','a','v','f','a','n','f'],['a','n','v','n','f','a','n']];
   const pat=P[Math.floor(Math.random()*P.length)];return pat.map(mpick).join(' ').split(' ');}
-function memeStart(){const words=memeWords();meme={t:0,kind:memeCount%3,words,dur:Math.max(5,.6+words.length*.42+1)};memeCount++;
+/* own clip from this device (IndexedDB), never part of the published game */
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('nfp-media',1);r.onupgradeneeded=()=>r.result.createObjectStore('m');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function mediaOp(mode,val){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction('m',mode==='get'?'readonly':'readwrite'),st=tx.objectStore('m');
+  const rq=mode==='get'?st.get('clip'):mode==='put'?st.put(val,'clip'):st.delete('clip');tx.oncomplete=()=>res(rq.result);tx.onerror=()=>rej(tx.error);});}
+const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;let hasClip=false,clipUnlocked=false,clipURL=null;
+function setClip(b){if(clipURL)URL.revokeObjectURL(clipURL);clipURL=null;hasClip=!!b;if(b){clipURL=URL.createObjectURL(b);clipV.src=clipURL;clipV.load();}else{clipV.removeAttribute('src');clipV.load();}
+  const el=document.getElementById('clipInfo');if(el)el.textContent=b?'Clip gespeichert ('+Math.round(b.size/1048576*10)/10+' MB). Läuft bei 200, 300, 400 m …':'Kein Clip gewählt. Dann laufen die Bohnis mit Wortsalat.';}
+try{mediaOp('get').then(b=>setClip(b||null)).catch(()=>setClip(null));}catch(e){}
+function clipUnlock(){if(!hasClip||clipUnlocked)return;clipUnlocked=true;clipV.muted=true;const p=clipV.play();if(p&&p.then)p.then(()=>{clipV.pause();clipV.muted=muted;}).catch(()=>{clipUnlocked=false;});}
+function memeStart(){if(hasClip){meme={t:0,kind:memeCount%3,words:[],dur:7,clip:true};memeCount++;clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{});}catch(e){}return;}
+  const words=memeWords();meme={t:0,kind:memeCount%3,words,dur:Math.max(5,.6+words.length*.42+1)};memeCount++;
   if(!muted){try{if(window.speechSynthesis){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(words.join(' ').toLowerCase());u.lang='de-DE';u.pitch=1.6+Math.random()*.4;u.rate=1.05;speechSynthesis.speak(u);}}catch(e){}
     [523,659,784,1046].forEach((f,i)=>setTimeout(()=>blip(f,f*1.01,.14,'square',.05),i*110));}}
-function memeTick(dt){if(duel.active||!state)return;if(meme){meme.t+=dt;if(meme.t>meme.dur)meme=null;return;}
+function memeTick(dt){if(duel.active||!state)return;if(meme){meme.t+=dt;if(meme.t>meme.dur){if(meme.clip)clipV.pause();meme=null;}return;}
   const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(memeNext<MEME_MARKS.length&&m>=MEME_MARKS[memeNext]){memeNext++;if(!state.crashed)memeStart();}}
 function drawBohni(x,y,s,ph,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(ph*1.3)*.12+(o.rot||0));
   const w=s*.36,h=s*.5,lw=Math.max(1.5,s*.03);ctx.lineWidth=lw;ctx.strokeStyle=INK;ctx.lineJoin='round';
@@ -641,6 +658,12 @@ function drawBohni(x,y,s,ph,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.rotate(
   ctx.restore();}
 function drawMemeBG(){if(!meme)return;const t=meme.t,d=meme.dur,io=Math.min(1,t/.8,(d-t)/.8),e=io<0?0:io*io*(3-2*io);
   ctx.save();
+  if(meme.clip){if(clipV.readyState>=2&&clipV.videoWidth){const ar=clipV.videoWidth/clipV.videoHeight,vh=H*.6*(.6+.4*e),vw=vh*ar,x=W*.66-vw/2,y=H*.05+(1-e)*H*.3,rr=vh*.05;
+      ctx.globalAlpha=Math.max(0,e);ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.roundRect(x+6,y+8,vw,vh,rr);ctx.fill();
+      ctx.save();ctx.beginPath();ctx.roundRect(x,y,vw,vh,rr);ctx.clip();ctx.drawImage(clipV,x,y,vw,vh);ctx.restore();
+      ctx.lineWidth=Math.max(4,vh*.022);ctx.strokeStyle='#fff';ctx.beginPath();ctx.roundRect(x,y,vw,vh,rr);ctx.stroke();ctx.lineWidth=2.5;ctx.strokeStyle=INK;ctx.stroke();
+      drawBohni(x-vh*.02,y+vh*.95,vh*.22,time,{rot:-.2});drawBohni(x+vw+vh*.02,y+vh*.95,vh*.22,time+2,{rot:.2,tuba:true});}
+    ctx.restore();return;}
   if(meme.kind===0){const s=H*.62,x=W*.66,y=H*.98-s*.42*e;drawBohni(x,y,s,time,{rot:Math.sin(time*2)*.08});}
   else if(meme.kind===1){const s=H*.13,y=H*.5;for(let i=0;i<7;i++){const x=W*1.1-(t*W*.22)+i*s*.9,bob=Math.abs(Math.sin(time*7+i))*s*.12;ctx.globalAlpha=Math.max(0,e);drawBohni(x,y-bob,s,time+i,{tuba:i%2===0,c1:i===3?'#ffe9a8':undefined});}}
   else{const px=W*.66,py=H*.3,r=H*.16*e;ctx.globalAlpha=Math.max(0,e);for(let k=0;k<4;k++){ctx.strokeStyle=['#43ff9a','#21d4ff','#b06bff','#43ff9a'][k];ctx.lineWidth=H*.02;ctx.beginPath();ctx.ellipse(px,py,r*(1-k*.18),r*(1-k*.18)*.9,time*(k%2?-2:2),0,5.2);ctx.stroke();}
@@ -655,7 +678,7 @@ function newRun(){
   if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>save.level)save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
-  meme=null;memeNext=0;try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}
+  meme=null;memeNext=0;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
   car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}setTimeout(loadGhost,0);
@@ -761,7 +784,7 @@ function engineUpdate(){
   eng.o1.frequency.setTargetAtTime(f,t,.04);eng.o2.frequency.setTargetAtTime(f*.5,t,.04);
   eng.g.gain.setTargetAtTime((muted||!running||state.crashed)?0:.035+.03*Math.abs(thrNow),t,.08);
 }
-$('mute').addEventListener('click',()=>{muted=!muted;$('mute').textContent=muted?'TON AUS':'TON AN';});
+$('mute').addEventListener('click',()=>{muted=!muted;clipV.muted=muted;$('mute').textContent=muted?'TON AUS':'TON AN';});
 
 /* ---------- Effects ---------- */
 function popup(text,x,y,color){popups.push({text,x,y,t:0,color:color||'#ffcf1f',rot:(Math.random()-.5)*.3});}
@@ -1579,7 +1602,7 @@ $('drv').addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt
 $('vPrev').addEventListener('click',()=>cycleVeh(-1));$('vNext').addEventListener('click',()=>cycleVeh(1));
 function setPlayUI(on){$('itemBtn').hidden=!on;$('hud').hidden=!on;$('gas').hidden=!on;$('brake').hidden=!on;$('rotate').hidden=!(on&&H>W);}
 function startRun(){
-  initAudio();newRun();running=true;overShown=false;acc=0;
+  initAudio();clipUnlock();newRun();running=true;overShown=false;acc=0;
   $('menu').hidden=true;$('over').hidden=true;setPlayUI(true);
   if(tiltOn){
     if(tiltRaw!=null)tiltNeutral=tiltRaw;
@@ -1626,6 +1649,9 @@ $('misBack').addEventListener('click',()=>{$('missions').hidden=true;$('menu').h
 $('misPlay').addEventListener('click',()=>{$('missions').hidden=true;playDaily=false;startRun();});
 $('boardBack').addEventListener('click',()=>{$('board').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('boardPlay').addEventListener('click',()=>{$('board').hidden=true;playDaily=true;startRun();});
+$('clipIn').addEventListener('change',async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;if(f.size>80*1048576){$('clipInfo').textContent='Das Video ist zu groß (max. 80 MB).';return;}
+  try{await mediaOp('put',f);clipUnlocked=false;setClip(f);}catch(err){$('clipInfo').textContent='Speichern ging nicht: '+err.message;}e.target.value='';});
+$('clipDel').addEventListener('click',async()=>{try{await mediaOp('del');}catch(e){}clipUnlocked=false;setClip(null);});
 $('pName').addEventListener('change',()=>{save.pname=$('pName').value.trim().slice(0,16);persist();});
 $('again').addEventListener('click',startRun);
 $('toMenu').addEventListener('click',()=>{$('over').hidden=true;newRun();showMenuStats();$('menu').hidden=false;});
