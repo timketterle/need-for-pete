@@ -712,7 +712,8 @@ const RANKS=['Anfänger','Hügel-Rookie','Salto-Azubi','Schrottplatz-Profi','Din
 function misReward(i){return {c:40+i*15,x:60+i*20};}
 function misDone(){return save.misDone||(save.misDone=[]);}
 function misRank(){return RANKS[Math.min(RANKS.length-1,Math.floor(misDone().length/4))];}
-function misUnlocked(mi){if(mi.trk)return TRACKS[mi.trk].unlock<=save.level;if(mi.veh)return VEH[mi.veh].unlock<=save.level;return true;}
+function lvlCap(){return save.allOpen?999:save.level;}
+function misUnlocked(mi){if(mi.trk)return TRACKS[mi.trk].unlock<=lvlCap();if(mi.veh)return VEH[mi.veh].unlock<=lvlCap();return true;}
 function misActive(){const d=misDone(),out=[];for(let i=0;i<MIS.length&&out.length<3;i++)if(!d.includes(i)&&misUnlocked(MIS[i]))out.push(i);return out;}
 function misVal(mi,live){const st=state||{},tot=(save.tot||{}),m=st.maxX?Math.max(0,Math.floor((st.maxX-START_X)/PX_PER_M)):0;
   switch(mi.t){case 'dist':return live?m:0;case 'distT':return live&&TRK.id===mi.trk?m:0;case 'veh':return live&&save.veh===mi.veh?m:0;
@@ -744,7 +745,8 @@ function rid(n){const a='abcdefghijklmnopqrstuvwxyz0123456789',b=crypto.getRando
 function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
 const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;
 let clipLast=null,clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
-const CH_POOL='nfpgemein1';const CLIP_BOOST={'m1lej5dt7h':2,'6oga15b8c8':2};/* clip id -> how much more often it is picked *//* shared pool: every device loads it, every upload goes there */
+const CH_POOL='nfpgemein1';
+{const q=new URLSearchParams(location.search);if(q.get('alles')==='frei'){save.allOpen=true;persist();try{history.replaceState(null,'',location.pathname);}catch(e){}}}const CLIP_BOOST={'m1lej5dt7h':2,'6oga15b8c8':2};/* clip id -> how much more often it is picked *//* shared pool: every device loads it, every upload goes there */
 function picList(){return save.pics||(save.pics=[]);}
 function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.')+(picList().length?' '+picList().length+' Bild'+(picList().length>1?'er':'')+' für den Himmel.':'');
@@ -883,9 +885,9 @@ function drawMemeCaption(){if(!meme)return;if(!meme.clip)drawMemeFG();if(meme.ki
   ctx.save();ctx.translate(W/2,H*.36);ctx.scale(sc,sc);const fs=Math.min(64,W*.075);ctx.font='900 '+fs+'px "Arial Black", Impact, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
   ctx.lineWidth=fs*.22;ctx.strokeStyle='#000';ctx.strokeText(w,0,0);ctx.fillStyle='#fff';ctx.fillText(w,0,0);ctx.restore();}
 function newRun(){
-  if(!VEH[save.veh]||VEH[save.veh].unlock>save.level)save.veh='f1';
+  if(!VEH[save.veh]||VEH[save.veh].unlock>lvlCap())save.veh='f1';
   CAR=buildCar(save.veh);
-  if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>save.level)save.trk='hills';
+  if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>lvlCap())save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
   memeEnd();memeNextAt=60+Math.random()*100;skyPic=null;picNextAt=90+Math.random()*120;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
@@ -1001,11 +1003,11 @@ async function enableTilt(){
     return true;
   }catch(e){return false;}
 }
-addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){keys.gas=true;e.preventDefault();}
+addEventListener('keydown',e=>{if(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){keys.gas=true;e.preventDefault();}
   if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){keys.brake=true;e.preventDefault();}
   if((e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W')&&running){useItem();e.preventDefault();}
   if((e.key==='Enter'||e.key===' ')&&!running&&!$('over').hidden){startRun();}});
-addEventListener('keyup',e=>{if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.gas=false;if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.brake=false;});
+addEventListener('keyup',e=>{if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.gas=false;if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.brake=false;});
 function bindPedal(el,k){
   const on=e=>{e.preventDefault();btn[k]=true;el.classList.add('down');try{el.setPointerCapture(e.pointerId);}catch(_){}};
   const off=e=>{btn[k]=false;el.classList.remove('down');};
@@ -1911,7 +1913,7 @@ function drawPreview(id){
   CAR=buildCar(id);const b={x:0,y:0,a:0};
   car={body:b,wheels:CAR.wheels.map(w=>({...w,x:w.ax,y:w.ay+CAR.rest,a:0}))};
   ctx=p;p.translate(150,104);p.scale(.8,.8);
-  const locked=VEH[id].unlock>save.level;if(locked)p.globalAlpha=.35;
+  const locked=VEH[id].unlock>lvlCap();if(locked)p.globalAlpha=.35;
   drawCar();p.globalAlpha=1;ctx=saveCtx;car=saveCar;CAR=saveCAR;
 }
 
@@ -1928,7 +1930,7 @@ function showMenuStats(){
 }
 let menuVeh=save.veh||'f1';
 function showVehicle(){
-  const v=VEH[menuVeh], locked=v.unlock>save.level, c=buildCar(menuVeh);
+  const v=VEH[menuVeh], locked=v.unlock>lvlCap(), c=buildCar(menuVeh);
   $('vName').textContent=v.name;
   $('vStats').innerHTML=statsOf(c).map(([n,x])=>'<div class="stat">'+n+' <div class="bar"><i'+(x<.3?' class="lo"':'')+' style="width:'+Math.round(x*100)+'%"></i></div></div>').join('');
   $('vNote').innerHTML=locked?'<span class="lock">Gesperrt: ab Level '+v.unlock+'.</span> '+v.note:v.note;$('mCoins').textContent=save.coins;
@@ -1940,16 +1942,16 @@ function showVehicle(){
 }
 let menuTrk=save.trk||'hills';
 function showTrack(){
-  const t=TRACKS[menuTrk], locked=t.unlock>save.level;
+  const t=TRACKS[menuTrk], locked=t.unlock>lvlCap();
   $('tName').textContent=t.name;
   $('tInfo').innerHTML='<b>Schwierigkeit: '+['','leicht','mittel','schwer'][t.diff]+'</b> · Rekord '+bestOf(t.id)+' m'+((save.bossWon||{})[t.id]?' · 👑 '+(BOSSES[t.id]||{}).n+' besiegt':'')+'<br>'+(locked?'<span class="lock">Gesperrt: ab Level '+t.unlock+'.</span> ':'')+'<span class="tdesc">'+t.desc+'</span>';
   if(!locked&&save.trk!==menuTrk){save.trk=menuTrk;persist();newRun();}
   const st=starsOf(t.id);const star=n=>'★'.repeat(n)+'☆'.repeat(3-n);
-  {const ok=m=>m===0||m===1||(m===2&&st[0]>0)||(m===3&&st[1]>0)||(m===4&&st[0]>0);if(!locked&&!ok(save.mode||0))save.mode=0;}
-  $('modes').innerHTML='<button data-m="0" aria-pressed="'+(!save.mode)+'">FREI</button>'+[1,2,3].map(l=>{const open=l===1||st[l-2]>0;
+  {const ok=m=>save.allOpen||m===0||m===1||(m===2&&st[0]>0)||(m===3&&st[1]>0)||(m===4&&st[0]>0);if(!locked&&!ok(save.mode||0))save.mode=0;}
+  $('modes').innerHTML='<button data-m="0" aria-pressed="'+(!save.mode)+'">FREI</button>'+[1,2,3].map(l=>{const open=save.allOpen||l===1||st[l-2]>0;
     return '<button data-m="'+l+'" aria-pressed="'+(save.mode===l)+'" '+(open?'':'disabled')+'>LV '+l+' '+(open?star(st[l-1]):'🔒')+'</button>';}).join('')
-    +'<button data-m="4" class="bossbtn" aria-pressed="'+(save.mode===4)+'" '+(st[0]>0?'':'disabled')+'>BOSS '+(st[0]>0?((save.bossWon||{})[t.id]?'👑':'⚔️'):'🔒')+'</button>';
-  const vLocked=VEH[menuVeh].unlock>save.level;
+    +'<button data-m="4" class="bossbtn" aria-pressed="'+(save.mode===4)+'" '+(save.allOpen||st[0]>0?'':'disabled')+'>BOSS '+(save.allOpen||st[0]>0?((save.bossWon||{})[t.id]?'👑':'⚔️'):'🔒')+'</button>';
+  const vLocked=VEH[menuVeh].unlock>lvlCap();
   $('start').disabled=locked||vLocked;$('start').textContent=(locked||vLocked)?'GESPERRT':"LOS GEHT'S!";
 }
 function cycleTrk(d){const i=TORDER.indexOf(menuTrk);menuTrk=TORDER[(i+d+TORDER.length)%TORDER.length];showTrack();}
@@ -2011,7 +2013,7 @@ function gameOver(){
       state.reason==='lost'?bn+' war zuerst im Ziel. Tipp: Garage aufrüsten und Saltos für Turbo-Schwung.':state.reason==='fuel'?'Der Tank ist leer, und '+bn+' fährt einfach weiter.':'Du bist gecrasht. '+bn+' lacht sich kaputt.';}
   $('rDist').textContent=m;$('rScore').textContent=state.score;$('rCoins').textContent=state.coins;$('rXp').textContent='+'+xp;
   $('lvlTxt2').textContent='Level '+save.level;$('lvlBar2').style.width=Math.min(100,save.xp/xpNeed(save.level)*100)+'%';
-  const unl=[...VORDER.map(k=>VEH[k]),...TORDER.map(k=>TRACKS[k])].filter(v=>v.unlock>save.level-ups&&v.unlock<=save.level).map(v=>v.name);
+  const unl=[...VORDER.map(k=>VEH[k]),...TORDER.map(k=>TRACKS[k])].filter(v=>v.unlock>lvlCap()-ups&&v.unlock<=lvlCap()).map(v=>v.name);
   $('lvlUp').hidden=!ups;$('lvlUp').textContent=ups?'LEVEL UP! Du bist jetzt Level '+save.level+'.'+(unl.length?' Neu freigeschaltet: '+unl.join(', ')+'!':''):'';
   $('over').hidden=false;
 }
@@ -2208,7 +2210,7 @@ const TUT_RUN=[
 function tutCoach(){const r=TUT_RUN[tut.step];$('coachN').textContent='PROBEFAHRT · SCHRITT '+(tut.step+1)+' VON '+TUT_RUN.length;$('coachT').textContent=r.t;$('coachS').textContent=r.s;
   const c=$('coach');c.hidden=true;void c.offsetWidth;c.hidden=false;}
 function tutStartRun(){$('tut').hidden=true;tut.run=true;tut.step=0;tut.st=0;tut.brake=0;tut.used=false;tut.hadItem=false;playDaily=false;
-  save.mode=0;if(TRACKS.hills.unlock<=save.level)save.trk='hills';TRK=TRACKS[save.trk];persist();startRun();tutCoach();}
+  save.mode=0;if(TRACKS.hills.unlock<=lvlCap())save.trk='hills';TRK=TRACKS[save.trk];persist();startRun();tutCoach();}
 function tutTick(dt){if(state.crashed)return;const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);tut.st+=dt;
   if(btn.brake||keys.brake)tut.brake+=dt;if(state.item)tut.hadItem=true;else if(tut.hadItem)tut.used=true;
   const r=TUT_RUN[tut.step];if(r.ok({m,brake:tut.brake,st:tut.st,used:tut.used})){tut.step=Math.min(TUT_RUN.length-1,tut.step+1);tut.st=0;tut.brake=0;tutCoach();
