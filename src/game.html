@@ -148,6 +148,13 @@ input#codeIn{background:rgba(255,255,255,.9)}
 .coin-ico{background:radial-gradient(circle at 35% 30%,#fff3a8,#ffc83a 45%,#d48a00);border:2px solid #8a5200}
 
 #settings,#missions,#board,#garage,#duel,#over{align-items:flex-start}#settings>.panel,#missions>.panel,#board>.panel,#garage>.panel,#duel>.panel,#over>.panel{margin-top:auto;margin-bottom:auto}
+#gift{z-index:60;flex-direction:column}#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.giftbox{position:relative;text-align:center;max-width:620px;padding:16px}
+.gfaces{display:flex;justify-content:center;gap:4px;height:min(34vh,230px)}.gfaces img{height:100%;animation:gbob 1.1s ease-in-out infinite}.gfaces img+img{animation-delay:.55s}
+@keyframes gbob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+.giftlogo{font-family:var(--hd);font-weight:400;font-size:clamp(40px,8vw,72px);margin:6px 0;color:#fff;text-shadow:0 4px 0 #1f3a8f}.giftlogo em{font-style:normal;color:var(--gold);text-shadow:0 4px 0 #b86b00}
+#giftTxt{font-weight:800;font-size:clamp(16px,2.6vw,21px);line-height:1.4;color:var(--txt);min-height:4.2em;margin:0 0 14px}
+#giftGo{transition:opacity .6s}
 /* Leaderboard */
 .lb{list-style:none;margin:8px auto;padding:0;max-width:440px;display:flex;flex-direction:column;gap:6px}
 .lb li{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:7px 12px;font-weight:900;color:var(--txt)}
@@ -319,6 +326,16 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <p class="note">So erscheinst du in der Tages-Bestenliste und als Geist bei deinen Freunden.</p>
     </div>
     <div class="row"><button class="gbtn play mid" id="closeSettings">FERTIG</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="gift" hidden>
+  <canvas id="confetti"></canvas>
+  <div class="giftbox">
+    <div class="gfaces"><img id="gTim" alt="Tim"><img id="gSev" alt="Severin"></div>
+    <h2 class="logo giftlogo">Für <em>Sevi</em></h2>
+    <p id="giftTxt"></p>
+    <button class="gbtn play" id="giftGo" style="opacity:0">LOS GEHT'S!</button>
   </div>
 </div>
 
@@ -653,9 +670,18 @@ async function chUpload(file){if(file.size>95*1048576){chInfo('Das Video ist zu 
   for(let i=0;i<n;i++){chInfo('Lade hoch … '+Math.round(i/n*100)+' %');if(!await dbSend('/cd/'+it+'/'+i,'PUT',data.slice(i*CH,(i+1)*CH))){chInfo('Hochladen ging schief. Bitte nochmal versuchen.');return;}}
   if(!await dbSend('/ch/'+save.chOwn+'/'+it,'PUT',{type:file.type||'video/mp4',size:file.size,n,t:{'.sv':'timestamp'}})){chInfo('Hochladen ging schief. Bitte nochmal versuchen.');return;}
   await mediaOp('put','it-'+it,file);surpList().push(it);persist();chInfo('Drin! Jetzt den Link an Severin schicken, falls noch nicht passiert.');clipPrepare();}
+const GIFT_TXT='Erinnerst du dich an unser Spiel aus dem Seminarkurs 2017? Hier ist die Fortsetzung. Mit dir, mir, den Bohnis und viel zu vielen Explosionen. Viel Spaß! – Tim';
+function showGift(){const g=$('gift');g.hidden=false;$('menu').hidden=true;
+  try{$('gTim').src=POSES.tim.src.grin;$('gSev').src=POSES.sev.src.wink||POSES.sev.src.grin;}catch(e){}
+  const el=$('giftTxt');el.textContent='';let i=0;const ty=setInterval(()=>{el.textContent=GIFT_TXT.slice(0,++i);if(i>=GIFT_TXT.length){clearInterval(ty);$('giftGo').style.opacity=1;}},38);
+  const cv2=$('confetti'),c2=cv2.getContext('2d');const C=[];for(let k=0;k<140;k++)C.push({x:Math.random(),y:-Math.random(),vy:.12+Math.random()*.25,vx:(Math.random()-.5)*.06,r:Math.random()*6.28,vr:(Math.random()-.5)*8,c:['#ffc83a','#ff5a5a','#43ff9a','#21d4ff','#b06bff','#ff9a1f'][k%6],s:6+Math.random()*8});
+  let lt=performance.now();(function fr(now){if(g.hidden)return;const dt=Math.min(.05,(now-lt)/1000);lt=now;cv2.width=innerWidth;cv2.height=innerHeight;
+    for(const q of C){q.y+=q.vy*dt;q.x+=q.vx*dt;q.r+=q.vr*dt;if(q.y>1.05){q.y=-.05;q.x=Math.random();}c2.save();c2.translate(q.x*cv2.width,q.y*cv2.height);c2.rotate(q.r);c2.fillStyle=q.c;c2.fillRect(-q.s/2,-q.s/4,q.s,q.s/2);c2.restore();}
+    requestAnimationFrame(fr);})(lt);}
 function chLink(){return location.origin+location.pathname+'?ch='+save.chOwn;}
+{const sp0=new URLSearchParams(location.search);if((sp0.get('ch')||sp0.get('fuer'))&&!save.giftSeen)setTimeout(showGift,300);}
 {const q=new URLSearchParams(location.search).get('ch');if(q&&/^[a-z0-9]{10}$/.test(q)){save.chSub=save.chSub||[];if(!save.chSub.includes(q)&&q!==save.chOwn){save.chSub.push(q);}persist();
-  try{history.replaceState(null,'',location.pathname);}catch(e){}setTimeout(()=>toast('Psst … ab jetzt kann während der Fahrt alles passieren. 🤫',4),900);}}
+  try{history.replaceState(null,'',location.pathname);}catch(e){}}}
 setTimeout(()=>{chInfo();clipPrepare().then(chSync);},400);
 function clipUnlock(){if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.muted=true;const p=clipV.play();if(p&&p.then)p.then(()=>{clipV.pause();clipV.muted=muted;}).catch(()=>{clipUnlocked=false;});}
 function headline(){return '+++ EILMELDUNG +++ '+memeWords().join(' ')+' +++ '+memeWords().join(' ')+' +++';}
@@ -1719,6 +1745,7 @@ $('misPlay').addEventListener('click',()=>{$('missions').hidden=true;playDaily=f
 $('boardBack').addEventListener('click',()=>{$('board').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('boardPlay').addEventListener('click',()=>{$('board').hidden=true;playDaily=true;startRun();});
 $('chIn').addEventListener('change',async e=>{const fs=[...(e.target.files||[])];e.target.value='';for(const f of fs){try{await chUpload(f);}catch(err){chInfo('Ging nicht: '+err.message);}}});
+$('giftGo').addEventListener('click',()=>{initAudio();save.giftSeen=true;persist();$('gift').hidden=true;$('menu').hidden=false;showMenuStats();[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>blip(f,f,.16,'square',.06),i*90));});
 $('chShare').addEventListener('click',async()=>{const url=chLink();try{if(navigator.share){await navigator.share({title:'Need For Pete',text:'Fahr mal hier 😂',url});return;}}catch(e){}
   try{await navigator.clipboard.writeText(url);chInfo('Link kopiert: '+url);}catch(e){chInfo('Dein Link: '+url);}});
 $('pName').addEventListener('change',()=>{save.pname=$('pName').value.trim().slice(0,16);persist();});
