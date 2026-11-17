@@ -117,6 +117,7 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 .logo{font-family:var(--hd);color:var(--gold);-webkit-text-stroke:0;text-shadow:0 4px 0 #b86b00,0 10px 24px rgba(0,0,0,.5);transform:none;letter-spacing:.02em}
 .boom{font-family:var(--hd);-webkit-text-stroke:0;color:var(--gold);text-shadow:0 5px 0 #c0341f,0 12px 28px rgba(0,0,0,.5)}
 .card,.card.glass{background:var(--glass2);border:1px solid var(--line);border-radius:16px;color:var(--txt)}
+.anl details{border-top:1px solid var(--line);padding:6px 0}.anl summary{cursor:pointer;font-family:var(--display);font-size:18px;letter-spacing:.02em;list-style:none}.anl summary::before{content:"▸ ";color:#ffc83a}.anl details[open] summary::before{content:"▾ "}.anl details p{margin:6px 0 2px;font-size:14px;line-height:1.45}
 .card h3,.vsel h3{font-family:var(--hd);font-weight:400;letter-spacing:.02em}
 .result div{background:var(--glass2);border:1px solid var(--line);color:var(--txt)}
 .result b{font-family:var(--hd)}
@@ -367,6 +368,19 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <label class="volrow">🔊 Lautstärke Motor <input type="range" id="engVol" min="0" max="150" step="5" value="60"> <b id="engVolTxt">60 %</b></label>
       <div id="engList" class="englist"></div>
       <p class="note">Wähl für jedes Fahrzeug einen Sound, du hörst ihn dann kurz zur Probe.</p>
+    </div>
+    <div class="card glass anl">
+      <h3>Anleitung 📖</h3>
+      <details><summary>Login und Spielstand</summary><p>Beim Start gibst du deine Nummer ein: <b>1 = Tim, 2 = Jonny, 3 = Sevi</b>. Ohne Nummer spielst du als Gast mit Pete. Jeder fährt nur seinen eigenen Fahrer. Dein Stand wird nach jeder Fahrt online gesichert. Auf einem anderen Handy oder am PC gibst du einfach wieder deine Nummer ein. Unter „Dein Name“ steht <b>SPIELER WECHSELN</b>.</p></details>
+      <details><summary>Steuerung</summary><p><b>GAS</b> rechts, <b>BREMSE</b> links (am PC: Pfeiltasten oder D/A). In der Luft dreht Gas das Auto nach hinten und Bremse nach vorne. Der gelbe Knopf in der Mitte zündet dein Item. Unter Steuerung kannst du auf <b>NEIGEN</b> (Handy kippen) umstellen. Der <b>Jonny-Modus</b> dreht das Kippen um.</p></details>
+      <details><summary>Ziel der Fahrt</summary><p>Fahr so weit wie möglich. Vorbei ist es, wenn dein Fahrer auf dem Kopf landet oder rausfliegt oder wenn der Sprit leer ist. Ohne Sprit hast du noch 5 Sekunden zum Ausrollen, oder du drückst AUFGEBEN. Unterwegs sammelst du Münzen und Sprit-Kanister. Saltos, Wheelies und Combos bringen Punkte.</p></details>
+      <details><summary>Items</summary><p>Aus den <b>?-Kisten</b> kommen Items: <b>Turbo</b> (schneller), <b>Schild</b> (rettet dich einmal vor einem Crash), <b>Magnet</b> (zieht Münzen an), <b>Sprit</b> (voller Tank). Im Live-Rennen gibt es zusätzlich Fallen für die anderen: <b>Öl</b>, <b>Holzstapel</b> und <b>Blitz</b>.</p></details>
+      <details><summary>Garage, Strecken, Level und Boss</summary><p>In der <b>Garage</b> kaufst du mit Münzen Upgrades für Motor, Federung, Reifen und Tank. Mit jedem Level werden neue Autos und Strecken frei. Jede Strecke hat <b>LV1 bis LV3</b>: ein Ziel auf Zeit mit bis zu 3 Sternen. Mit einem Stern kannst du gegen den <b>Boss</b> der Strecke fahren. Unter 📋 stehen deine Karriere-Aufgaben.</p></details>
+      <details><summary>Daily</summary><p>Jeden Tag gibt es eine <b>komplett neue Welt</b> mit anderer Schwerkraft, anderer Rutschigkeit und manchmal mit <b>Loopings</b>. Für einen Looping brauchst du Anlauf, sonst kommt „Zu langsam“. Du hast <b>10 Versuche am Tag</b>, 5 weitere kosten 100 Münzen. Die beste Fahrt zählt für die <b>Tages-Bestenliste</b> 🏆. Wer um Mitternacht vorne liegt, gewinnt den Tag.</p></details>
+      <details><summary>Geister</summary><p>Oben beim Fahren schaltest du mit <b>👻 GEISTER AN/AUS</b> die besten Fahrten deiner Freunde als Geister ein. Dein eigener Rekord fährt immer als blauer Geist mit.</p></details>
+      <details><summary>Live-Rennen (2 bis 4 Leute)</summary><p>Tippe auf <b>LIVE-RENNEN</b>. Einer wählt den Modus und drückt <b>CODE ERSTELLEN</b>. Die anderen geben den Code ein und drücken BEITRETEN. Wenn alle in der Liste stehen, drückt der Gastgeber <b>RENNEN STARTEN</b>.<br><b>Rennen:</b> Wer zuerst im Ziel ist, gewinnt. Nach einem Crash geht es kurz davor weiter.<br><b>Auf Zeit 2000 m:</b> Bei 1000 m liegt ein Checkpoint. Nach einem Crash startest du am Checkpoint, wenn du ihn schon hattest, sonst ganz vorne.<br>Danach gibt es mit REVANCHE gleich die nächste Runde. Die Strecke wählt der Gastgeber im Menü, dein Auto wählst du selbst.</p></details>
+      <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen zufällig während der Fahrt am Himmel auf, Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein.</p></details>
+      <details><summary>Push-Nachrichten und App auf dem Handy</summary><p>Damit es wie eine App läuft: im iPhone-Safari auf <b>Teilen → „Zum Home-Bildschirm“</b> tippen, auf Android im Browser-Menü „App installieren“. Starte das Spiel dann immer vom Home-Bildschirm und melde dich dort einmal mit deiner Nummer an. Danach drückst du hier <b>PUSH AN</b>. Dann kommt eine Nachricht, wenn jemand das Daily gespielt hat oder neuer Tages-Erster ist.</p></details>
     </div>
     <div class="card glass">
       <h3>Tutorial</h3>
