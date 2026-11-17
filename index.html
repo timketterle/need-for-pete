@@ -348,7 +348,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <div class="hubbtns">
         <button class="gbtn blue" id="openGarage">GARAGE</button>
         <button class="gbtn orange" id="dailyBtn"><span>DAILY</span><small id="dailySub"></small></button>
-        <button class="gbtn purple" id="duelBtn" hidden>DUELL</button>
+        <button class="gbtn purple" id="duelBtn" hidden>LIVE-RENNEN</button>
       </div>
       <button class="gbtn play" id="start">LOS GEHT'S!</button>
     </section>
@@ -477,10 +477,10 @@ input#codeIn{background:rgba(255,255,255,.9)}
 
 <div class="overlay" id="duel" hidden>
   <div class="panel">
-    <h2 class="logo" style="font-size:46px">Duell</h2>
-    <p class="tag" id="duelInfo">Fahrt live gegeneinander. Einer erstellt das Duell, der andere gibt den Code ein.</p>
+    <h2 class="logo" style="font-size:46px">Live-Rennen</h2>
+    <p class="tag" id="duelInfo">Fahrt live gegeneinander, zu zweit oder bis zu viert. Einer erstellt das Rennen, die anderen geben den Code ein.</p>
     <div class="cols">
-      <div class="card"><h3>Duell erstellen</h3>
+      <div class="card"><h3>Rennen erstellen</h3>
         <p class="note" style="margin-top:0">Strecke und Fahrzeug kommen aus dem Menü. Das Ziel liegt bei <b id="duelGoalTxt">800 m</b>.</p>
         <div class="seg" id="duelGoal" role="group" aria-label="Streckenlänge"><button data-g="500">500 M</button><button data-g="800" aria-pressed="true">800 M</button><button data-g="1500">1500 M</button></div>
         <div class="row" style="margin-top:10px"><button class="big mid" id="hostBtn">CODE ERSTELLEN</button></div>
@@ -493,6 +493,8 @@ input#codeIn{background:rgba(255,255,255,.9)}
         <div class="row" style="margin-top:10px"><button class="big mid" id="joinBtn">BEITRETEN</button></div>
       </div>
     </div>
+    <div id="lobby" class="card" hidden style="text-align:center"><h3>Fahrer im Rennen</h3><ul id="lobbyList" style="list-style:none;padding:0;margin:6px 0;font-family:var(--display);font-size:22px;line-height:1.5"></ul>
+      <button class="gbtn play mid" id="raceStart" hidden>RENNEN STARTEN</button></div>
     <p class="tag" id="duelStatus" aria-live="polite"></p>
     <div class="row"><button class="big alt mid" id="duelBack">ZURÜCK</button></div>
   </div>
@@ -981,7 +983,7 @@ function drawBoss(){if(!boss)return;const B=boss,sC=CAR,sc=car,c=Math.cos(B.a),s
     ctx.beginPath();ctx.moveTo(hx-8,by+14);ctx.lineTo(hx,by+26);ctx.lineTo(hx+8,by+14);ctx.fill();ctx.fillStyle=INK;ctx.fillText(B.msg,hx,by+7);ctx.globalAlpha=1;}
 }
 let drawingGhost=false;
-const duel={active:false,lv:null,conn:null,peer:null,opp:null,oppCar:null,oppCAR:null,host:false,goal:800,result:null};
+const duel={active:false,lv:null,opps:{},race:0,host:false,goal:800,result:null};
 function starsOf(t){save.stars=save.stars||{};return save.stars[t]=save.stars[t]||[0,0,0];}
 function rollItem(){if(duel.active)return duelRoll();const lv=curLevel(),hz=lv?lv.haz:0;const pool=[['turbo',40],['shield',12+hz*25],['magnet',25],['fuel',15]];
   let tot=pool.reduce((a,x)=>a+x[1],0),r=Math.random()*tot;for(const [k,w] of pool){if((r-=w)<0)return k;}return 'turbo';}
@@ -1308,7 +1310,7 @@ function update(dt){
     const lv=curLevel();
     if(lv&&!state.crashed){state.t+=dt;
       if(b.x>=START_X+lv.goal*PX_PER_M){state.finished=true;state.crashed=true;state.reason='finish';state.crashT=0;
-        if(duel.active){duelSend({type:'win',t:state.t});duel.result='win';}
+        if(duel.active){duelSend({type:'win',t:state.t,race:duel.race});duel.result='win';}
         state.stars=state.t<=lv.time*.55?3:state.t<=lv.time*.75?2:1;popup('ZIEL!',b.x,b.y-80,'#9be15d');blip(500,1500,.5,'square',.09);}
       else if(state.t>lv.time){state.crashed=true;state.reason='time';state.crashT=0;popup('ZEIT UM!',b.x,b.y-80,'#ff5a4e');}}
     state.maxX=Math.max(state.maxX,b.x);
@@ -1355,7 +1357,7 @@ function hud(){
   $('coinN').textContent=state.coins;$('fuel').style.width=state.fuel+'%';
   $('speed').textContent=Math.round(Math.abs(car.body.vx)/PX_PER_M*3.6)+' km/h';
   const lv=curLevel();$('goal').hidden=!lv;
-  if(lv&&duel.active){const om=duel.opp?Math.max(0,Math.floor((duel.opp.x-START_X)/PX_PER_M)):0;$('goal').textContent='Ziel '+lv.goal+' m · Gegner '+om+' m';}
+  if(lv&&duel.active){const xs=Object.values(duel.opps).map(o=>o.x),pl=1+xs.filter(x=>x>car.body.x).length;$('goal').textContent='Ziel '+lv.goal+' m · Platz '+pl+'/'+(xs.length+1);}
   else if(lv&&boss){const g=Math.round((boss.x-car.body.x)/PX_PER_M);$('goal').textContent='Ziel '+lv.goal+' m · 👑 '+(Math.abs(g)<3?'Kopf an Kopf!':g>0?'Boss '+g+' m vorn':'Boss '+(-g)+' m hinten');}
   else if(lv){const left=Math.max(0,lv.time-state.t);$('goal').textContent='Ziel '+lv.goal+' m · '+Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0');}
   const ib=$('itemBtn');const txt=state.item?ITEMS[state.item].name:(state.turbo>0?'TURBO AN':state.shield>0?'SCHILD AN':state.magnet>0?'MAGNET AN':'KEIN ITEM');
@@ -2259,9 +2261,56 @@ const ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:global.stun.twilio.
   {urls:'turn:eu-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},{urls:'turn:us-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},
   {urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
 const PEER_OPTS=(()=>{const q=new URLSearchParams(location.search);return q.get('local')?{host:location.hostname,port:9000,path:'/nfp',secure:false,config:{iceServers:ICE}}:{config:{iceServers:ICE}};})();
-if(typeof Peer!=='undefined')$('duelBtn').hidden=false;
-function duelSend(m){try{if(duel.conn&&duel.conn.open)duel.conn.send(m);}catch(e){}}
+$('duelBtn').hidden=false;
+/* ---------- Live race over the Firebase database (up to 4 players). Uses the ghost tables gm/gd so it works with the current rules:
+   every player writes his state string to gd/<room>/<id> plus meta gm/<room>/<id> with a growing m; others stream it with EventSource. */
+const NET={key:null,code:null,me:null,m:0,ev:[],evId:0,pos:null,busy:false,dirty:false,lastSend:0,meta:{},srcs:{},peers:{},seenEv:{},list:null,hb:null,host:false,hostId:null};
+function netRid(){let r='';const A='abcdefghijkmnpqrstuvwxyz23456789';for(let i=0;i<8;i++)r+=A[Math.floor(Math.random()*A.length)];return 'p'+r;}
+function netClose(){try{NET.list&&NET.list.close();}catch(e){}for(const k in NET.srcs){try{NET.srcs[k].close();}catch(e){}}NET.srcs={};NET.list=null;if(NET.hb)clearInterval(NET.hb);NET.hb=null;NET.key=null;NET.peers={};NET.meta={};}
+function netPath(o,path,data,merge){const ps=path.split('/').filter(Boolean);if(!ps.length){if(merge&&data&&typeof data==='object')Object.assign(o,data);else{for(const k in o)delete o[k];if(data&&typeof data==='object')Object.assign(o,data);}return;}
+  let c=o;for(let i=0;i<ps.length-1;i++){if(!c[ps[i]]||typeof c[ps[i]]!=='object')c[ps[i]]={};c=c[ps[i]];}const l=ps[ps.length-1];
+  if(data===null)delete c[l];else if(merge&&typeof data==='object'&&c[l]&&typeof c[l]==='object')Object.assign(c[l],data);else c[l]=data;}
+function netOpen(code,host){netClose();NET.code=code;NET.key='rr-'+code.toLowerCase()+'-'+todayStr().replace(/-/g,'');NET.me=netRid();NET.m=0;NET.ev=[];NET.evId=0;NET.seenEv={};NET.host=host;NET.hostId=host?NET.me:null;NET.joinedAt=Date.now();
+  try{const es=new EventSource(DBU+'/gm/'+NET.key+'.json');NET.list=es;
+    const on=merge=>e=>{try{const d=JSON.parse(e.data);netPath(NET.meta,d.path,d.data,merge);netScan();}catch(x){}};
+    es.addEventListener('put',on(false));es.addEventListener('patch',on(true));}catch(e){duelStatus('Live-Verbindung geht auf diesem Gerät nicht.');}
+  netKick();NET.hb=setInterval(()=>{netKick();netLobby();},2500);}
+function netScan(){const now=Date.now();for(const id in NET.meta){if(id===NET.me||NET.srcs[id])continue;const mt=NET.meta[id];if(!mt||!(mt.t>now-5*60e3))continue;
+    try{const es=new EventSource(DBU+'/gd/'+NET.key+'/'+id+'.json');NET.srcs[id]=es;
+      es.addEventListener('put',e=>{try{const d=JSON.parse(e.data);if(d.path==='/'&&typeof d.data==='string')netRecv(id,JSON.parse(d.data));}catch(x){}});}catch(e){}}
+  netLobby();}
+function netRecv(id,o){if(!o||typeof o!=='object')return;const first=!NET.peers[id];const P=NET.peers[id]=NET.peers[id]||{};P.info=o.info||P.info;P.host=!!o.host;P.seen=performance.now();P.race=o.race;
+  if(o.host&&!NET.host)NET.hostId=id;
+  const evs=Array.isArray(o.ev)?o.ev:[];let last=NET.seenEv[id]||0;
+  for(const ev of evs){if(!ev||!(ev.id>last))continue;last=ev.id;if(first&&!(ev.at>Date.now()-6000))continue;onDuelData(Object.assign({},ev,{from:id}));}
+  NET.seenEv[id]=last;
+  if(o.pos&&o.race===duel.race)onDuelData(Object.assign({type:'pos'},o.pos,{from:id}));
+  if(first)netLobby();}
+async function netSend(){if(!NET.key)return;NET.busy=true;NET.dirty=false;NET.lastSend=performance.now();const key=NET.key,me=NET.me,m=++NET.m;
+  const st=JSON.stringify({info:Object.assign(myInfo(),{name:pName()}),host:NET.host,race:duel.race||0,pos:NET.pos,ev:NET.ev.slice(-12)});
+  await dbSend('/','PATCH',{['gd/'+key+'/'+me]:st,['gm/'+key+'/'+me]:{n:pName(),m,v:String(save.veh||'f1').slice(0,12),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});
+  NET.busy=false;if(NET.dirty)setTimeout(netKick,Math.max(0,110-(performance.now()-NET.lastSend)));}
+function netKick(){if(!NET.key)return;if(NET.busy){NET.dirty=true;return;}netSend();}
+function duelSend(m){if(!NET.key)return;m=Object.assign({race:duel.race},m);if(m.type==='pos'){NET.pos=m;}else{NET.ev.push(Object.assign({id:++NET.evId,at:Date.now()},m));if(NET.ev.length>30)NET.ev.splice(0,NET.ev.length-30);}netKick();}
 function duelStatus(t){$('duelStatus').textContent=t;}
+function netPlayers(){const now=performance.now(),L=[{id:NET.me,name:pName(),me:true,host:NET.host}];for(const id in NET.peers){const P=NET.peers[id];if(now-P.seen<9000)L.push({id,name:(P.info&&P.info.name)||'?',host:P.host});}return L;}
+function netLobby(){if(!NET.key||duel.active)return;const L=netPlayers();
+  $('lobby').hidden=false;$('lobbyList').innerHTML=L.map(p=>'<li>'+(p.host?'👑 ':'🏎️ ')+String(p.name).replace(/[<>&]/g,'')+(p.me?' (du)':'')+'</li>').join('');
+  $('raceStart').hidden=!NET.host;$('raceStart').disabled=L.length<2;
+  duelStatus(NET.host?(L.length<2?'Schick den Code '+NET.code+' an deine Leute. Sobald jemand drin ist, kannst du starten (bis 4 Fahrer).':L.length+' Fahrer drin. Starte, wenn alle da sind!'):'Du bist drin! Warte, bis '+((L.find(p=>p.host)||{}).name||'der Gastgeber')+' startet.');}
+$('duelGoal').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duel.goal=+b.dataset.g;$('duelGoalTxt').textContent=duel.goal+' m';
+  [...$('duelGoal').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
+$('hostBtn').addEventListener('click',()=>{
+  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<4;i++)code+=A[Math.floor(Math.random()*A.length)];
+  duel.host=true;netOpen(code,true);$('codeOut').hidden=false;$('codeOut').textContent=code;netLobby();});
+$('joinBtn').addEventListener('click',()=>{
+  const code=$('codeIn').value.trim().toUpperCase();if(code.length!==4){duelStatus('Der Code hat 4 Zeichen.');return;}
+  duel.host=false;netOpen(code,false);duelStatus('Suche das Rennen '+code+' …');
+  setTimeout(()=>{if(NET.key&&!Object.keys(NET.peers).length&&!duel.active)duelStatus('Noch niemand gefunden. Stimmt der Code? Der Gastgeber muss das Spiel offen haben.');},8000);});
+$('raceStart').addEventListener('click',()=>{if(!NET.host)return;const race=Date.now()%1e9;duelSend({type:'setup',trk:save.trk,goal:duel.goal,race});setTimeout(()=>{duelSend({type:'go',race});},250);setTimeout(()=>{duel.race=race;beginDuel();},900);});
+$('duelBtn').addEventListener('click',()=>{initAudio();$('menu').hidden=true;$('duel').hidden=false;$('codeOut').hidden=true;$('lobby').hidden=true;duelStatus('');});
+$('duelBack').addEventListener('click',()=>{leaveDuel();$('duel').hidden=true;$('menu').hidden=false;showMenuStats();});
+function leaveDuel(){if(NET.key)duelSend({type:'bye'});const k=NET.key;setTimeout(()=>{if(NET.key===k)netClose();},400);duel.active=false;duel.opps={};duel.result=null;}
 /* ---------- Accounts: a number per friend, each one owns his driver ---------- */
 function acct(){return save.acct&&ACCTS[save.acct]||null;}
 function allowedDrivers(){const a=acct();if(!a)return ['pete'];return DORDER.some(d=>d[0]===a.d)?[a.d]:['pete'];}
@@ -2295,57 +2344,20 @@ async function cloudLoad(code){code=String(code||'').trim().toLowerCase().replac
   if(!confirm('Spielstand von „'+(o.pname||code)+'“ laden? Level '+(o.level||1)+', '+(o.coins||0)+' Münzen. Der Stand auf diesem Gerät wird ersetzt.'))return;
   o.sk='sv-'+code;localStorage.setItem('nfp-save',JSON.stringify(o));location.reload();}
 function myInfo(){return {veh:save.veh,driver:save.driver||'pete',name:(DORDER.find(d=>d[0]===(save.driver||'pete'))||[0,'Pete'])[1]};}
-function setupConn(c){
-  duel.conn=c;
-  c.on('open',()=>{duelStatus('Verbunden!');c.send({type:'hello',info:myInfo()});
-    if(duel.host){c.send({type:'setup',trk:save.trk,goal:duel.goal});duelStatus('Verbunden! Gleich geht es los...');setTimeout(()=>{c.send({type:'go'});beginDuel();},1500);}});
-  c.on('data',onDuelData);
-  c.on('close',()=>{if(duel.active&&!duel.result){toast('Dein Gegner ist weg. Die Verbindung wurde getrennt.',4);duel.opp=null;}duelStatus('Verbindung getrennt.');});
-  c.on('error',e=>duelStatus('Fehler: '+(e&&e.type||e)));
-}
-function newPeer(id){
-  try{if(duel.peer)duel.peer.destroy();}catch(e){}
-  const p=id?new Peer(id,PEER_OPTS):new Peer(PEER_OPTS);duel.peer=p;
-  p.on('disconnected',()=>{setTimeout(()=>{try{if(duel.peer===p&&p.disconnected&&!p.destroyed)p.reconnect();}catch(e){}},800);});
-  p.on('error',e=>{const t=e&&e.type;duelStatus(t==='peer-unavailable'?'Diesen Code gibt es nicht. Prüf ihn nochmal.':t==='unavailable-id'?'Code ist besetzt, bitte nochmal erstellen.':t==='network'||t==='server-error'?'Keine Verbindung zum Duell-Server. Prüf dein Internet.':'Fehler: '+t);});
-  return p;
-}
-$('duelGoal').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duel.goal=+b.dataset.g;$('duelGoalTxt').textContent=duel.goal+' m';
-  [...$('duelGoal').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
-$('hostBtn').addEventListener('click',()=>{
-  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<4;i++)code+=A[Math.floor(Math.random()*A.length)];
-  duel.host=true;const p=newPeer('needforpete-'+code);
-  p.on('open',()=>{$('codeOut').hidden=false;$('codeOut').textContent=code;duelStatus('Schick deinem Kollegen den Code '+code+' und komm danach gleich wieder ins Spiel zurück. Das Spiel muss offen bleiben.');});
-  p.on('connection',c=>{if(duel.conn&&duel.conn.open){c.close();return;}setupConn(c);});
-  duelStatus('Erstelle Code...');
-});
-$('joinBtn').addEventListener('click',()=>{
-  const code=$('codeIn').value.trim().toUpperCase();if(code.length!==4){duelStatus('Der Code hat 4 Zeichen.');return;}
-  duel.host=false;joinTry(code,1);
-});
-let joinT=null;
-function joinTry(code,n){if(joinT)clearTimeout(joinT);const p=newPeer();duelStatus(n>1?'Zweiter Versuch, verbinde...':'Verbinde mit dem Duell-Server...');
-  p.on('open',()=>{duelStatus('Suche deinen Kollegen ('+code+')...');setupConn(p.connect('needforpete-'+code,{reliable:true}));});
-  joinT=setTimeout(()=>{if(duel.conn&&duel.conn.open)return;if(n<2){joinTry(code,n+1);return;}
-    duelStatus('Klappt gerade nicht. Wichtig: Wer den Code erstellt hat, muss das Spiel offen haben (nicht in WhatsApp bleiben). Sonst: beide neu laden und einen neuen Code erstellen.');},14000);}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;const p=duel.peer;try{if(p&&p.disconnected&&!p.destroyed)p.reconnect();}catch(e){}});
-$('duelBtn').addEventListener('click',()=>{initAudio();$('menu').hidden=true;$('duel').hidden=false;$('codeOut').hidden=true;duelStatus('');});
-$('duelBack').addEventListener('click',()=>{leaveDuel();$('duel').hidden=true;$('menu').hidden=false;showMenuStats();});
-function leaveDuel(){duel.active=false;duel.opp=null;duel.result=null;try{if(duel.conn)duel.conn.close();}catch(e){}try{if(duel.peer)duel.peer.destroy();}catch(e){}duel.conn=null;duel.peer=null;}
 function onDuelData(m){
-  if(!m||typeof m!=='object')return;
-  if(m.type==='hello'){duel.oppInfo=m.info;}
+  if(!m||typeof m!=='object')return;const id=m.from||'x',P=NET.peers[id],nm=(P&&P.info&&P.info.name)||'Gegner';
   if(m.type==='setup'){if(TRACKS[m.trk])save.trk=m.trk;duel.goal=+m.goal||800;}
-  if(m.type==='go'){beginDuel();}
-  if(m.type==='pos'){duel.opp=Object.assign(duel.opp||{},m,{seen:performance.now()});if(!duel.opp.sx){duel.opp.sx=m.x;duel.opp.sy=m.y;duel.opp.sa=m.a;}}
+  if(m.type==='go'){duel.race=m.race;beginDuel();}
+  if(m.type==='pos'){const o=duel.opps[id]=Object.assign(duel.opps[id]||{},m,{seen:performance.now(),name:nm});if(o.sx==null){o.sx=m.x;o.sy=m.y;o.sa=m.a;}}
+  if(!duel.active||m.race!==duel.race){if(m.type==='again'&&!running&&NET.key){duel.race=m.race;$('over').hidden=true;beginDuel();}if(m.type==='bye'&&P)P.seen=-1e9;if(m.type==='bye')netLobby();return;}
   if(m.type==='haz'&&running){hazards.push({t:m.t==='oil'?'oil':'logs',x:+m.x,dead:false,hit:false,fromOpp:true});}
-  if(m.type==='zap'&&running&&!state.crashed){if(state.shield>0){state.shield=0;popup('GEBLOCKT!',car.body.x,car.body.y-70,'#7fe0ff');}else{state.zap=3;state.turbo=0;popup('GEBLITZT!',car.body.x,car.body.y-70,'#ffe066');cam.shake=10;blip(1400,100,.5,'sawtooth',.09);}}
-  if(m.type==='win'&&!duel.result){duel.result='lost';duel.oppTime=m.t;state.crashed=true;state.reason='lost';state.crashT=0;popup('ZU SPÄT!',car.body.x,car.body.y-80,'#ff5a4e');}
-  if(m.type==='again'){if(!running&&duel.conn){$('over').hidden=true;beginDuel();}}
+  if(m.type==='zap'&&running&&!state.crashed&&car.body.x>(+m.x||0)){if(state.shield>0){state.shield=0;popup('GEBLOCKT!',car.body.x,car.body.y-70,'#7fe0ff');}else{state.zap=3;state.turbo=0;popup('GEBLITZT VON '+nm.toUpperCase()+'!',car.body.x,car.body.y-70,'#ffe066');cam.shake=10;blip(1400,100,.5,'sawtooth',.09);}}
+  if(m.type==='win'&&!duel.result){duel.result='lost';duel.oppTime=m.t;duel.winner=nm;state.crashed=true;state.reason='lost';state.crashT=0;popup(nm.toUpperCase()+' GEWINNT!',car.body.x,car.body.y-80,'#ff5a4e');}
+  if(m.type==='bye'){delete duel.opps[id];if(P)P.seen=-1e9;toast(nm+' ist raus.',3);}
 }
 function beginDuel(){
   if(duel.active&&running)return;
-  duel.active=true;duel.result=null;duel.lv={goal:duel.goal,time:999,drain:.7,haz:.35};
+  duel.active=true;duel.result=null;duel.winner=null;duel.opps={};$('lobby').hidden=true;duel.lv={goal:duel.goal,time:999,drain:.7,haz:.35};
   $('duel').hidden=true;$('over').hidden=true;
   startRun();
   // countdown: frozen car for 3 seconds
@@ -2359,11 +2371,12 @@ function duelTick(dt){
   duel.sendT=(duel.sendT||0)+dt;
   if(duel.sendT>.05){duel.sendT=0;const b=car.body;
     duelSend({type:'pos',x:Math.round(b.x),y:Math.round(b.y),a:+b.a.toFixed(3),veh:save.veh,driver:save.driver||'pete',
-      w:car.wheels.map(w=>[Math.round(w.x),Math.round(w.y),+w.a.toFixed(2)]),sh:state.shield>0?1:0,tb:state.turbo>0?1:0});}
-  const o=duel.opp;if(o){const k=Math.min(1,dt*12);o.sx+=(o.x-o.sx)*k;o.sy+=(o.y-o.sy)*k;o.sa+=(o.a-o.sa)*k;}
+      vx:Math.round(b.vx),vy:Math.round(b.vy),w:car.wheels.map(w=>[Math.round(w.x),Math.round(w.y),+w.a.toFixed(2)]),sh:state.shield>0?1:0,tb:state.turbo>0?1:0});}
+  const now=performance.now();for(const id in duel.opps){const o=duel.opps[id];const age=Math.min(.45,(now-o.seen)/1000);if(now-o.seen>9000){delete duel.opps[id];toast((o.name||'Gegner')+' hat keine Verbindung mehr.',3);continue;}
+    const tx=o.x+(o.vx||0)*age,ty=o.y+(o.vy||0)*age,k=Math.min(1,dt*10);o.sx+=(tx-o.sx)*k;o.sy+=(ty-o.sy)*k;o.sa+=(o.a-o.sa)*k;o.ex=tx-o.x;o.ey=ty-o.y;}
 }
 function duelRoll(){
-  const me=car.body.x, op=duel.opp?duel.opp.x:me, gap=(op-me)/PX_PER_M;
+  const me=car.body.x, op=Math.max(me,...Object.values(duel.opps).map(o=>o.x)), gap=(op-me)/PX_PER_M;
   const pool=gap>40?[['turbo',45],['zap',35],['shield',10],['fuel',10]]:gap<-40?[['oil',35],['logs',35],['shield',20],['turbo',10]]:[['turbo',25],['oil',20],['logs',20],['zap',15],['shield',15],['fuel',5]];
   let tot=pool.reduce((a,x)=>a+x[1],0),r=Math.random()*tot;for(const [k,w] of pool){if((r-=w)<0)return k;}return 'turbo';
 }
@@ -2377,30 +2390,31 @@ function respawn(){
   popup('WEITER!',x,y-60,'#9be15d');
 }
 function drawOpponent(){
-  const o=duel.active&&duel.opp;if(!o||!VEH[o.veh])return;
+  if(!duel.active)return;const cols=['#ff9f1c','#7fe0ff','#c86bff'];let n=0;
+  for(const id in duel.opps){const o=duel.opps[id];if(!VEH[o.veh]||o.sx==null)continue;const col=cols[n++%3];
   const sC=CAR,sc=car,sd=save.driver;
   CAR=buildCar(o.veh);
   const dx=o.sx-o.x,dy=o.sy-o.y;
-  car={body:{x:o.sx,y:o.sy,a:o.sa},wheels:CAR.wheels.map((w,i)=>({...w,x:(o.w[i]||[o.x,o.y])[0]+dx,y:(o.w[i]||[o.x,o.y])[1]+dy,a:(o.w[i]||[0,0,0])[2]}))};
+  car={body:{x:o.sx,y:o.sy,a:o.sa},wheels:CAR.wheels.map((w,i)=>({...w,x:((o.w||[])[i]||[o.x,o.y])[0]+dx,y:((o.w||[])[i]||[o.x,o.y])[1]+dy,a:((o.w||[])[i]||[0,0,0])[2]}))};
   save.driver=o.driver;drawingGhost=true;ctx.globalAlpha=.6;
-  drawCar();
+  try{drawCar();}catch(e){}
   ctx.globalAlpha=1;
-  ctx.font='16px Bangers, Impact, sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle=INK;const nm=(duel.oppInfo&&duel.oppInfo.name)||'Gegner';
-  ctx.strokeText(nm,o.sx,o.sy-70);ctx.fillStyle='#ff9f1c';ctx.fillText(nm,o.sx,o.sy-70);
-  drawingGhost=false;CAR=sC;car=sc;save.driver=sd;
+  ctx.font='16px Bangers, Impact, sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle=INK;const nm=o.name||'Gegner';
+  ctx.strokeText(nm,o.sx,o.sy-70);ctx.fillStyle=col;ctx.fillText(nm,o.sx,o.sy-70);
+  drawingGhost=false;CAR=sC;car=sc;save.driver=sd;}
 }
 function duelOver(){
   const win=duel.result==='win';
   $('overTitle').textContent=win?'GEWONNEN!':'VERLOREN!';
   const tt=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0');
-  $('overSub').textContent=win?'Du warst zuerst im Ziel, in '+tt(state.t)+'.':'Dein Gegner war schneller'+(duel.oppTime?' ('+tt(duel.oppTime)+')':'')+'.';
+  $('overSub').textContent=win?'Du warst zuerst im Ziel, in '+tt(state.t)+'.':(duel.winner||'Dein Gegner')+' war schneller'+(duel.oppTime?' ('+tt(duel.oppTime)+')':'')+'.';
   const bonus=win?60:15;state.coins+=bonus;save.coins+=state.coins;const xp=win?120:40;save.xp+=xp;
   while(save.xp>=xpNeed(save.level)){save.xp-=xpNeed(save.level);save.level++;}persist();
   $('rDist').textContent=Math.floor((state.maxX-START_X)/PX_PER_M);$('rCoins').textContent=state.coins;$('rXp').textContent='+'+xp;
   $('lvlTxt2').textContent='Level '+save.level;$('lvlBar2').style.width=Math.min(100,save.xp/xpNeed(save.level)*100)+'%';$('lvlUp').hidden=true;
   $('again').textContent='REVANCHE';$('over').hidden=false;
 }
-$('again').addEventListener('click',e=>{if(duel.active&&duel.conn){e.stopImmediatePropagation();duelSend({type:'again'});beginDuel();}},true);
+$('again').addEventListener('click',e=>{if(duel.active&&NET.key){e.stopImmediatePropagation();const race=Date.now()%1e9;duel.race=race;duelSend({type:'again',race});beginDuel();}},true);
 $('toMenu').addEventListener('click',()=>{if(duel.active){leaveDuel();}$('again').textContent='NOCHMAL';},true);
 $('pause').addEventListener('click',()=>{if(duel.active){leaveDuel();$('countdown').hidden=true;}},true);
 /* ---------- Tutorial (einmalig beim ersten Start, danach über Einstellungen) ---------- */
@@ -2416,7 +2430,7 @@ const TUT_B=[
   {v:'🗺️',t:'Strecken und Level',x:'Rechts im Menü wählst du die Strecke. <b>FREI</b> heißt: endlos fahren auf Rekordjagd. <b>LV 1 bis 3</b> haben ein Ziel, ein Zeitlimit und Hindernisse wie Ölpfützen. Je schneller du ankommst, desto mehr <b>Sterne</b>. Mit einem Stern in LV 1 öffnet sich der <b>BOSS</b>: ein Rennen gegen einen verrückten Bohni bis ins Ziel.'},
   {v:'📋',t:'Karriere',x:'Hinter dem 📋 oben stehen immer <b>drei Aufgaben</b>, zum Beispiel „Schaffe einen Salto“. Für jede gibt es Münzen und XP, danach kommt die nächste. So steigst du vom <b>Anfänger</b> zur <b>Legende von Pete</b> auf.'},
   {v:'🏆👻',t:'Tages-Challenge',x:'<b>DAILY</b> ist jeden Tag eine andere Strecke für alle. Die Punkte landen in der <b>Tages-Bestenliste</b> (🏆). Der <b>Geist</b> des Besten fährt neben dir her, damit du siehst, wo er dich abhängt.'},
-  {v:'⚔️',t:'Duell',x:'Mit <b>DUELL</b> fahrt ihr live gegeneinander. Einer erstellt einen <b>Code</b>, der andere tippt ihn ein. Wer zuerst im Ziel ist, gewinnt. Danach gibt es sofort eine <b>Revanche</b>.'},
+  {v:'⚔️',t:'Live-Rennen',x:'Mit <b>LIVE-RENNEN</b> fahrt ihr live gegeneinander, bis zu viert. Einer erstellt einen <b>Code</b>, die anderen tippen ihn ein. Wer zuerst im Ziel ist, gewinnt. Danach gibt es sofort eine <b>Revanche</b>.'},
   {v:'bohni',t:'Überraschungen',x:'Beim Fahren passiert immer wieder <b>völlig verrückter Kram</b>: Bohnis, Eilmeldungen, Explosionen. Unter ⚙ gibt es den <b>Überraschungskanal</b>: Dort lädst du Videos hoch, und sie tauchen bei deinen Freunden mitten in der Fahrt am Himmel auf.'},
   {v:'🎉',t:'Fertig!',x:'Das war alles. Das Tutorial findest du jederzeit wieder unter <b>⚙ Einstellungen</b>. Und jetzt: Rekord holen und Sevi ärgern.',go:'ZUM MENÜ'}];
 function tutVis(v){if(v==='faces'){let a='',b='';try{a=POSES.tim.src.grin;b=POSES.sev.src.wink||POSES.sev.src.grin;}catch(e){}return '<img src="'+a+'" alt="Tim"><img src="'+b+'" alt="Severin">';}
