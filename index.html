@@ -165,6 +165,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
 .albgrid button{aspect-ratio:9/12;border-radius:12px;border:1px solid var(--line);background:var(--glass);color:var(--txt);font:900 20px var(--hd,sans-serif);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .albgrid button.on{background:linear-gradient(160deg,#ff9a1f,#b06bff);border-color:#ffd27a}.albgrid button small{font-size:11px;opacity:.8}.albgrid button.off{opacity:.45;cursor:default}
 .albplay{display:flex;justify-content:center}.albplay video{max-width:100%;max-height:52vh;border-radius:14px;background:#000}
+#settings .volrow{display:flex;align-items:center;gap:10px;margin-top:8px;font-weight:900}#settings .volrow input{flex:1;accent-color:#ff9a1f;min-width:0}#settings .volrow b{min-width:52px;text-align:right}
 #settings,#missions,#board,#garage,#duel,#over{align-items:flex-start}#settings>.panel,#missions>.panel,#board>.panel,#garage>.panel,#duel>.panel,#over>.panel{margin-top:auto;margin-bottom:auto}
 #gift{z-index:60;flex-direction:column}#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
 .giftbox{position:relative;text-align:center;max-width:620px;padding:16px}
@@ -360,9 +361,10 @@ input#codeIn{background:rgba(255,255,255,.9)}
     </div>
     <div class="card glass">
       <h3>Überraschungskanal 🤫</h3>
-      <p class="note" style="margin-top:0">Schieb Videos rein, z. B. eure Lieblings-Reels. Sie tauchen bei allen, die deinen Link geöffnet haben, irgendwann zufällig während der Fahrt am Himmel auf, mit Ton. Sie liegen nur in eurer eigenen Datenbank, nicht im Spiel.</p>
+      <p class="note" style="margin-top:0">Schieb Videos rein, z. B. eure Lieblings-Reels. Videos und Bilder tauchen bei allen, die das Spiel spielen, zufällig während der Fahrt am Himmel auf. Sie liegen nur in eurer eigenen Datenbank, nicht im Spiel.</p>
       <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><label class="gbtn orange mid" style="cursor:pointer">VIDEO/BILD REIN<input type="file" id="chIn" accept="video/*,image/*" multiple hidden></label><button class="gbtn blue mid" id="chShare" hidden>LINK FÜR SEVERIN</button><button class="gbtn play mid" id="chTest" hidden>JETZT TESTEN</button></div>
       <p class="note" id="chInfo"></p>
+      <label class="volrow">🔊 Lautstärke Clips <input type="range" id="clipVol" min="0" max="150" step="5" value="100"> <b id="clipVolTxt">100 %</b></label>
     </div>
     <div class="card glass">
       <h3>Tutorial</h3>
@@ -781,7 +783,9 @@ function chLink(){return location.origin+location.pathname+'?ch='+save.chOwn;}
   try{history.replaceState(null,'',location.pathname);}catch(e){}}}
 setTimeout(()=>{chInfo();clipPrepare().then(chSync);},400);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!running)chSync();});
-function clipUnlock(){if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.muted=muted;try{const p=clipV.play();clipV.pause();if(p&&p.catch)p.catch(()=>{clipUnlocked=false;});}catch(e){clipUnlocked=false;}}
+let clipGain=null;function clipVolume(){return (save.clipVol==null?100:save.clipVol)/100;}
+function clipAudio(){try{if(!clipGain&&AC){const src=AC.createMediaElementSource(clipV);clipGain=AC.createGain();src.connect(clipGain);clipGain.connect(AC.destination);}if(clipGain)clipGain.gain.value=clipVolume();else clipV.volume=Math.min(1,clipVolume());}catch(e){try{clipV.volume=Math.min(1,clipVolume());}catch(e2){}}}
+function clipUnlock(){clipAudio();if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.muted=muted;try{const p=clipV.play();clipV.pause();if(p&&p.catch)p.catch(()=>{clipUnlocked=false;});}catch(e){clipUnlocked=false;}}
 function headline(){return '+++ EILMELDUNG +++ '+memeWords().join(' ')+' +++ '+memeWords().join(' ')+' +++';}
 function memeStart(){memeCount++;
   const unseen=clipCur&&!((save.surpSeen||{})[clipCur]);
@@ -1022,8 +1026,8 @@ function blip(f1,f2,dur,type,vol){
 /* ---------- Weather + day/night ---------- */
 const WXN={clear:'☀️ KLARE SICHT',rain:'🌧️ REGEN! Weniger Grip',storm:'⛈️ STURM! Wind schiebt dich',snow:'❄️ SCHNEE! Rutschig',fog:'🌫️ NEBEL! Kaum Sicht',sand:'🌪️ SANDSTURM! Wind schiebt dich'};
 let wx={kind:'clear',prev:'clear',f:1,next:1e9,night:0,wind:0,flash:0,boltT:3,bolt:null};
-function wxPool(){const id=TRK.id;if(id==='moon')return [['clear',1]];if(id==='volcano')return [['clear',3],['storm',2],['fog',2]];if(id==='dunes')return [['clear',3],['sand',3],['fog',1]];
-  if(id==='glacier')return [['clear',2],['snow',4],['fog',2],['storm',1]];if(id==='junk')return [['clear',2],['rain',3],['storm',2],['fog',2]];return [['clear',3],['rain',3],['storm',2],['snow',1],['fog',2]];}
+function wxPool(){const id=TRK.id;if(id==='moon')return [['clear',1]];if(id==='volcano')return [['clear',3],['storm',2]];if(id==='dunes')return [['clear',3],['sand',3]];
+  if(id==='glacier')return [['clear',2],['snow',4],['storm',1]];if(id==='junk')return [['clear',2],['rain',3],['storm',2]];return [['clear',3],['rain',3],['storm',2],['snow',1]];}
 function wxRand(r){const P=wxPool();let tot=P.reduce((a,x)=>a+x[1],0),q=r*tot;for(const [k,w] of P){if((q-=w)<0)return k;}return 'clear';}
 function wxRng(){return playDaily?hash(wx.n++*7.7+seed*.13):Math.random();}
 function wxInit(){wx={kind:'clear',prev:'clear',f:1,next:0,night:0,wind:0,flash:0,boltT:4,bolt:null,n:1};
@@ -2015,11 +2019,13 @@ function albStop(){const v=$('albV');try{v.pause();}catch(e){}v.removeAttribute(
 function showAlbum(){albStop();const L=surpList(),ss=save.surpSeen||{},seen=albSeen().length,g=$('albGrid');g.innerHTML='';
   $('albCount').textContent=L.length?seen+' von '+L.length+' Reels gesammelt':'Noch keine Reels im Spiel. Sobald welche drin sind, tauchen sie beim Fahren am Himmel auf.';
   L.forEach((id,i)=>{const b=document.createElement('button');const on=ss[id]>0;b.className=on?'on':'off';b.innerHTML=(on?'▶':'🔒')+'<small>#'+(i+1)+'</small>';
-    if(on)b.addEventListener('click',async()=>{try{const blob=await mediaOp('get','it-'+id);if(!blob)return;albStop();albURL=URL.createObjectURL(blob);const v=$('albV');v.src=albURL;v.muted=muted;$('albPlay').hidden=false;v.play().catch(()=>{});}catch(e){}});
+    if(on)b.addEventListener('click',async()=>{try{const blob=await mediaOp('get','it-'+id);if(!blob)return;albStop();albURL=URL.createObjectURL(blob);const v=$('albV');v.src=albURL;v.muted=muted;try{v.volume=Math.min(1,clipVolume());}catch(e){}$('albPlay').hidden=false;v.play().catch(()=>{});}catch(e){}});
     g.appendChild(b);});}
 $('openAlbum').addEventListener('click',()=>{showAlbum();$('menu').hidden=true;$('album').hidden=false;});
 $('albBack').addEventListener('click',()=>{albStop();$('album').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('albGo').addEventListener('click',()=>{albStop();$('album').hidden=true;playDaily=false;startRun();});
+{const v=$('clipVol');const show=()=>{$('clipVolTxt').textContent=v.value+' %';};v.value=save.clipVol==null?100:save.clipVol;show();
+  v.addEventListener('input',()=>{save.clipVol=+v.value;show();clipAudio();try{$('albV').volume=Math.min(1,clipVolume());}catch(e){}});v.addEventListener('change',persist);}
 $('openMis').addEventListener('click',()=>{showMissions();$('menu').hidden=true;$('missions').hidden=false;});
 $('misBack').addEventListener('click',()=>{$('missions').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('misPlay').addEventListener('click',()=>{$('missions').hidden=true;playDaily=false;startRun();});
