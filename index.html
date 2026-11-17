@@ -482,6 +482,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div class="cols">
       <div class="card"><h3>Rennen erstellen</h3>
         <p class="note" style="margin-top:0">Strecke und Fahrzeug kommen aus dem Menü. Das Ziel liegt bei <b id="duelGoalTxt">800 m</b>.</p>
+        <div class="seg" id="duelMode" role="group" aria-label="Modus" style="margin-bottom:6px"><button data-m="race" aria-pressed="true">RENNEN</button><button data-m="zeit" aria-pressed="false">AUF ZEIT 2000 M</button></div>
         <div class="seg" id="duelGoal" role="group" aria-label="Streckenlänge"><button data-g="500">500 M</button><button data-g="800" aria-pressed="true">800 M</button><button data-g="1500">1500 M</button></div>
         <div class="row" style="margin-top:10px"><button class="big mid" id="hostBtn">CODE ERSTELLEN</button></div>
         <p class="boom" id="codeOut" style="font-size:48px" hidden></p>
@@ -533,6 +534,10 @@ const $=id=>document.getElementById(id);
 let save={best:0,coins:0,xp:0,level:1,ctl:'buttons',inv:false,veh:'f1',up:{}};
 try{const s=JSON.parse(localStorage.getItem('nfp-save')||'null');if(s)save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem('nfp-save',JSON.stringify(save));}catch(e){}}
+const SEASON='s2', SEASON_T=1794933800186;
+function seasonReset(o){for(const k of ['best','coins','xp','level','up','veh','trk','bests','stars','bossWon','misDone','tot','daily','dTry','allOpen','mode','driver'])delete o[k];
+  Object.assign(o,{best:0,coins:0,xp:0,level:1,veh:'f1',up:{},season:SEASON});return o;}
+if(save.season!==SEASON){seasonReset(save);try{for(const k of Object.keys(localStorage))if(k.startsWith('nfp-ghost-'))localStorage.removeItem(k);}catch(e){}persist();}
 const ACCTS={'1':{n:'Tim',d:'tim',k:'tim'},'2':{n:'Jonny',d:'jonny',k:'jonny'},'3':{n:'Severin',d:'sev',k:'sevi'}};
 const xpNeed=l=>150+l*100;
 
@@ -676,7 +681,7 @@ async function dbGet(path){try{const r=await fetch(DBU+path+'.json',{cache:'no-s
 async function dbSend(path,method,body){try{const r=await fetch(DBU+path+'.json',{method,body:JSON.stringify(body)});return r.ok;}catch(e){return false;}}
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 async function loadBoard(date){const d=await dbGet('/daily/'+date);if(!d||typeof d!=='object')return d===null?[]:null;
-  return Object.entries(d).map(([k,v])=>({k,...v})).filter(e=>typeof e.s==='number').sort((a,b)=>b.s-a.s);}
+  return Object.entries(d).map(([k,v])=>({k,...v})).filter(e=>typeof e.s==='number'&&!(e.t<SEASON_T)).sort((a,b)=>b.s-a.s);}
 function boardHTML(list,max){if(!list)return '<li class="empty">Keine Verbindung zur Bestenliste.</li>';if(!list.length)return '<li class="empty">Noch niemand gefahren. Sei der Erste!</li>';
   const me=pKey(),esc=t=>String(t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   let rows=list.slice(0,max);const mi=list.findIndex(e=>e.k===me);if(mi>=max)rows=[...rows.slice(0,max-1),list[mi]];
@@ -687,7 +692,7 @@ async function uploadGhost(key,m,rec){const d=JSON.stringify(rec);if(d.length>39
 let rival=null,ghostTok=0;
 let rivals=[];const ghostsOn=()=>save.ghostsAll!==false;
 async function loadRival(key,tok){rivals=[];if(!ghostsOn())return;const gm=await dbGet('/gm/'+key);if(tok!==ghostTok||!gm||typeof gm!=='object')return;const me=pKey();
-  const list=Object.entries(gm).filter(([k,v])=>k!==me&&v&&VEH[v.v]).sort((a,b)=>b[1].m-a[1].m).slice(0,5);
+  const list=Object.entries(gm).filter(([k,v])=>k!==me&&v&&VEH[v.v]&&!(v.t<SEASON_T)).sort((a,b)=>b[1].m-a[1].m).slice(0,5);
   await Promise.all(list.map(async best=>{const d=await dbGet('/gd/'+key+'/'+best[0]);if(tok!==ghostTok||typeof d!=='string')return;
     try{const f=JSON.parse(d);if(Array.isArray(f)&&f.length){const g={m:best[1].m,veh:best[1].v,driver:best[1].dr,name:String(best[1].n).toUpperCase()+' · '+best[1].m+' M',f,rival:true};rivals.push(g);if(!rival||g.m>rival.m)rival=g;}}catch(e){}}));}
 function loadGhost(){ghost=null;rival=null;rivals=[];ghostBtn();const tok=++ghostTok;if(curLevel()||duel.active)return;try{const g=JSON.parse(localStorage.getItem('nfp-ghost-'+ghostKey())||'null');if(g&&g.f&&g.f.length)ghost=g;}catch(e){}
@@ -985,7 +990,7 @@ function drawBoss(){if(!boss)return;const B=boss,sC=CAR,sc=car,c=Math.cos(B.a),s
     ctx.beginPath();ctx.moveTo(hx-8,by+14);ctx.lineTo(hx,by+26);ctx.lineTo(hx+8,by+14);ctx.fill();ctx.fillStyle=INK;ctx.fillText(B.msg,hx,by+7);ctx.globalAlpha=1;}
 }
 let drawingGhost=false;
-const duel={active:false,lv:null,opps:{},race:0,host:false,goal:800,result:null};
+const duel={active:false,lv:null,opps:{},race:0,host:false,goal:800,result:null,mode:'race'};const CP_M=1000;
 function starsOf(t){save.stars=save.stars||{};return save.stars[t]=save.stars[t]||[0,0,0];}
 function rollItem(){if(duel.active)return duelRoll();const lv=curLevel(),hz=lv?lv.haz:0;const pool=[['turbo',40],['shield',12+hz*25],['magnet',25],['fuel',15]];
   let tot=pool.reduce((a,x)=>a+x[1],0),r=Math.random()*tot;for(const [k,w] of pool){if((r-=w)<0)return k;}return 'turbo';}
@@ -1359,7 +1364,7 @@ function hud(){
   $('coinN').textContent=state.coins;$('fuel').style.width=state.fuel+'%';
   $('speed').textContent=Math.round(Math.abs(car.body.vx)/PX_PER_M*3.6)+' km/h';
   const lv=curLevel();$('goal').hidden=!lv;
-  if(lv&&duel.active){const xs=Object.values(duel.opps).map(o=>o.x),pl=1+xs.filter(x=>x>car.body.x).length;$('goal').textContent='Ziel '+lv.goal+' m · Platz '+pl+'/'+(xs.length+1);}
+  if(lv&&duel.active){const xs=Object.values(duel.opps).map(o=>o.x),pl=1+xs.filter(x=>x>car.body.x).length;$('goal').textContent='Ziel '+lv.goal+' m · Platz '+pl+'/'+(xs.length+1)+(duel.mode==='zeit'?' · '+Math.floor(state.t/60)+':'+String(Math.floor(state.t%60)).padStart(2,'0'):'');}
   else if(lv&&boss){const g=Math.round((boss.x-car.body.x)/PX_PER_M);$('goal').textContent='Ziel '+lv.goal+' m · 👑 '+(Math.abs(g)<3?'Kopf an Kopf!':g>0?'Boss '+g+' m vorn':'Boss '+(-g)+' m hinten');}
   else if(lv){const left=Math.max(0,lv.time-state.t);$('goal').textContent='Ziel '+lv.goal+' m · '+Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0');}
   const ib=$('itemBtn');const txt=state.item?ITEMS[state.item].name:(state.turbo>0?'TURBO AN':state.shield>0?'SCHILD AN':state.magnet>0?'MAGNET AN':'KEIN ITEM');
@@ -1798,6 +1803,7 @@ function drawHazards(x0,x1){
       ctx.fillStyle='#d7a46a';ctx.beginPath();ctx.arc(h.x+dx,gy+dy,5,0,7);ctx.fill();}}}
 }
 function drawGoal(x0,x1){
+  if(duel.active&&duel.mode==='zeit'){const cx=START_X+CP_M*PX_PER_M;if(cx>x0-80&&cx<x1+80)drawSign(cx,state&&state.cp?'CHECKPOINT ✓':'CHECKPOINT','#9be15d');}
   const lv=curLevel();if(!lv)return;const gx=START_X+lv.goal*PX_PER_M;if(gx<x0-60||gx>x1+60)return;const gy=groundY(gx);
   ctx.strokeStyle=INK;ctx.lineWidth=3;ctx.fillStyle='#fff6dc';
   ctx.fillRect(gx-70,gy-150,8,150);ctx.strokeRect(gx-70,gy-150,8,150);ctx.fillRect(gx+62,gy-150,8,150);ctx.strokeRect(gx+62,gy-150,8,150);
@@ -2301,6 +2307,8 @@ function netLobby(){if(!NET.key||duel.active)return;const L=netPlayers();
   $('lobby').hidden=false;$('lobbyList').innerHTML=L.map(p=>'<li>'+(p.host?'👑 ':'🏎️ ')+String(p.name).replace(/[<>&]/g,'')+(p.me?' (du)':'')+'</li>').join('');
   $('raceStart').hidden=!NET.host;$('raceStart').disabled=L.length<2;
   duelStatus(NET.host?(L.length<2?'Schick den Code '+NET.code+' an deine Leute. Sobald jemand drin ist, kannst du starten (bis 4 Fahrer).':L.length+' Fahrer drin. Starte, wenn alle da sind!'):'Du bist drin! Warte, bis '+((L.find(p=>p.host)||{}).name||'der Gastgeber')+' startet.');}
+$('duelMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duel.mode=b.dataset.m;[...$('duelMode').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  $('duelGoal').hidden=duel.mode==='zeit';$('duelGoalTxt').textContent=duel.mode==='zeit'?'2000 m, mit Checkpoint bei 1000 m':duel.goal+' m';});
 $('duelGoal').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duel.goal=+b.dataset.g;$('duelGoalTxt').textContent=duel.goal+' m';
   [...$('duelGoal').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
 $('hostBtn').addEventListener('click',()=>{
@@ -2310,7 +2318,7 @@ $('joinBtn').addEventListener('click',()=>{
   const code=$('codeIn').value.trim().toUpperCase();if(code.length!==4){duelStatus('Der Code hat 4 Zeichen.');return;}
   duel.host=false;netOpen(code,false);duelStatus('Suche das Rennen '+code+' …');
   setTimeout(()=>{if(NET.key&&!Object.keys(NET.peers).length&&!duel.active)duelStatus('Noch niemand gefunden. Stimmt der Code? Der Gastgeber muss das Spiel offen haben.');},8000);});
-$('raceStart').addEventListener('click',()=>{if(!NET.host)return;const race=Date.now()%1e9;duelSend({type:'setup',trk:save.trk,goal:duel.goal,race});setTimeout(()=>{duelSend({type:'go',race});},250);setTimeout(()=>{duel.race=race;beginDuel();},900);});
+$('raceStart').addEventListener('click',()=>{if(!NET.host)return;const race=Date.now()%1e9;duelSend({type:'setup',trk:save.trk,goal:duel.mode==='zeit'?2000:duel.goal,mode:duel.mode,race});setTimeout(()=>{duelSend({type:'go',race});},250);setTimeout(()=>{duel.race=race;beginDuel();},900);});
 $('duelBtn').addEventListener('click',()=>{initAudio();$('menu').hidden=true;$('duel').hidden=false;$('codeOut').hidden=true;$('lobby').hidden=true;duelStatus('');});
 $('duelBack').addEventListener('click',()=>{leaveDuel();$('duel').hidden=true;$('menu').hidden=false;showMenuStats();});
 function leaveDuel(){if(NET.key)duelSend({type:'bye'});const k=NET.key;setTimeout(()=>{if(NET.key===k)netClose();},400);duel.active=false;duel.opps={};duel.result=null;}
@@ -2320,8 +2328,8 @@ function allowedDrivers(){const a=acct();if(!a)return ['pete'];return DORDER.som
 function acctFix(){const a=acct();if(a){save.pname=a.n;save.sk='sv-'+a.k+'-000'+save.acct;}const al=allowedDrivers();if(!al.includes(save.driver||'pete'))save.driver=al[0];}
 function stScore(o){return (o.level||1)*1e6+(o.xp||0)*10+(o.coins||0)/1e3;}
 async function loginWith(num){num=String(num||'').trim();const a=ACCTS[num];if(!a){$('loginMsg').textContent='Diese Nummer gibt es nicht.';return;}
-  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-000'+num,d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}
-  const local=save.acct?null:save;let next=o&&(!local||stScore(o)>=stScore(local))?o:Object.assign({},local||{},{});
+  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-000'+num,d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}if(o&&o.season!==SEASON)o=null;
+  const local=save.acct?null:save;let next=o&&(!local||stScore(o)>stScore(local))?o:Object.assign({},local||{},{});
   next.acct=num;next.sk=k;next.pname=a.n;next.giftSeen=true;if(!next.tutDone&&local&&local.tutDone)next.tutDone=true;
   localStorage.setItem('nfp-save',JSON.stringify(next));save=Object.assign(save,next);acctFix();persist();
   $('loginMsg').textContent='Hallo '+a.n+'!';if(next===o)location.reload();else{await cloudSave(true);location.reload();}}
@@ -2349,7 +2357,7 @@ async function cloudLoad(code){code=String(code||'').trim().toLowerCase().replac
 function myInfo(){return {veh:save.veh,driver:save.driver||'pete',name:(DORDER.find(d=>d[0]===(save.driver||'pete'))||[0,'Pete'])[1]};}
 function onDuelData(m){
   if(!m||typeof m!=='object')return;const id=m.from||'x',P=NET.peers[id],nm=(P&&P.info&&P.info.name)||'Gegner';
-  if(m.type==='setup'){if(TRACKS[m.trk])save.trk=m.trk;duel.goal=+m.goal||800;}
+  if(m.type==='setup'){if(TRACKS[m.trk])save.trk=m.trk;duel.goal=+m.goal||800;duel.mode=m.mode==='zeit'?'zeit':'race';}
   if(m.type==='go'){duel.race=m.race;beginDuel();}
   if(m.type==='pos'){const o=duel.opps[id]=Object.assign(duel.opps[id]||{},m,{seen:performance.now(),name:nm});if(o.sx==null){o.sx=m.x;o.sy=m.y;o.sa=m.a;}}
   if(!duel.active||m.race!==duel.race){if(m.type==='again'&&!running&&NET.key){duel.race=m.race;$('over').hidden=true;beginDuel();}if(m.type==='bye'&&P)P.seen=-1e9;if(m.type==='bye')netLobby();return;}
@@ -2360,7 +2368,7 @@ function onDuelData(m){
 }
 function beginDuel(){
   if(duel.active&&running)return;
-  duel.active=true;duel.result=null;duel.winner=null;duel.opps={};$('lobby').hidden=true;duel.lv={goal:duel.goal,time:999,drain:.7,haz:.35};
+  if(duel.mode==='zeit')duel.goal=2000;duel.active=true;duel.result=null;duel.winner=null;duel.opps={};$('lobby').hidden=true;duel.lv={goal:duel.goal,time:999,drain:.7,haz:.35};
   $('duel').hidden=true;$('over').hidden=true;
   startRun();
   // countdown: frozen car for 3 seconds
@@ -2368,6 +2376,7 @@ function beginDuel(){
 }
 function duelTick(dt){
   if(!duel.active)return;
+  if(duel.mode==='zeit'&&!state.cp&&car.body.x>=START_X+CP_M*PX_PER_M&&!state.crashed){state.cp=true;popup('CHECKPOINT!',car.body.x,car.body.y-90,'#9be15d');blip(500,1500,.3,'square',.08);toast('Checkpoint! Ab jetzt startest du nach einem Crash hier.',3);}
   if(state.freeze>0){state.freeze-=dt;const n=Math.ceil(state.freeze);$('countdown').textContent=state.freeze>0?String(n):'LOS!';
     const b=car.body;b.vx=b.vy=b.w=0;for(const w of car.wheels){w.vx=w.vy=w.w=0;}state.t=0;
     if(state.freeze<=0){setTimeout(()=>$('countdown').hidden=true,600);blip(600,1200,.3,'square',.09);}}
@@ -2384,7 +2393,7 @@ function duelRoll(){
   let tot=pool.reduce((a,x)=>a+x[1],0),r=Math.random()*tot;for(const [k,w] of pool){if((r-=w)<0)return k;}return 'turbo';
 }
 function respawn(){
-  const b=car.body,x=Math.max(START_X,b.x-60),y=groundY(x)-60;
+  const b=car.body,x=duel.mode==='zeit'?(state.cp?START_X+CP_M*PX_PER_M:START_X):Math.max(START_X,b.x-60),y=groundY(x)-60;
   Object.assign(b,{x,y,a:Math.atan((groundY(x+20)-groundY(x-20))/40),vx:0,vy:0,w:0});
   const c=Math.cos(b.a),s=Math.sin(b.a);
   for(const w of car.wheels){w.x=x+w.ax*c-(w.ay+CAR.rest)*s;w.y=y+w.ax*s+(w.ay+CAR.rest)*c;w.vx=w.vy=w.w=0;}
