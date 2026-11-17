@@ -725,13 +725,13 @@ function rid(n){const a='abcdefghijklmnopqrstuvwxyz0123456789',b=crypto.getRando
 function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
 const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;
 let clipLast=null,clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
-const CH_POOL='nfpgemein1';/* shared pool: every device loads it, every upload goes there */
+const CH_POOL='nfpgemein1';const CLIP_BOOST={m1lej5dt7h:2};/* clip id -> how much more often it is picked *//* shared pool: every device loads it, every upload goes there */
 function picList(){return save.pics||(save.pics=[]);}
 function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.')+(picList().length?' '+picList().length+' Bild'+(picList().length>1?'er':'')+' für den Himmel.':'');
   const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;const te=document.getElementById('chTest');if(te)te.hidden=!surpList().length;}
 async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;return;}const seen=save.surpSeen||(save.surpSeen={});
-  let pick=want&&L.includes(want)?want:null;if(!pick){const C=L.length>1?L.filter(x=>x!==clipLast):L;let tot=0;const w=C.map(x=>{const v=1/(1+(seen[x]||0));tot+=v;return v;});let r=Math.random()*tot;pick=C[C.length-1];for(let i=0;i<C.length;i++){r-=w[i];if(r<=0){pick=C[i];break;}}}
+  let pick=want&&L.includes(want)?want:null;if(!pick){const C=L.length>1?L.filter(x=>x!==clipLast):L;let tot=0;const w=C.map(x=>{const v=(CLIP_BOOST[x]||1)/(1+(seen[x]||0));tot+=v;return v;});let r=Math.random()*tot;pick=C[C.length-1];for(let i=0;i<C.length;i++){r-=w[i];if(r<=0){pick=C[i];break;}}}
   if(pick===clipCur&&clipV.src)return;
   try{const b=await mediaOp('get','it-'+pick);if(!b){save.surp=L.filter(x=>x!==pick);persist();return clipPrepare();}
     if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(b);clipCur=pick;clipV.src=clipURL;clipV.load();clipUnlocked=false;
@@ -776,7 +776,7 @@ function clipUnlock(){clipAudio();if(!clipCur||clipUnlocked)return;clipUnlocked=
 function headline(){return '+++ EILMELDUNG +++ '+memeWords().join(' ')+' +++ '+memeWords().join(' ')+' +++';}
 function memeStart(){memeCount++;
   const unseen=clipCur&&!((save.surpSeen||{})[clipCur]);
-  if(clipCur&&!clipV.error&&(state.forceClip||unseen||Math.random()<.8)){if(clipV.readyState<1)try{clipV.load();}catch(e){}state.forceClip=false;if(unseen){const L=surpList();setTimeout(()=>toast('📼 Neues Reel im Album! ('+(albSeen().length+1)+'/'+L.length+')',2.6),1200);}meme={t:0,clip:true,id:clipCur,words:[],dur:Math.max(6,Math.min(16,(clipV.duration||8)-(clipV.currentTime||0)))};clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{clipV.muted=true;clipV.play().catch(()=>{});});}catch(e){}return;}
+  if(clipCur&&!clipV.error&&(state.forceClip||unseen||Math.random()<.8)){if(clipV.readyState<1)try{clipV.load();}catch(e){}state.forceClip=false;if(unseen){const L=surpList();setTimeout(()=>toast('📼 Neues Reel im Album! ('+(albSeen().length+1)+'/'+L.length+')',2.6),1200);}meme={t:0,clip:true,id:clipCur,words:[],dur:Math.max(6,Math.min(24,(clipV.duration||8)-(clipV.currentTime||0)))};clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{clipV.muted=true;clipV.play().catch(()=>{});});}catch(e){}return;}
   let k;do{k=Math.floor(Math.random()*8);}while(k===memeLast);memeLast=k;
   if(k===5){meme={t:0,kind:5,words:[],dur:3.6,shown:0};return;}
   if(k===6){meme={t:0,kind:6,words:['UPSI'],dur:2.6};$('game').style.transition='transform .35s';$('game').style.transform='rotate(180deg)';blip(900,200,.5,'sawtooth',.06);return;}
