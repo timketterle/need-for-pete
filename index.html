@@ -168,6 +168,24 @@ input#codeIn{background:rgba(255,255,255,.9)}
 .giftlogo{font-family:var(--hd);font-weight:400;font-size:clamp(40px,8vw,72px);margin:6px 0;color:#fff;text-shadow:0 4px 0 #1f3a8f}.giftlogo em{font-style:normal;color:var(--gold);text-shadow:0 4px 0 #b86b00}
 #giftTxt{font-weight:800;font-size:clamp(16px,2.6vw,21px);line-height:1.4;color:var(--txt);min-height:4.2em;margin:0 0 14px}
 #giftGo{transition:opacity .6s}
+#tut{z-index:58;align-items:flex-start}#tut>.panel{margin-top:auto;margin-bottom:auto;max-width:600px;text-align:center;gap:8px}
+.tutvis{min-height:96px;display:flex;align-items:flex-end;justify-content:center;gap:10px;font-size:64px;line-height:1}
+.tutvis img{height:clamp(90px,26vh,170px);animation:gbob 1.1s ease-in-out infinite}.tutvis img+img{animation-delay:.55s}
+.tutt{font-family:var(--hd);font-weight:400;font-size:clamp(26px,4.6vw,38px);margin:2px 0 0;color:var(--gold);text-shadow:0 3px 0 #b86b00}
+.tutx{margin:0;font-weight:800;font-size:clamp(14px,2.2vw,17px);line-height:1.45;color:var(--txt);text-wrap:pretty}.tutx b{color:#fff}
+.tutdots{display:flex;justify-content:center;gap:6px;margin:4px 0}.tutdots i{width:8px;height:8px;border-radius:9px;background:rgba(255,255,255,.25)}.tutdots i.on{background:var(--gold);width:20px}
+.tutrow{justify-content:center;gap:8px;flex-wrap:wrap}.tutskip{background:rgba(255,255,255,.12)!important;box-shadow:none!important;color:var(--mute)!important;font-size:15px!important}
+.tutped{display:inline-flex;align-items:center;justify-content:center;width:84px;height:64px;border-radius:16px;font-family:var(--hd);font-size:20px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.tutped.b{background:linear-gradient(180deg,#ff8a6a,#e5413a);box-shadow:0 5px 0 #8f1717}.tutped.g{background:linear-gradient(180deg,#9dff6a,#36c935);box-shadow:0 5px 0 #146b18;height:84px}
+.tutped.i{background:linear-gradient(180deg,#ffe066,#ffb21e);color:#3a2300;text-shadow:none;width:96px;height:48px;border-radius:99px;font-size:17px}
+@media (max-height:520px){.tutvis{min-height:64px;font-size:46px}.tutvis img{height:min(24vh,96px)}.tutped{transform:scale(.8)}#tut>.panel{padding:10px 14px;gap:5px}}
+#coach{position:fixed;z-index:20;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);max-width:min(46vw,420px);
+  background:rgba(14,20,46,.88);border:2px solid var(--gold);border-radius:16px;padding:8px 14px 9px;color:#fff;text-align:center;pointer-events:none;box-shadow:0 8px 22px rgba(0,0,0,.35);animation:cpop .35s ease-out}
+#coach b{display:block;font-family:var(--hd);font-weight:400;font-size:clamp(17px,2.6vw,22px);line-height:1.15;color:var(--gold)}
+#coach small{display:block;font-weight:800;font-size:clamp(12px,1.8vw,14px);line-height:1.35;margin-top:3px;color:#dfe6ff}
+#coach .cstep{display:block;font-size:11px;font-weight:900;letter-spacing:.08em;color:#9fb0e8}
+@keyframes cpop{from{transform:translateX(-50%) scale(.85);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+@media (orientation:portrait){#coach{top:calc(env(safe-area-inset-top,0px) + 150px);max-width:72vw;min-width:60vw}}
 /* Leaderboard */
 .lb{list-style:none;margin:8px auto;padding:0;max-width:440px;display:flex;flex-direction:column;gap:6px}
 .lb li{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:7px 12px;font-weight:900;color:var(--txt)}
@@ -341,6 +359,11 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <p class="note" id="chInfo"></p>
     </div>
     <div class="card glass">
+      <h3>Tutorial</h3>
+      <p class="note" style="margin-top:0">Alles nochmal erklärt bekommen: worum es geht, Steuerung, eine Probefahrt und eine Tour durchs Menü.</p>
+      <div class="row" style="justify-content:flex-start;margin:6px 0 0"><button class="gbtn blue mid" id="tutAgain">TUTORIAL STARTEN</button></div>
+    </div>
+    <div class="card glass">
       <h3>Dein Name</h3>
       <input id="pName" maxlength="16" autocomplete="off" placeholder="z. B. Tim" class="namein">
       <p class="note">So erscheinst du in der Tages-Bestenliste und als Geist bei deinen Freunden.</p>
@@ -358,6 +381,17 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <button class="gbtn play" id="giftGo" style="opacity:0">LOS GEHT'S!</button>
   </div>
 </div>
+
+<div class="overlay" id="tut" hidden>
+  <div class="panel tutp">
+    <div class="tutvis" id="tutVis"></div>
+    <h2 class="tutt" id="tutT"></h2>
+    <p class="tutx" id="tutX"></p>
+    <div class="tutdots" id="tutDots"></div>
+    <div class="row tutrow"><button class="gbtn mid tutskip" id="tutSkip">ÜBERSPRINGEN</button><button class="gbtn blue mid" id="tutPrev">ZURÜCK</button><button class="gbtn play mid" id="tutNext">WEITER</button></div>
+  </div>
+</div>
+<div id="coach" hidden><span class="cstep" id="coachN"></span><b id="coachT"></b><small id="coachS"></small></div>
 
 <div class="overlay" id="missions" hidden>
   <div class="panel">
@@ -733,7 +767,7 @@ function memeStart(){memeCount++;
 function memeEnd(){if(!meme)return;if(meme.clip){clipV.pause();const sp=save.surpPos||(save.surpPos={}),ss=save.surpSeen||(save.surpSeen={});
     sp[meme.id]=clipV.currentTime>=clipV.duration-1.5?0:clipV.currentTime;ss[meme.id]=(ss[meme.id]||0)+1;persist();setTimeout(clipPrepare,50);}
   if(meme.kind===6){$('game').style.transform='';}meme=null;}
-function memeTick(dt){if(duel.active||!state)return;if(meme){meme.t+=dt;if(meme.kind===5){const n=Math.min(9,Math.floor(meme.t*3.2)+1);if(n>meme.shown){meme.shown=n;blip(300,300,.12,'square',.07);}}if(meme.t>meme.dur)memeEnd();return;}
+function memeTick(dt){if(duel.active||!state||(tut&&tut.run))return;if(meme){meme.t+=dt;if(meme.kind===5){const n=Math.min(9,Math.floor(meme.t*3.2)+1);if(n>meme.shown){meme.shown=n;blip(300,300,.12,'square',.07);}}if(meme.t>meme.dur)memeEnd();return;}
   const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(m>=memeNextAt){memeNextAt=m+140+Math.random()*260;if(!state.crashed)memeStart();}}
 function drawBohni(x,y,s,ph,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(ph*1.3)*.12+(o.rot||0));
   const w=s*.36,h=s*.5,lw=Math.max(1.5,s*.03);ctx.lineWidth=lw;ctx.strokeStyle=INK;ctx.lineJoin='round';
@@ -1041,6 +1075,7 @@ function update(dt){
         if(!h.warned&&Math.abs(h.x-b.x)<50){h.warned=true;if(h.t==='oil'){popup('RUTSCHIG!',h.x,groundY(h.x)-50,'#c9a0ff');}}}}
     acc+=dt;let n=0;while(acc>=DT&&n<40){step(DT);acc-=DT;n++;}
     if(!state.crashed)recGhost(dt);
+    if(tut&&tut.run)tutTick(dt);
     memeTick(dt);
     state.misT+=dt;if(state.misT>.25){state.misT=0;if(!state.crashed)misCheck();}
     const b=car.body;
@@ -1808,7 +1843,7 @@ $('misPlay').addEventListener('click',()=>{$('missions').hidden=true;playDaily=f
 $('boardBack').addEventListener('click',()=>{$('board').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('boardPlay').addEventListener('click',()=>{$('board').hidden=true;playDaily=true;startRun();});
 $('chIn').addEventListener('change',async e=>{const fs=[...(e.target.files||[])];e.target.value='';for(const f of fs){try{await chUpload(f);}catch(err){chInfo('Ging nicht: '+err.message);}}});
-$('giftGo').addEventListener('click',()=>{initAudio();save.giftSeen=true;persist();$('gift').hidden=true;$('menu').hidden=false;showMenuStats();[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>blip(f,f,.16,'square',.06),i*90));});
+$('giftGo').addEventListener('click',()=>{initAudio();save.giftSeen=true;persist();$('gift').hidden=true;$('menu').hidden=false;showMenuStats();if(!save.tutDone)setTimeout(()=>tutShow('A'),400);[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>blip(f,f,.16,'square',.06),i*90));});
 $('chShare').addEventListener('click',async()=>{const url=chLink();try{if(navigator.share){await navigator.share({title:'Need For Pete',text:'Fahr mal hier 😂',url});return;}}catch(e){}
   try{await navigator.clipboard.writeText(url);chInfo('Link kopiert: '+url);}catch(e){chInfo('Dein Link: '+url);}});
 $('pName').addEventListener('change',()=>{save.pname=$('pName').value.trim().slice(0,16);persist();});
@@ -1936,6 +1971,57 @@ function duelOver(){
 $('again').addEventListener('click',e=>{if(duel.active&&duel.conn){e.stopImmediatePropagation();duelSend({type:'again'});beginDuel();}},true);
 $('toMenu').addEventListener('click',()=>{if(duel.active){leaveDuel();}$('again').textContent='NOCHMAL';},true);
 $('pause').addEventListener('click',()=>{if(duel.active){leaveDuel();$('countdown').hidden=true;}},true);
+/* ---------- Tutorial (einmalig beim ersten Start, danach über Einstellungen) ---------- */
+let tut=null;
+const TUT_A=[
+  {v:'faces',t:'Willkommen bei Need For Pete!',x:'2017 haben <b>Tim und Sevi</b> im Seminarkurs selbst ein Hügel-Rennspiel gebaut. Das Spiel gibt es nicht mehr, also kommt hier die <b>Fortsetzung</b>: nur für euch und eure Freunde, ohne Werbung und ohne Kaufen. Einfach Quatsch machen und sich gegenseitig die Rekorde wegnehmen.'},
+  {v:'🏁',t:'Das Ziel',x:'Fahr <b>so weit wie möglich</b> über die Hügel. Die Fahrt ist vorbei, wenn dein Fahrer <b>auf dem Kopf landet</b>, rausfliegt oder der <b>Sprit leer</b> ist. Unterwegs sammelst du Münzen, machst Saltos und knackst Rekorde.'},
+  {v:'pedals',t:'Die Steuerung',x:'<b>GAS</b> rechts, <b>BREMSE</b> links. In der Luft drehst du dein Auto: <b>Gas kippt nach hinten, Bremse nach vorne.</b> Der gelbe Knopf in der Mitte zündet dein Item. Wer will, kann unter ⚙ auf <b>Neigen</b> umstellen und lenkt dann mit dem Handy.'},
+  {v:'🚗💨',t:'Jetzt du!',x:'Wir machen eine kurze <b>Probefahrt</b>. Oben in der Mitte steht immer, was du als Nächstes tun sollst. Keine Angst vorm Crashen, danach geht das Tutorial einfach weiter.',go:'PROBEFAHRT STARTEN'}];
+const TUT_B=[
+  {v:'🪙⭐',t:'Nach jeder Fahrt',x:'Du bekommst <b>Münzen und XP</b>. Mit genug XP steigst du ein <b>Level</b> auf und schaltest neue <b>Fahrzeuge und Strecken</b> frei, zum Beispiel das Bohni-Mobil oder die Schrottplatz-Stadt.'},
+  {v:'🔧',t:'Garage',x:'In der <b>Garage</b> steckst du Münzen in Motor, Federung, Reifen und Tank. Jedes Fahrzeug wird einzeln aufgerüstet. Ohne Upgrades kommst du auf den schweren Strecken kaum weit.'},
+  {v:'🗺️',t:'Strecken und Level',x:'Rechts im Menü wählst du die Strecke. <b>FREI</b> heißt: endlos fahren auf Rekordjagd. <b>LV 1 bis 3</b> haben ein Ziel, ein Zeitlimit und Hindernisse wie Ölpfützen. Je schneller du ankommst, desto mehr <b>Sterne</b>.'},
+  {v:'📋',t:'Karriere',x:'Hinter dem 📋 oben stehen immer <b>drei Aufgaben</b>, zum Beispiel „Schaffe einen Salto“. Für jede gibt es Münzen und XP, danach kommt die nächste. So steigst du vom <b>Anfänger</b> zur <b>Legende von Pete</b> auf.'},
+  {v:'🏆👻',t:'Tages-Challenge',x:'<b>DAILY</b> ist jeden Tag eine andere Strecke für alle. Die Punkte landen in der <b>Tages-Bestenliste</b> (🏆). Der <b>Geist</b> des Besten fährt neben dir her, damit du siehst, wo er dich abhängt.'},
+  {v:'⚔️',t:'Duell',x:'Mit <b>DUELL</b> fahrt ihr live gegeneinander. Einer erstellt einen <b>Code</b>, der andere tippt ihn ein. Wer zuerst im Ziel ist, gewinnt. Danach gibt es sofort eine <b>Revanche</b>.'},
+  {v:'bohni',t:'Überraschungen',x:'Beim Fahren passiert immer wieder <b>völlig verrückter Kram</b>: Bohnis, Eilmeldungen, Explosionen. Unter ⚙ gibt es den <b>Überraschungskanal</b>: Dort lädst du Videos hoch, und sie tauchen bei deinen Freunden mitten in der Fahrt am Himmel auf.'},
+  {v:'🎉',t:'Fertig!',x:'Das war alles. Das Tutorial findest du jederzeit wieder unter <b>⚙ Einstellungen</b>. Und jetzt: Rekord holen und Sevi ärgern.',go:'ZUM MENÜ'}];
+function tutVis(v){if(v==='faces'){let a='',b='';try{a=POSES.tim.src.grin;b=POSES.sev.src.wink||POSES.sev.src.grin;}catch(e){}return '<img src="'+a+'" alt="Tim"><img src="'+b+'" alt="Severin">';}
+  if(v==='pedals')return '<span class="tutped b">BREMSE</span><span class="tutped i">ITEM</span><span class="tutped g">GAS</span>';
+  if(v==='bohni')return '<canvas id="tutBohni" width="200" height="120" style="height:clamp(70px,20vh,120px)"></canvas>';return v;}
+function tutShow(part,i){tut=tut||{};tut.part=part;tut.i=i||0;tut.run=false;const L=part==='A'?TUT_A:TUT_B,sl=L[tut.i];
+  $('tut').hidden=false;$('coach').hidden=true;$('tutVis').innerHTML=tutVis(sl.v);$('tutT').textContent=sl.t;$('tutX').innerHTML=sl.x;
+  $('tutDots').innerHTML=L.map((_,k)=>'<i'+(k===tut.i?' class="on"':'')+'></i>').join('');
+  $('tutPrev').hidden=tut.i===0;$('tutNext').textContent=sl.go||'WEITER';$('tutSkip').hidden=!!sl.go&&part==='B';
+  if(sl.v==='bohni'){const c=$('tutBohni'),sv=ctx;let ph=0;(function an(){if($('tut').hidden||!document.getElementById('tutBohni'))return;ph+=.03;ctx=c.getContext('2d');ctx.clearRect(0,0,200,120);
+    drawBohni(60,62,90,ph,{});drawBohni(140,66,70,ph+1.3,{tuba:true});ctx=sv;requestAnimationFrame(an);})();}}
+function tutEnd(){save.tutDone=true;persist();tut=null;$('tut').hidden=true;$('coach').hidden=true;
+  if(!running){$('over').hidden=true;$('again').textContent='NOCHMAL';$('menu').hidden=false;showMenuStats();}}
+const TUT_RUN=[
+  {t:'Halte GAS gedrückt',s:'Der grüne Knopf rechts. Einfach drauf lassen.',ok:(d)=>d.m>25},
+  {t:'Sammle Münzen ein',s:'Fahr einfach durch die goldenen Münzen durch.',ok:(d)=>state.coins>=5||d.m>150},
+  {t:'Jetzt mal BREMSE',s:'Links. Damit wirst du langsamer, wenn es zu wild wird.',ok:(d)=>d.brake>.3||d.st>25},
+  {t:'Ab in die Luft!',s:'Nimm Schwung über eine Kuppe. In der Luft: Gas kippt nach hinten, Bremse nach vorne. Lande auf beiden Rädern!',ok:(d)=>state.maxAir>.9||d.m>420},
+  {t:'Achte auf den Sprit',s:'Der Balken oben rechts. Rote Kanister auf der Strecke füllen ihn wieder auf.',ok:(d)=>d.st>6},
+  {t:'Kisten mit Fragezeichen',s:'Fahr durch eine ?-Kiste und tipp dann den gelben Knopf unten in der Mitte für Turbo, Schild oder Magnet.',ok:(d)=>d.used||d.st>22},
+  {t:'Stark! Jetzt fahr so weit du kannst',s:'Versuch einen Salto. Wenn die Fahrt vorbei ist, geht es mit der Menü-Tour weiter.',ok:()=>false}];
+function tutCoach(){const r=TUT_RUN[tut.step];$('coachN').textContent='PROBEFAHRT · SCHRITT '+(tut.step+1)+' VON '+TUT_RUN.length;$('coachT').textContent=r.t;$('coachS').textContent=r.s;
+  const c=$('coach');c.hidden=true;void c.offsetWidth;c.hidden=false;}
+function tutStartRun(){$('tut').hidden=true;tut.run=true;tut.step=0;tut.st=0;tut.brake=0;tut.used=false;tut.hadItem=false;playDaily=false;
+  save.mode=0;if(TRACKS.hills.unlock<=save.level)save.trk='hills';TRK=TRACKS[save.trk];persist();startRun();tutCoach();}
+function tutTick(dt){if(state.crashed)return;const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);tut.st+=dt;
+  if(btn.brake||keys.brake)tut.brake+=dt;if(state.item)tut.hadItem=true;else if(tut.hadItem)tut.used=true;
+  const r=TUT_RUN[tut.step];if(r.ok({m,brake:tut.brake,st:tut.st,used:tut.used})){tut.step=Math.min(TUT_RUN.length-1,tut.step+1);tut.st=0;tut.brake=0;tutCoach();
+    blip(660,990,.12,'triangle',.07);if(tut.step===TUT_RUN.length-1)setTimeout(()=>{if(tut&&tut.run&&tut.step===TUT_RUN.length-1)$('coach').hidden=true;},7000);}}
+{const _go=gameOver;gameOver=function(){_go();if(tut&&tut.run){tut.run=false;$('coach').hidden=true;setTimeout(()=>{if(tut)tutShow('B');},1600);}};}
+$('tutNext').addEventListener('click',()=>{initAudio();const L=tut.part==='A'?TUT_A:TUT_B;blip(700,900,.06,'square',.04);
+  if(tut.i<L.length-1)return tutShow(tut.part,tut.i+1);if(tut.part==='A')tutStartRun();else tutEnd();});
+$('tutPrev').addEventListener('click',()=>{if(tut.i>0)tutShow(tut.part,tut.i-1);});
+$('tutSkip').addEventListener('click',()=>tutEnd());
+$('tutAgain').addEventListener('click',()=>{$('settings').hidden=true;tut=null;tutShow('A');});
+$('pause').addEventListener('click',()=>{if(tut&&tut.run){tut.run=false;$('coach').hidden=true;setTimeout(()=>{if(tut)tutShow('B');},150);}});
+{const sp1=new URLSearchParams(location.search);if(!save.tutDone&&!((sp1.get('ch')||sp1.get('fuer'))&&!save.giftSeen))setTimeout(()=>{if($('tut').hidden&&!running)tutShow('A');},500);}
 // test hook
 window.__nfp={get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;}};
 })();
