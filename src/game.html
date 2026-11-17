@@ -722,13 +722,14 @@ async function mediaOp(mode,key,val){const db=await idb();return new Promise((re
 function rid(n){const a='abcdefghijklmnopqrstuvwxyz0123456789',b=crypto.getRandomValues(new Uint8Array(n));return Array.from(b,x=>a[x%36]).join('');}
 function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
 const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;
-let clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
+let clipLast=null,clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
 const CH_POOL='nfpgemein1';/* shared pool: every device loads it, every upload goes there */
 function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.');
   const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;const te=document.getElementById('chTest');if(te)te.hidden=!surpList().length;}
 async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;return;}const seen=save.surpSeen||(save.surpSeen={});
-  const pick=want&&L.includes(want)?want:L.slice().sort((a,b)=>(seen[a]||0)-(seen[b]||0)||Math.random()-.5)[0];if(pick===clipCur&&clipV.src)return;
+  let pick=want&&L.includes(want)?want:null;if(!pick){const C=L.length>1?L.filter(x=>x!==clipLast):L;let tot=0;const w=C.map(x=>{const v=1/(1+(seen[x]||0));tot+=v;return v;});let r=Math.random()*tot;pick=C[C.length-1];for(let i=0;i<C.length;i++){r-=w[i];if(r<=0){pick=C[i];break;}}}
+  if(pick===clipCur&&clipV.src)return;
   try{const b=await mediaOp('get','it-'+pick);if(!b){save.surp=L.filter(x=>x!==pick);persist();return clipPrepare();}
     if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(b);clipCur=pick;clipV.src=clipURL;clipV.load();clipUnlocked=false;
     clipV.addEventListener('loadedmetadata',()=>{const pos=(save.surpPos||{})[pick]||0;if(pos<clipV.duration-1)clipV.currentTime=pos;},{once:true});}catch(e){}}
@@ -775,7 +776,7 @@ function memeStart(){memeCount++;
   const words=memeWords();meme={t:0,kind:k,words,dur:Math.max(5,.6+words.length*.42+1)};say(words.join(' '),1.6+Math.random()*.4);
   if(!muted)[523,659,784,1046].forEach((f,i)=>setTimeout(()=>blip(f,f*1.01,.14,'square',.05),i*110));}
 function memeEnd(){if(!meme)return;if(meme.clip){clipV.pause();const sp=save.surpPos||(save.surpPos={}),ss=save.surpSeen||(save.surpSeen={});
-    sp[meme.id]=clipV.currentTime>=clipV.duration-1.5?0:clipV.currentTime;ss[meme.id]=(ss[meme.id]||0)+1;persist();setTimeout(clipPrepare,50);}
+    sp[meme.id]=clipV.currentTime>=clipV.duration-1.5?0:clipV.currentTime;ss[meme.id]=(ss[meme.id]||0)+1;clipLast=meme.id;persist();setTimeout(clipPrepare,50);}
   if(meme.kind===6){$('game').style.transform='';}meme=null;}
 function memeTick(dt){if(duel.active||!state||(tut&&tut.run))return;if(meme){meme.t+=dt;if(meme.kind===5){const n=Math.min(9,Math.floor(meme.t*3.2)+1);if(n>meme.shown){meme.shown=n;blip(300,300,.12,'square',.07);}}if(meme.t>meme.dur)memeEnd();return;}
   const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(m>=memeNextAt){memeNextAt=m+140+Math.random()*260;if(!state.crashed)memeStart();}}
@@ -2161,6 +2162,7 @@ function tutTick(dt){if(state.crashed)return;const m=Math.max(0,(car.body.x-STAR
   if(btn.brake||keys.brake)tut.brake+=dt;if(state.item)tut.hadItem=true;else if(tut.hadItem)tut.used=true;
   const r=TUT_RUN[tut.step];if(r.ok({m,brake:tut.brake,st:tut.st,used:tut.used})){tut.step=Math.min(TUT_RUN.length-1,tut.step+1);tut.st=0;tut.brake=0;tutCoach();
     blip(660,990,.12,'triangle',.07);if(tut.step===TUT_RUN.length-1)setTimeout(()=>{if(tut&&tut.run&&tut.step===TUT_RUN.length-1)$('coach').hidden=true;},7000);}}
+{const _go0=gameOver;gameOver=function(){_go0();try{if(surpList().length>1){clipLast=clipCur;clipPrepare();}}catch(e){}};}
 {const _go=gameOver;gameOver=function(){_go();if(tut&&tut.run){tut.run=false;$('coach').hidden=true;setTimeout(()=>{if(tut)tutShow('B');},1600);}};}
 $('tutNext').addEventListener('click',()=>{initAudio();const L=tut.part==='A'?TUT_A:TUT_B;blip(700,900,.06,'square',.04);
   if(tut.i<L.length-1)return tutShow(tut.part,tut.i+1);if(tut.part==='A')tutStartRun();else tutEnd();});
