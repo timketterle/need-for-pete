@@ -160,6 +160,11 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 input#codeIn{background:rgba(255,255,255,.9)}
 .coin-ico{background:radial-gradient(circle at 35% 30%,#fff3a8,#ffc83a 45%,#d48a00);border:2px solid #8a5200}
 
+#album{align-items:flex-start}#album>.panel{margin-top:auto;margin-bottom:auto}
+.albgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin:8px 0}
+.albgrid button{aspect-ratio:9/12;border-radius:12px;border:1px solid var(--line);background:var(--glass);color:var(--txt);font:900 20px var(--hd,sans-serif);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.albgrid button.on{background:linear-gradient(160deg,#ff9a1f,#b06bff);border-color:#ffd27a}.albgrid button small{font-size:11px;opacity:.8}.albgrid button.off{opacity:.45;cursor:default}
+.albplay{display:flex;justify-content:center}.albplay video{max-width:100%;max-height:52vh;border-radius:14px;background:#000}
 #settings,#missions,#board,#garage,#duel,#over{align-items:flex-start}#settings>.panel,#missions>.panel,#board>.panel,#garage>.panel,#duel>.panel,#over>.panel{margin-top:auto;margin-bottom:auto}
 #gift{z-index:60;flex-direction:column}#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
 .giftbox{position:relative;text-align:center;max-width:620px;padding:16px}
@@ -311,6 +316,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div class="coinpill"><span class="coin-ico"></span><span id="mCoins">0</span></div>
     <button class="iconbtn" id="openMis" aria-label="Karriere-Aufgaben">📋</button>
     <button class="iconbtn" id="openBoard" aria-label="Bestenliste">🏆</button>
+    <button class="iconbtn" id="openAlbum" aria-label="Reel-Album">📼</button>
     <button class="iconbtn" id="openSettings" aria-label="Einstellungen">⚙</button>
   </div>
   <div class="hubmain">
@@ -400,6 +406,17 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <ol class="lb" id="misList"></ol>
     <p class="note">Schaffe die Aufgaben in einer Fahrt. Für jede gibt es Münzen und XP, und danach kommt die nächste.</p>
     <div class="row"><button class="gbtn play mid" id="misPlay">LOS GEHT'S!</button><button class="gbtn blue mid" id="misBack">ZURÜCK</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="album" hidden>
+  <div class="panel">
+    <h2 class="logo" style="font-size:40px">Reel-Album</h2>
+    <p class="tag" id="albCount"></p>
+    <div class="albplay" id="albPlay" hidden><video id="albV" playsinline controls></video></div>
+    <div class="albgrid" id="albGrid"></div>
+    <p class="note">Jedes Reel, das beim Fahren am Himmel lief, kommt hier rein. Fahr weiter, um alle freizuschalten!</p>
+    <div class="row"><button class="gbtn play mid" id="albGo">LOS GEHT'S!</button><button class="gbtn blue mid" id="albBack">ZURÜCK</button></div>
   </div>
 </div>
 
@@ -763,7 +780,7 @@ function clipUnlock(){if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.m
 function headline(){return '+++ EILMELDUNG +++ '+memeWords().join(' ')+' +++ '+memeWords().join(' ')+' +++';}
 function memeStart(){memeCount++;
   const unseen=clipCur&&!((save.surpSeen||{})[clipCur]);
-  if(clipCur&&!clipV.error&&(state.forceClip||unseen||Math.random()<.8)){if(clipV.readyState<1)try{clipV.load();}catch(e){}state.forceClip=false;meme={t:0,clip:true,id:clipCur,words:[],dur:Math.max(6,Math.min(16,(clipV.duration||8)-(clipV.currentTime||0)))};clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{clipV.muted=true;clipV.play().catch(()=>{});});}catch(e){}return;}
+  if(clipCur&&!clipV.error&&(state.forceClip||unseen||Math.random()<.8)){if(clipV.readyState<1)try{clipV.load();}catch(e){}state.forceClip=false;if(unseen){const L=surpList();setTimeout(()=>toast('📼 Neues Reel im Album! ('+(albSeen().length+1)+'/'+L.length+')',2.6),1200);}meme={t:0,clip:true,id:clipCur,words:[],dur:Math.max(6,Math.min(16,(clipV.duration||8)-(clipV.currentTime||0)))};clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{clipV.muted=true;clipV.play().catch(()=>{});});}catch(e){}return;}
   let k;do{k=Math.floor(Math.random()*8);}while(k===memeLast);memeLast=k;
   if(k===5){meme={t:0,kind:5,words:[],dur:3.6,shown:0};return;}
   if(k===6){meme={t:0,kind:6,words:['UPSI'],dur:2.6};$('game').style.transition='transform .35s';$('game').style.transform='rotate(180deg)';blip(900,200,.5,'sawtooth',.06);return;}
@@ -1968,6 +1985,17 @@ async function showBoard(){const di=dailyInfo();$('menu').hidden=true;$('board')
   const y=new Date();y.setDate(y.getDate()-1);const [l,ly]=await Promise.all([loadBoard(di.date),loadBoard(ymd(y))]);
   $('boardList').innerHTML=boardHTML(l,10);$('boardYest').textContent=ly&&ly.length?'Gestern gewann '+ly[0].n+' mit '+ly[0].s+' Punkten.':'';}
 $('openBoard').addEventListener('click',showBoard);
+function albSeen(){const ss=save.surpSeen||{};return surpList().filter(id=>ss[id]>0);}
+let albURL=null;
+function albStop(){const v=$('albV');try{v.pause();}catch(e){}v.removeAttribute('src');try{v.load();}catch(e){}if(albURL){URL.revokeObjectURL(albURL);albURL=null;}$('albPlay').hidden=true;}
+function showAlbum(){albStop();const L=surpList(),ss=save.surpSeen||{},seen=albSeen().length,g=$('albGrid');g.innerHTML='';
+  $('albCount').textContent=L.length?seen+' von '+L.length+' Reels gesammelt':'Noch keine Reels im Spiel. Sobald welche drin sind, tauchen sie beim Fahren am Himmel auf.';
+  L.forEach((id,i)=>{const b=document.createElement('button');const on=ss[id]>0;b.className=on?'on':'off';b.innerHTML=(on?'▶':'🔒')+'<small>#'+(i+1)+'</small>';
+    if(on)b.addEventListener('click',async()=>{try{const blob=await mediaOp('get','it-'+id);if(!blob)return;albStop();albURL=URL.createObjectURL(blob);const v=$('albV');v.src=albURL;v.muted=muted;$('albPlay').hidden=false;v.play().catch(()=>{});}catch(e){}});
+    g.appendChild(b);});}
+$('openAlbum').addEventListener('click',()=>{showAlbum();$('menu').hidden=true;$('album').hidden=false;});
+$('albBack').addEventListener('click',()=>{albStop();$('album').hidden=true;$('menu').hidden=false;showMenuStats();});
+$('albGo').addEventListener('click',()=>{albStop();$('album').hidden=true;playDaily=false;startRun();});
 $('openMis').addEventListener('click',()=>{showMissions();$('menu').hidden=true;$('missions').hidden=false;});
 $('misBack').addEventListener('click',()=>{$('missions').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('misPlay').addEventListener('click',()=>{$('missions').hidden=true;playDaily=false;startRun();});
