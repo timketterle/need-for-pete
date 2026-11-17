@@ -1,0 +1,26 @@
+name: Push-Nachrichten
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency: push-notify
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: .nfp-push
+          key: nfp-push-${{ github.run_id }}
+          restore-keys: nfp-push-
+      - run: pip install -q pywebpush==2.5.0
+      - run: python .github/scripts/notify.py
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .nfp-push
+          key: nfp-push-${{ github.run_id }}

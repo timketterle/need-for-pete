@@ -393,6 +393,11 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <p class="note">So erscheinst du in der Tages-Bestenliste und als Geist bei deinen Freunden.</p>
     </div>
     <div class="card glass">
+      <h3>Push-Nachrichten 🔔</h3>
+      <p class="note" style="margin-top:0" id="pushNote">Dein Handy meldet sich, wenn einer von euch das Daily gespielt hat oder neuer Tages-Erster ist.</p>
+      <div class="row" style="justify-content:flex-start;margin:6px 0 0"><button class="gbtn blue mid" id="pushOn">PUSH AN</button></div>
+    </div>
+    <div class="card glass">
       <h3>Spielstand online ☁️</h3>
       <p class="note" style="margin-top:0">Dein Fortschritt wird nach jeder Fahrt automatisch gesichert. Auf einem anderen Handy oder am PC gibst du einfach deine Nummer ein.</p>
       <p class="note">Dein Konto: <b id="svCode" style="font-size:20px;letter-spacing:1px">…</b> <span id="svState"></span></p>
@@ -2339,6 +2344,24 @@ $('loginGuest').addEventListener('click',()=>{save.acct='guest';save.driver='pet
 $('logout').addEventListener('click',async()=>{if(!confirm('Spieler wechseln? Dein Stand wird vorher online gesichert.'))return;if(acct())await cloudSave(true);localStorage.removeItem('nfp-save');location.reload();});
 if(!save.acct)$('login').hidden=false;
 acctFix();
+/* ---------- Push notifications (sent by a free GitHub Action, see .github/scripts/notify.py) ---------- */
+async function dbPutStr(key,p,val){const meta=await dbGet('/gm/'+key+'/'+p),m=((meta&&meta.m)||0)+1;
+  return dbSend('/','PATCH',{['gd/'+key+'/'+p]:val,['gm/'+key+'/'+p]:{n:pName(),m,v:String(save.veh||'f1').slice(0,12),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});}
+function b64u(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const b=atob(s),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
+async function pushEnable(silent){const note=t=>{if(!silent)$('pushNote').textContent=t;};
+  if(!acct()){note('Push geht nur mit Login (deine Nummer).');return;}
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){note(ios&&!standalone?'iPhone: Öffne das Spiel in Safari, tippe auf Teilen → „Zum Home-Bildschirm“. Starte es dann vom Home-Bildschirm und drück hier nochmal.':'Dieser Browser kann leider keine Push-Nachrichten.');return;}
+  try{const perm=silent?Notification.permission:await Notification.requestPermission();if(perm!=='granted'){note('Du hast Nachrichten nicht erlaubt. Das kannst du in den Handy-Einstellungen ändern.');return;}
+    const k=await dbGet('/gd/push-cfg/k');if(typeof k!=='string'){note('Der Push-Dienst startet gerade. Versuch es in 10 Minuten nochmal.');return;}
+    const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+    if(sub&&save.pushK!==k){try{await sub.unsubscribe();}catch(e){}sub=null;}
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(k)});
+    const ok=await dbPutStr('push-sub-'+save.acct,'s',JSON.stringify({sub:sub.toJSON(),k,key:pKey()}));
+    if(ok){save.pushK=k;save.pushOn=true;persist();note('Push ist an! Du bekommst Bescheid, wenn die anderen das Daily spielen.');$('pushOn').textContent='PUSH IST AN ✓';}else note('Keine Verbindung, versuch es nochmal.');
+  }catch(e){note('Hat nicht geklappt: '+(e&&e.message||e));}}
+$('pushOn').addEventListener('click',()=>pushEnable(false));
+if(save.pushOn){try{$('pushOn').textContent='PUSH IST AN ✓';}catch(e){}setTimeout(()=>pushEnable(true),6000);}
 /* ---------- Cloud savegame (stored in the ghost tables, works with the current database rules) ---------- */
 function svKey(){if(!save.sk||!/^sv-[a-z0-9_-]{1,16}-[0-9]{4}$/.test(save.sk)){save.sk='sv-'+pKey()+'-'+String(1000+Math.floor(Math.random()*9000));persist();}return save.sk;}
 function svCode(){return svKey().slice(3);}
