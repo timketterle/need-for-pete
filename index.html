@@ -39,6 +39,7 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 #right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 #coins{font-size:24px;display:flex;align-items:center;gap:6px}
 .coin-ico{width:18px;height:18px;border-radius:50%;background:var(--yellow);border:3px solid var(--ink);display:inline-block}
+#giveUp{background:#ff5a4e;color:#fff;align-self:flex-end;animation:gpulse .8s infinite alternate}@keyframes gpulse{to{transform:scale(1.08)}}
 #fuelwrap{display:flex;align-items:center;gap:8px;font-size:16px}
 #fuelbar{width:110px;height:14px;border:3px solid var(--ink);border-radius:8px;background:#fff;overflow:hidden}
 #fuel{height:100%;width:100%;background:linear-gradient(90deg,var(--red),var(--yellow) 60%,var(--green))}
@@ -171,6 +172,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
 #over.withclip{padding-left:calc(38vw + 30px)}
 @media (max-aspect-ratio:1/1){#overClip{left:50%;top:12px;transform:translateX(-50%)}#overClip video{max-height:36vh;max-width:90vw}#over.withclip{padding-left:0;padding-top:calc(36vh + 24px)}}
 #again:disabled{opacity:.55;filter:grayscale(.4)}
+#settings .englist{display:flex;flex-direction:column;gap:6px;margin-top:8px}#settings .englist label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:900}#settings .englist select{font:inherit;font-weight:800;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:#1d2650;color:#fff;max-width:58%}
 #settings,#missions,#board,#garage,#duel,#over{align-items:flex-start}#settings>.panel,#missions>.panel,#board>.panel,#garage>.panel,#duel>.panel,#over>.panel{margin-top:auto;margin-bottom:auto}
 #gift{z-index:60;flex-direction:column}#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
 .giftbox{position:relative;text-align:center;max-width:620px;padding:16px}
@@ -305,6 +307,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div class="hudbox" id="coins"><span class="coin-ico"></span><span id="coinN">0</span></div>
     <div class="hudbox" id="fuelwrap">SPRIT <div id="fuelbar"><div id="fuel"></div></div></div>
     <div class="hudbox" id="speed">0 km/h</div>
+    <button class="small" id="giveUp" hidden>AUFGEBEN</button>
   </div>
 </div>
 
@@ -370,6 +373,12 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><label class="gbtn orange mid" style="cursor:pointer">VIDEO/BILD REIN<input type="file" id="chIn" accept="video/*,image/*" multiple hidden></label><button class="gbtn blue mid" id="chShare" hidden>LINK FÜR SEVERIN</button><button class="gbtn play mid" id="chTest" hidden>JETZT TESTEN</button></div>
       <p class="note" id="chInfo"></p>
       <label class="volrow">🔊 Lautstärke Clips <input type="range" id="clipVol" min="0" max="150" step="5" value="100"> <b id="clipVolTxt">100 %</b></label>
+    </div>
+        <div class="card glass">
+      <h3>Motorsound</h3>
+      <label class="volrow">🔊 Lautstärke Motor <input type="range" id="engVol" min="0" max="150" step="5" value="60"> <b id="engVolTxt">60 %</b></label>
+      <div id="engList" class="englist"></div>
+      <p class="note">Wähl für jedes Fahrzeug einen Sound, du hörst ihn dann kurz zur Probe.</p>
     </div>
     <div class="card glass">
       <h3>Tutorial</h3>
@@ -890,7 +899,7 @@ function newRun(){
   if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>lvlCap())save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
-  memeEnd();memeNextAt=60+Math.random()*100;skyPic=null;picNextAt=90+Math.random()*120;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
+  memeEnd();try{$('giveUp').hidden=true;}catch(e){}memeNextAt=60+Math.random()*100;skyPic=null;picNextAt=90+Math.random()*120;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
   car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}setTimeout(loadGhost,0);
@@ -1024,8 +1033,11 @@ function initAudio(){
     if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();
       const g=AC.createGain();g.gain.value=0;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=1100;
       const o1=AC.createOscillator();o1.type='sawtooth';const o2=AC.createOscillator();o2.type='square';
-      const g2=AC.createGain();g2.gain.value=.5;o1.connect(f);o2.connect(g2);g2.connect(f);f.connect(g);g.connect(AC.destination);o1.start();o2.start();
-      eng={g,o1,o2};}
+      const g2=AC.createGain();g2.gain.value=.5;const trem=AC.createGain();trem.gain.value=1;
+      const lfo=AC.createOscillator();lfo.frequency.value=10;const lfoG=AC.createGain();lfoG.gain.value=0;lfo.connect(lfoG);lfoG.connect(trem.gain);
+      const vib=AC.createOscillator();vib.frequency.value=6;const vibG=AC.createGain();vibG.gain.value=0;vib.connect(vibG);vibG.connect(o1.frequency);
+      o1.connect(f);o2.connect(g2);g2.connect(f);f.connect(trem);trem.connect(g);g.connect(AC.destination);o1.start();o2.start();lfo.start();vib.start();
+      eng={g,o1,o2,g2,f,trem,lfo,lfoG,vib,vibG,preset:null};}
     if(AC.state==='suspended')AC.resume();
   }catch(e){AC=null;}
 }
@@ -1090,12 +1102,33 @@ function crashSound(){
   for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);const s=AC.createBufferSource();s.buffer=buf;const g=AC.createGain();g.gain.value=.25;
   s.connect(g);g.connect(AC.destination);s.start(t);}catch(e){}
 }
+const ENG_SND={
+  brumm:{n:'Brumm-Brumm',o1:'triangle',o2:'sine',mix:.6,lp:520,base:40,range:120,r2:.5,trem:[7,26,.55],vib:[0,0],vol:1.3},
+  kazoo:{n:'Kazoo',o1:'sawtooth',o2:'square',mix:.25,lp:2600,base:200,range:480,r2:.5,trem:[0,0,0],vib:[6.5,14],vol:.45},
+  mofa:{n:'Mofa-Knatter',o1:'square',o2:'sawtooth',mix:.4,lp:1500,base:68,range:190,r2:.5,trem:[18,45,.8],vib:[0,0],vol:.55},
+  pfeife:{n:'Flöte',o1:'sine',o2:'triangle',mix:.25,lp:3200,base:300,range:720,r2:2,trem:[0,0,0],vib:[5,24],vol:.9},
+  ente:{n:'Quietsche-Ente',o1:'square',o2:'square',mix:.5,lp:1800,base:420,range:500,r2:1.01,trem:[9,14,.7],vib:[9,30],vol:.35},
+  aus:{n:'Aus',vol:0}};
+const ENG_DEF={f1:'kazoo',truck:'brumm',bohni:'pfeife',buggy:'mofa'};
+function engPreset(){return ENG_SND[((save.engSnd||{})[CAR.id])||ENG_DEF[CAR.id]||'brumm']||ENG_SND.brumm;}
+function engVol(){return (save.engVol==null?60:save.engVol)/100;}
+function engApply(P){if(!eng||!P||P.vol===0||eng.preset===P)return;eng.preset=P;const t=AC.currentTime;
+  eng.o1.type=P.o1;eng.o2.type=P.o2;eng.g2.gain.setValueAtTime(P.mix,t);eng.f.frequency.setValueAtTime(P.lp,t);
+  eng.lfoG.gain.setValueAtTime(P.trem[2]*.5,t);eng.trem.gain.setValueAtTime(1-P.trem[2]*.5,t);eng.vib.frequency.setValueAtTime(P.vib[0]||1,t);eng.vibG.gain.setValueAtTime(P.vib[1],t);}
 function engineUpdate(){
-  if(!eng)return;const rw=car.wheels[0];const rpm=Math.min(1.2,Math.abs(rw.w)*rw.r/CAR.maxSpeed);
-  const f=48+rpm*190+Math.max(0,thrNow)*30, t=AC.currentTime;
-  eng.o1.frequency.setTargetAtTime(f,t,.04);eng.o2.frequency.setTargetAtTime(f*.5,t,.04);
-  eng.g.gain.setTargetAtTime((muted||!running||state.crashed)?0:.035+.03*Math.abs(thrNow),t,.08);
+  if(!eng)return;const P=engPreset();engApply(P);const rw=car.wheels[0];const rpm=Math.min(1.2,Math.abs(rw.w)*rw.r/CAR.maxSpeed);const t=AC.currentTime;
+  if(eng.previewT>t)return;
+  if(P.vol===0){eng.g.gain.setTargetAtTime(0,t,.05);return;}
+  const f=P.base+rpm*P.range+Math.max(0,thrNow)*P.range*.15;
+  eng.o1.frequency.setTargetAtTime(f,t,.04);eng.o2.frequency.setTargetAtTime(f*P.r2,t,.04);
+  if(P.trem[2])eng.lfo.frequency.setTargetAtTime(P.trem[0]+rpm*P.trem[1],t,.05);
+  eng.g.gain.setTargetAtTime((muted||!running||state.crashed)?0:(.02+.02*Math.abs(thrNow))*P.vol*engVol(),t,.08);
 }
+function engPreview(key){initAudio();if(!eng||muted)return;const P=ENG_SND[key];if(!P||P.vol===0)return;eng.preset=null;engApply(P);const t=AC.currentTime;eng.previewT=t+1.6;
+  eng.o1.frequency.setValueAtTime(P.base,t);eng.o1.frequency.linearRampToValueAtTime(P.base+P.range*.9,t+1.2);eng.o2.frequency.setValueAtTime(P.base*P.r2,t);eng.o2.frequency.linearRampToValueAtTime((P.base+P.range*.9)*P.r2,t+1.2);
+  if(P.trem[2]){eng.lfo.frequency.setValueAtTime(P.trem[0],t);eng.lfo.frequency.linearRampToValueAtTime(P.trem[0]+P.trem[1],t+1.2);}
+  const v=.04*P.vol*Math.max(.3,engVol());eng.g.gain.cancelScheduledValues(t);eng.g.gain.setValueAtTime(0,t);eng.g.gain.linearRampToValueAtTime(v,t+.08);eng.g.gain.setValueAtTime(v,t+1.3);eng.g.gain.linearRampToValueAtTime(0,t+1.55);}
+$('giveUp').addEventListener('click',()=>{if(!running||!state||state.crashed)return;state.crashed=true;state.reason='fuel';state.crashT=0;$('giveUp').hidden=true;});
 $('mute').addEventListener('click',()=>{muted=!muted;clipV.muted=muted;$('mute').textContent=muted?'TON AUS':'TON AN';});
 
 /* ---------- Effects ---------- */
@@ -1270,6 +1303,7 @@ function update(dt){
     // fuel
     if(!state.crashed){state.fuel=Math.max(0,state.fuel-dt*(2.6+2.4*Math.max(0,thrNow))*CAR.drain*(curLevel()?curLevel().drain:1));
       const sp=Math.hypot(b.vx,b.vy);
+      if(state.fuel<=0&&!state.crashed){state.emptyT=(state.emptyT||0)+dt;const left=Math.ceil(5-state.emptyT);const gb=$('giveUp');if(gb.hidden)gb.hidden=false;const tx='AUFGEBEN ('+Math.max(0,left)+')';if(gb.textContent!==tx)gb.textContent=tx;if(state.emptyT>=5){state.crashed=true;state.reason='fuel';state.crashT=0;}}else if(state.emptyT){state.emptyT=0;$('giveUp').hidden=true;}
       if(state.fuel<=0&&sp<25){state.stillT+=dt;if(state.stillT>1.4){state.crashed=true;state.reason='fuel';state.crashT=0;}}else state.stillT=0;
       if(state.fuel<=0&&!state.fuelWarned){state.fuelWarned=true;popup('SPRIT LEER!',b.x,b.y-80,'#ff5a4e');}
     }else{state.crashT+=dt;
@@ -2037,6 +2071,12 @@ $('albBack').addEventListener('click',()=>{albStop();$('album').hidden=true;$('m
 $('albGo').addEventListener('click',()=>{albStop();$('album').hidden=true;playDaily=false;startRun();});
 {const v=$('clipVol');const show=()=>{$('clipVolTxt').textContent=v.value+' %';};v.value=save.clipVol==null?100:save.clipVol;show();
   v.addEventListener('input',()=>{save.clipVol=+v.value;show();clipAudio();try{$('albV').volume=Math.min(1,clipVolume());}catch(e){}});v.addEventListener('change',persist);}
+{const v=$('engVol');const show=()=>{$('engVolTxt').textContent=v.value+' %';};v.value=save.engVol==null?60:save.engVol;show();
+  v.addEventListener('input',()=>{save.engVol=+v.value;show();});v.addEventListener('change',()=>{persist();engPreview(engPreset===undefined?'brumm':(((save.engSnd||{})[save.veh])||ENG_DEF[save.veh]||'brumm'));});
+  const L=$('engList');L.innerHTML='';for(const id of VORDER){const lb=document.createElement('label');lb.textContent=VEH[id].name;const sel=document.createElement('select');
+    for(const [k,P] of Object.entries(ENG_SND)){const o=document.createElement('option');o.value=k;o.textContent=P.n;sel.appendChild(o);}
+    sel.value=((save.engSnd||{})[id])||ENG_DEF[id]||'brumm';sel.addEventListener('change',()=>{save.engSnd=save.engSnd||{};save.engSnd[id]=sel.value;persist();engPreview(sel.value);});
+    sel.addEventListener('click',()=>initAudio());lb.appendChild(sel);L.appendChild(lb);}}
 $('openMis').addEventListener('click',()=>{showMissions();$('menu').hidden=true;$('missions').hidden=false;});
 $('misBack').addEventListener('click',()=>{$('missions').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('misPlay').addEventListener('click',()=>{$('missions').hidden=true;playDaily=false;startRun();});
