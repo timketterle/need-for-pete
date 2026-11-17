@@ -2052,7 +2052,10 @@ if(tiltOn)enableTilt();
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 /* ---------- Duel (PeerJS, peer-to-peer) ---------- */
-const PEER_OPTS=(()=>{const q=new URLSearchParams(location.search);return q.get('local')?{host:location.hostname,port:9000,path:'/nfp',secure:false}:{};})();
+const ICE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'},
+  {urls:'turn:eu-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},{urls:'turn:us-0.turn.peerjs.com:3478',username:'peerjs',credential:'peerjsp'},
+  {urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
+const PEER_OPTS=(()=>{const q=new URLSearchParams(location.search);return q.get('local')?{host:location.hostname,port:9000,path:'/nfp',secure:false,config:{iceServers:ICE}}:{config:{iceServers:ICE}};})();
 if(typeof Peer!=='undefined')$('duelBtn').hidden=false;
 function duelSend(m){try{if(duel.conn&&duel.conn.open)duel.conn.send(m);}catch(e){}}
 function duelStatus(t){$('duelStatus').textContent=t;}
@@ -2068,6 +2071,7 @@ function setupConn(c){
 function newPeer(id){
   try{if(duel.peer)duel.peer.destroy();}catch(e){}
   const p=id?new Peer(id,PEER_OPTS):new Peer(PEER_OPTS);duel.peer=p;
+  p.on('disconnected',()=>{setTimeout(()=>{try{if(duel.peer===p&&p.disconnected&&!p.destroyed)p.reconnect();}catch(e){}},800);});
   p.on('error',e=>{const t=e&&e.type;duelStatus(t==='peer-unavailable'?'Diesen Code gibt es nicht. Prüf ihn nochmal.':t==='unavailable-id'?'Code ist besetzt, bitte nochmal erstellen.':t==='network'||t==='server-error'?'Keine Verbindung zum Duell-Server. Prüf dein Internet.':'Fehler: '+t);});
   return p;
 }
@@ -2076,15 +2080,20 @@ $('duelGoal').addEventListener('click',e=>{const b=e.target.closest('button');if
 $('hostBtn').addEventListener('click',()=>{
   const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<4;i++)code+=A[Math.floor(Math.random()*A.length)];
   duel.host=true;const p=newPeer('needforpete-'+code);
-  p.on('open',()=>{$('codeOut').hidden=false;$('codeOut').textContent=code;duelStatus('Schick deinem Kollegen den Code '+code+' und wartet kurz.');});
+  p.on('open',()=>{$('codeOut').hidden=false;$('codeOut').textContent=code;duelStatus('Schick deinem Kollegen den Code '+code+' und komm danach gleich wieder ins Spiel zurück. Das Spiel muss offen bleiben.');});
   p.on('connection',c=>{if(duel.conn&&duel.conn.open){c.close();return;}setupConn(c);});
   duelStatus('Erstelle Code...');
 });
 $('joinBtn').addEventListener('click',()=>{
   const code=$('codeIn').value.trim().toUpperCase();if(code.length!==4){duelStatus('Der Code hat 4 Zeichen.');return;}
-  duel.host=false;const p=newPeer();duelStatus('Verbinde...');
-  p.on('open',()=>setupConn(p.connect('needforpete-'+code,{reliable:true})));
+  duel.host=false;joinTry(code,1);
 });
+let joinT=null;
+function joinTry(code,n){if(joinT)clearTimeout(joinT);const p=newPeer();duelStatus(n>1?'Zweiter Versuch, verbinde...':'Verbinde mit dem Duell-Server...');
+  p.on('open',()=>{duelStatus('Suche deinen Kollegen ('+code+')...');setupConn(p.connect('needforpete-'+code,{reliable:true}));});
+  joinT=setTimeout(()=>{if(duel.conn&&duel.conn.open)return;if(n<2){joinTry(code,n+1);return;}
+    duelStatus('Klappt gerade nicht. Wichtig: Wer den Code erstellt hat, muss das Spiel offen haben (nicht in WhatsApp bleiben). Sonst: beide neu laden und einen neuen Code erstellen.');},14000);}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;const p=duel.peer;try{if(p&&p.disconnected&&!p.destroyed)p.reconnect();}catch(e){}});
 $('duelBtn').addEventListener('click',()=>{initAudio();$('menu').hidden=true;$('duel').hidden=false;$('codeOut').hidden=true;duelStatus('');});
 $('duelBack').addEventListener('click',()=>{leaveDuel();$('duel').hidden=true;$('menu').hidden=false;showMenuStats();});
 function leaveDuel(){duel.active=false;duel.opp=null;duel.result=null;try{if(duel.conn)duel.conn.close();}catch(e){}try{if(duel.peer)duel.peer.destroy();}catch(e){}duel.conn=null;duel.peer=null;}
