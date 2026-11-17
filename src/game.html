@@ -290,7 +290,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
 <div id="hud" hidden>
   <div class="hudbox"><div id="dist">0 m</div><div id="best">Rekord 0 m</div><div id="goal" hidden></div><div id="score">0 PUNKTE</div></div>
   <div id="right">
-    <div id="topbtns"><button class="small" id="mute" aria-label="Ton an oder aus">TON AN</button><button class="small" id="pause" aria-label="Zum Menü">MENÜ</button></div>
+    <div id="topbtns"><button class="small" id="ghostTog" aria-label="Geister der anderen zeigen">👻 GEISTER AN</button><button class="small" id="mute" aria-label="Ton an oder aus">TON AN</button><button class="small" id="pause" aria-label="Zum Menü">MENÜ</button></div>
     <div class="hudbox" id="coins"><span class="coin-ico"></span><span id="coinN">0</span></div>
     <div class="hudbox" id="fuelwrap">SPRIT <div id="fuelbar"><div id="fuel"></div></div></div>
     <div class="hudbox" id="speed">0 km/h</div>
@@ -672,18 +672,20 @@ async function submitDaily(date,m,pts){return dbSend('/daily/'+date+'/'+pKey(),'
 async function uploadGhost(key,m,rec){const d=JSON.stringify(rec);if(d.length>390000)return false;const p=pKey();
   return dbSend('/','PATCH',{['gd/'+key+'/'+p]:d,['gm/'+key+'/'+p]:{n:pName(),m,v:save.veh,dr:save.driver||'pete',t:{'.sv':'timestamp'}}});}
 let rival=null,ghostTok=0;
-async function loadRival(key,tok){const gm=await dbGet('/gm/'+key);if(tok!==ghostTok||!gm||typeof gm!=='object')return;const me=pKey();
-  const best=Object.entries(gm).filter(([k,v])=>k!==me&&v&&VEH[v.v]).sort((a,b)=>b[1].m-a[1].m)[0];if(!best)return;
-  const d=await dbGet('/gd/'+key+'/'+best[0]);if(tok!==ghostTok||typeof d!=='string')return;
-  try{const f=JSON.parse(d);if(Array.isArray(f)&&f.length)rival={m:best[1].m,veh:best[1].v,driver:best[1].dr,name:String(best[1].n).toUpperCase()+' · '+best[1].m+' M',f,rival:true};}catch(e){}}
-function loadGhost(){ghost=null;rival=null;const tok=++ghostTok;if(curLevel()||duel.active)return;try{const g=JSON.parse(localStorage.getItem('nfp-ghost-'+ghostKey())||'null');if(g&&g.f&&g.f.length)ghost=g;}catch(e){}
+let rivals=[];const ghostsOn=()=>save.ghostsAll!==false;
+async function loadRival(key,tok){rivals=[];if(!ghostsOn())return;const gm=await dbGet('/gm/'+key);if(tok!==ghostTok||!gm||typeof gm!=='object')return;const me=pKey();
+  const list=Object.entries(gm).filter(([k,v])=>k!==me&&v&&VEH[v.v]).sort((a,b)=>b[1].m-a[1].m).slice(0,5);
+  await Promise.all(list.map(async best=>{const d=await dbGet('/gd/'+key+'/'+best[0]);if(tok!==ghostTok||typeof d!=='string')return;
+    try{const f=JSON.parse(d);if(Array.isArray(f)&&f.length){const g={m:best[1].m,veh:best[1].v,driver:best[1].dr,name:String(best[1].n).toUpperCase()+' · '+best[1].m+' M',f,rival:true};rivals.push(g);if(!rival||g.m>rival.m)rival=g;}}catch(e){}}));}
+function loadGhost(){ghost=null;rival=null;rivals=[];ghostBtn();const tok=++ghostTok;if(curLevel()||duel.active)return;try{const g=JSON.parse(localStorage.getItem('nfp-ghost-'+ghostKey())||'null');if(g&&g.f&&g.f.length)ghost=g;}catch(e){}
   loadRival(ghostKey(),tok);}
 function saveGhost(m){if(curLevel()||!state.rec||state.rec.length<20)return;try{const k='nfp-ghost-'+ghostKey(),old=JSON.parse(localStorage.getItem(k)||'null');
   if(!old||m>old.m){if(playDaily)for(const kk of Object.keys(localStorage))if(kk.startsWith('nfp-ghost-daily-')&&kk!==k)localStorage.removeItem(kk);
     localStorage.setItem(k,JSON.stringify({m,veh:save.veh,driver:save.driver||'pete',name:'DEIN REKORD',f:state.rec}));uploadGhost(ghostKey(),m,state.rec);}}catch(e){}}
 function recGhost(dt){state.rt+=dt;state.recT=(state.recT||0)+dt;if(state.recT<.05)return;state.recT=0;const b=car.body,w=car.wheels,r=v=>Math.round(v*10)/10;
   state.rec.push([r(b.x),r(b.y),Math.round(b.a*100)/100,...w.flatMap(q=>[r(q.x),r(q.y),Math.round(q.a*10)/10])]);}
-function drawGhost(){if(!state||duel.active)return;if(rival)drawOneGhost(rival);if(ghost)drawOneGhost(ghost);}
+function drawGhost(){if(!state||duel.active)return;if(ghostsOn())for(const r of rivals)drawOneGhost(r);if(ghost)drawOneGhost(ghost);}
+function ghostBtn(){try{const b=$('ghostTog');b.hidden=!!(duel.active||curLevel());b.textContent=ghostsOn()?'👻 GEISTER AN':'👻 GEISTER AUS';}catch(e){}}
 function drawOneGhost(ghost){
   const i=Math.min(ghost.f.length-1,Math.floor(state.rt/.05)),f=ghost.f[i];if(!f||!VEH[ghost.veh])return;
   const sC=CAR,sc=car,sd=save.driver;CAR=buildCar(ghost.veh);
@@ -2227,6 +2229,7 @@ $('svNow').addEventListener('click',async()=>{$('svState').textContent='· siche
 document.addEventListener('visibilitychange',()=>{if(document.hidden)cloudSave(false);});
 setTimeout(()=>cloudSave(true),4000);
 $('again').addEventListener('click',startRun);
+$('ghostTog').addEventListener('click',e=>{save.ghostsAll=!ghostsOn();persist();ghostBtn();if(ghostsOn()&&state){const tok=++ghostTok;loadRival(ghostKey(),tok);}e.currentTarget.blur();});
 $('toMenu').addEventListener('click',()=>{$('over').hidden=true;newRun();showMenuStats();$('menu').hidden=false;});
 $('pause').addEventListener('click',()=>{running=false;setPlayUI(false);newRun();showMenuStats();$('menu').hidden=false;});
 $('ctlBtn').addEventListener('click',()=>{tiltOn=false;save.ctl='buttons';persist();showMenuStats();});
