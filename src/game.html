@@ -342,7 +342,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div class="card glass">
       <h3>Überraschungskanal 🤫</h3>
       <p class="note" style="margin-top:0">Schieb Videos rein, z. B. eure Lieblings-Reels. Sie tauchen bei allen, die deinen Link geöffnet haben, irgendwann zufällig während der Fahrt am Himmel auf, mit Ton. Sie liegen nur in eurer eigenen Datenbank, nicht im Spiel.</p>
-      <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><label class="gbtn orange mid" style="cursor:pointer">VIDEO REIN<input type="file" id="chIn" accept="video/*" multiple hidden></label><button class="gbtn blue mid" id="chShare" hidden>LINK FÜR SEVERIN</button></div>
+      <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><label class="gbtn orange mid" style="cursor:pointer">VIDEO REIN<input type="file" id="chIn" accept="video/*" multiple hidden></label><button class="gbtn blue mid" id="chShare" hidden>LINK FÜR SEVERIN</button><button class="gbtn play mid" id="chTest" hidden>JETZT TESTEN</button></div>
       <p class="note" id="chInfo"></p>
     </div>
     <div class="card glass">
@@ -708,9 +708,9 @@ const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttr
 let clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
 function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.');
-  const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;}
-async function clipPrepare(){const L=surpList();if(!L.length){clipCur=null;return;}const seen=save.surpSeen||(save.surpSeen={});
-  const pick=L.slice().sort((a,b)=>(seen[a]||0)-(seen[b]||0)||Math.random()-.5)[0];if(pick===clipCur&&clipV.src)return;
+  const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;const te=document.getElementById('chTest');if(te)te.hidden=!surpList().length;}
+async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;return;}const seen=save.surpSeen||(save.surpSeen={});
+  const pick=want&&L.includes(want)?want:L.slice().sort((a,b)=>(seen[a]||0)-(seen[b]||0)||Math.random()-.5)[0];if(pick===clipCur&&clipV.src)return;
   try{const b=await mediaOp('get','it-'+pick);if(!b){save.surp=L.filter(x=>x!==pick);persist();return clipPrepare();}
     if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(b);clipCur=pick;clipV.src=clipURL;clipV.load();
     clipV.addEventListener('loadedmetadata',()=>{const pos=(save.surpPos||{})[pick]||0;if(pos<clipV.duration-1)clipV.currentTime=pos;},{once:true});}catch(e){}}
@@ -720,13 +720,17 @@ async function chSync(){if(chBusy)return;chBusy=true;try{const ids=[...new Set([
       for(let i=0;i<meta.n;i++){const c=await dbGet('/cd/'+it+'/'+i);if(typeof c!=='string'){ok=false;break;}parts.push(b64ToBytes(c));}
       if(!ok)continue;await mediaOp('put','it-'+it,new Blob(parts,{type:meta.type||'video/mp4'}));surpList().push(it);persist();}}
   }catch(e){}chBusy=false;chInfo();if(!clipCur)clipPrepare();}
-async function chUpload(file){if(file.size>95*1048576){chInfo('Das Video ist zu groß (max. 95 MB). Kürz es etwas.');return;}chInfo('Lese Video …');
+function blobB64(b){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(',')[1]||'');fr.onerror=()=>rej(fr.error);fr.readAsDataURL(b);});}
+async function chUpload(file){if(file.size>95*1048576){chInfo('Das Video ist zu groß (max. 95 MB). Kürz es etwas.');return;}chInfo('Speichere Video …');
   if(!save.chOwn){save.chOwn=rid(10);persist();}const it=rid(10);
-  const data=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(',')[1]||'');fr.onerror=()=>rej(fr.error);fr.readAsDataURL(file);});
-  const CH=1000000,n=Math.ceil(data.length/CH);
-  for(let i=0;i<n;i++){chInfo('Lade hoch … '+Math.round(i/n*100)+' %');if(!await dbSend('/cd/'+it+'/'+i,'PUT',data.slice(i*CH,(i+1)*CH))){chInfo('Hochladen ging schief. Bitte nochmal versuchen.');return;}}
-  if(!await dbSend('/ch/'+save.chOwn+'/'+it,'PUT',{type:file.type||'video/mp4',size:file.size,n,t:{'.sv':'timestamp'}})){chInfo('Hochladen ging schief. Bitte nochmal versuchen.');return;}
-  await mediaOp('put','it-'+it,file);surpList().push(it);persist();chInfo('Drin! Jetzt den Link an Severin schicken, falls noch nicht passiert.');clipPrepare();}
+  try{await mediaOp('put','it-'+it,file);}catch(e){chInfo('Konnte das Video auf diesem Handy nicht speichern ('+(e&&e.message||'Fehler')+').');return;}
+  surpList().push(it);persist();clipCur=null;await clipPrepare(it);
+  const CH=750000,n=Math.max(1,Math.ceil(file.size/CH));
+  for(let i=0;i<n;i++){chInfo('Gespeichert ✔ Lädt jetzt für deine Freunde hoch … '+Math.round(i/n*100)+' %');let ok=false;
+    for(let tr=0;tr<3&&!ok;tr++){try{ok=await dbSend('/cd/'+it+'/'+i,'PUT',await blobB64(file.slice(i*CH,(i+1)*CH)));}catch(e){ok=false;}}
+    if(!ok){chInfo('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief (Internet?). Einfach nochmal reinlegen.');return;}}
+  if(!await dbSend('/ch/'+save.chOwn+'/'+it,'PUT',{type:file.type||'video/mp4',size:file.size,n,t:{'.sv':'timestamp'}})){chInfo('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief. Einfach nochmal reinlegen.');return;}
+  chInfo('Fertig ✔ Video ist auf deinem Handy und online. Tipp auf JETZT TESTEN oder schick den Link an Severin.');}
 const GIFT_TXT='Erinnerst du dich an unser Spiel aus dem Seminarkurs 2017? Hier ist die Fortsetzung. Mit dir, mir, den Bohnis und viel zu vielen Explosionen. Viel Spaß! – Tim';
 function showGift(){const g=$('gift');g.hidden=false;$('menu').hidden=true;
   try{$('gTim').src=POSES.tim.src.grin;$('gSev').src=POSES.sev.src.wink||POSES.sev.src.grin;}catch(e){}
@@ -740,11 +744,11 @@ function chLink(){return location.origin+location.pathname+'?ch='+save.chOwn;}
 {const q=new URLSearchParams(location.search).get('ch');if(q&&/^[a-z0-9]{10}$/.test(q)){save.chSub=save.chSub||[];if(!save.chSub.includes(q)&&q!==save.chOwn){save.chSub.push(q);}persist();
   try{history.replaceState(null,'',location.pathname);}catch(e){}}}
 setTimeout(()=>{chInfo();clipPrepare().then(chSync);},400);
-function clipUnlock(){if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.muted=true;const p=clipV.play();if(p&&p.then)p.then(()=>{clipV.pause();clipV.muted=muted;}).catch(()=>{clipUnlocked=false;});}
+function clipUnlock(){if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.muted=muted;try{const p=clipV.play();clipV.pause();if(p&&p.catch)p.catch(()=>{clipUnlocked=false;});}catch(e){clipUnlocked=false;}}
 function headline(){return '+++ EILMELDUNG +++ '+memeWords().join(' ')+' +++ '+memeWords().join(' ')+' +++';}
 function memeStart(){memeCount++;
   const unseen=clipCur&&!((save.surpSeen||{})[clipCur]);
-  if(clipCur&&clipV.readyState>=2&&Math.random()<(unseen?.85:.4)){meme={t:0,clip:true,id:clipCur,words:[],dur:8};clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{});}catch(e){}return;}
+  if(clipCur&&clipV.readyState>=1&&(state.forceClip||Math.random()<(unseen?.85:.4))){state.forceClip=false;meme={t:0,clip:true,id:clipCur,words:[],dur:Math.max(6,Math.min(16,(clipV.duration||8)-(clipV.currentTime||0)))};clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{clipV.muted=true;clipV.play().catch(()=>{});});}catch(e){}return;}
   let k;do{k=Math.floor(Math.random()*8);}while(k===memeLast);memeLast=k;
   if(k===5){meme={t:0,kind:5,words:[],dur:3.6,shown:0};return;}
   if(k===6){meme={t:0,kind:6,words:['UPSI'],dur:2.6};$('game').style.transition='transform .35s';$('game').style.transform='rotate(180deg)';blip(900,200,.5,'sawtooth',.06);return;}
@@ -780,6 +784,8 @@ function drawMemeBG(){if(!meme)return;const t=meme.t,d=meme.dur,io=Math.min(1,t/
       ctx.save();ctx.beginPath();ctx.roundRect(x,y,vw,vh,rr);ctx.clip();ctx.drawImage(clipV,x,y,vw,vh);ctx.restore();
       ctx.lineWidth=Math.max(4,vh*.022);ctx.strokeStyle='#fff';ctx.beginPath();ctx.roundRect(x,y,vw,vh,rr);ctx.stroke();ctx.lineWidth=2.5;ctx.strokeStyle=INK;ctx.stroke();
       drawBohni(x-vh*.02,y+vh*.95,vh*.22,time,{rot:-.2});drawBohni(x+vw+vh*.02,y+vh*.95,vh*.22,time+2,{rot:.2,tuba:true});}
+    else{const vh=H*.4*e,vw=vh*.6,x=W*.66-vw/2,y=H*.08;ctx.globalAlpha=Math.max(0,e);ctx.fillStyle='#111';ctx.beginPath();ctx.roundRect(x,y,vw,vh,10);ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#fff';ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font=Math.round(vh*.09)+'px Bangers, Impact, sans-serif';ctx.textAlign='center';ctx.fillText('📺 LÄDT …',x+vw/2,y+vh/2);}
     ctx.restore();return;}
   if(meme.kind===0){const s=H*.62,x=W*.66,y=H*.98-s*.42*e;drawBohni(x,y,s,time,{rot:Math.sin(time*2)*.08});}
   else if(meme.kind===1){const s=H*.13,y=H*.5;for(let i=0;i<7;i++){const x=W*1.1-(t*W*.22)+i*s*.9,bob=Math.abs(Math.sin(time*7+i))*s*.12;ctx.globalAlpha=Math.max(0,e);drawBohni(x,y-bob,s,time+i,{tuba:i%2===0,c1:i===3?'#ffe9a8':undefined});}}
@@ -813,7 +819,7 @@ function newRun(){
   if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>save.level)save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
-  memeEnd();memeNextAt=90+Math.random()*160;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
+  memeEnd();memeNextAt=60+Math.random()*100;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
   car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}setTimeout(loadGhost,0);
@@ -1843,6 +1849,7 @@ $('misBack').addEventListener('click',()=>{$('missions').hidden=true;$('menu').h
 $('misPlay').addEventListener('click',()=>{$('missions').hidden=true;playDaily=false;startRun();});
 $('boardBack').addEventListener('click',()=>{$('board').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('boardPlay').addEventListener('click',()=>{$('board').hidden=true;playDaily=true;startRun();});
+$('chTest').addEventListener('click',()=>{const L=surpList();if(!L.length)return;$('settings').hidden=true;playDaily=false;startRun();state.forceClip=true;memeNextAt=25;toast('Fahr los: bei 25 m kommt dein Video am Himmel.',3);});
 $('chIn').addEventListener('change',async e=>{const fs=[...(e.target.files||[])];e.target.value='';for(const f of fs){try{await chUpload(f);}catch(err){chInfo('Ging nicht: '+err.message);}}});
 $('giftGo').addEventListener('click',()=>{initAudio();save.giftSeen=true;persist();$('gift').hidden=true;$('menu').hidden=false;showMenuStats();if(!save.tutDone)setTimeout(()=>tutShow('A'),400);[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>blip(f,f,.16,'square',.06),i*90));});
 $('chShare').addEventListener('click',async()=>{const url=chLink();try{if(navigator.share){await navigator.share({title:'Need For Pete',text:'Fahr mal hier 😂',url});return;}}catch(e){}
