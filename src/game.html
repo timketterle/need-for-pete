@@ -348,7 +348,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div class="card glass">
       <h3>Überraschungskanal 🤫</h3>
       <p class="note" style="margin-top:0">Schieb Videos rein, z. B. eure Lieblings-Reels. Sie tauchen bei allen, die deinen Link geöffnet haben, irgendwann zufällig während der Fahrt am Himmel auf, mit Ton. Sie liegen nur in eurer eigenen Datenbank, nicht im Spiel.</p>
-      <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><label class="gbtn orange mid" style="cursor:pointer">VIDEO REIN<input type="file" id="chIn" accept="video/*" multiple hidden></label><button class="gbtn blue mid" id="chShare" hidden>LINK FÜR SEVERIN</button><button class="gbtn play mid" id="chTest" hidden>JETZT TESTEN</button></div>
+      <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><label class="gbtn orange mid" style="cursor:pointer">VIDEO/BILD REIN<input type="file" id="chIn" accept="video/*,image/*" multiple hidden></label><button class="gbtn blue mid" id="chShare" hidden>LINK FÜR SEVERIN</button><button class="gbtn play mid" id="chTest" hidden>JETZT TESTEN</button></div>
       <p class="note" id="chInfo"></p>
     </div>
     <div class="card glass">
@@ -724,8 +724,9 @@ function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=
 const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;
 let clipLast=null,clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
 const CH_POOL='nfpgemein1';/* shared pool: every device loads it, every upload goes there */
+function picList(){return save.pics||(save.pics=[]);}
 function surpList(){return save.surp||(save.surp=[]);}
-function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.');
+function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.')+(picList().length?' '+picList().length+' Bild'+(picList().length>1?'er':'')+' für den Himmel.':'');
   const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;const te=document.getElementById('chTest');if(te)te.hidden=!surpList().length;}
 async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;return;}const seen=save.surpSeen||(save.surpSeen={});
   let pick=want&&L.includes(want)?want:null;if(!pick){const C=L.length>1?L.filter(x=>x!==clipLast):L;let tot=0;const w=C.map(x=>{const v=1/(1+(seen[x]||0));tot+=v;return v;});let r=Math.random()*tot;pick=C[C.length-1];for(let i=0;i<C.length;i++){r-=w[i];if(r<=0){pick=C[i];break;}}}
@@ -735,20 +736,23 @@ async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;r
     clipV.addEventListener('loadedmetadata',()=>{const pos=(save.surpPos||{})[pick]||0;if(pos<clipV.duration-1)clipV.currentTime=pos;},{once:true});}catch(e){}}
 async function chSync(){if(chBusy)return;chBusy=true;try{const ids=[...new Set([CH_POOL,save.chOwn,...(save.chSub||[])].filter(x=>x&&/^[a-z0-9]{10}$/.test(x)))];
   for(const id of ids){const list=await dbGet('/ch/'+id);if(!list||typeof list!=='object')continue;
-    for(const [it,meta] of Object.entries(list)){if(surpList().includes(it)||!meta||!meta.n)continue;const parts=[];let ok=true;
+    for(const [it,meta] of Object.entries(list)){if(surpList().includes(it)||picList().includes(it)||!meta||!meta.n)continue;const isPic=/^image\//.test(meta.type||'');const parts=[];let ok=true;
       for(let i=0;i<meta.n;i++){const c=await dbGet('/cd/'+it+'/'+i);if(typeof c!=='string'){ok=false;break;}parts.push(b64ToBytes(c));}
-      if(!ok)continue;await mediaOp('put','it-'+it,new Blob(parts,{type:meta.type||'video/mp4'}));surpList().push(it);persist();chInfo();if(!clipCur)clipPrepare();}}
+      if(!ok)continue;await mediaOp('put','it-'+it,new Blob(parts,{type:meta.type||'video/mp4'}));if(isPic){picList().push(it);persist();chInfo();continue;}surpList().push(it);persist();chInfo();if(!clipCur)clipPrepare();}}
   }catch(e){}chBusy=false;chInfo();if(!clipCur)clipPrepare();}
 function blobB64(b){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(',')[1]||'');fr.onerror=()=>rej(fr.error);fr.readAsDataURL(b);});}
-async function chUpload(file,k,N){const say=(t)=>chInfo(N>1?'Video '+k+' von '+N+': '+t:t);if(file.size>95*1048576){say('Das Video ist zu groß (max. 95 MB). Kürz es etwas.');return;}say('Speichere Video …');
+async function picShrink(file){const url=URL.createObjectURL(file);try{const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
+  const sc=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.85));}finally{URL.revokeObjectURL(url);}}
+async function chUpload(file,k,N){const isPic=/^image\//.test(file.type||'');if(isPic){try{file=await picShrink(file);}catch(e){chInfo('Das Bild konnte nicht gelesen werden.');return;}}const say=(t)=>chInfo(N>1?'Video '+k+' von '+N+': '+t:t);if(file.size>95*1048576){say('Das Video ist zu groß (max. 95 MB). Kürz es etwas.');return;}say('Speichere Video …');
   if(!save.chOwn){save.chOwn=rid(10);persist();}const it=rid(10);
   try{await mediaOp('put','it-'+it,file);}catch(e){say('Konnte das Video auf diesem Handy nicht speichern ('+(e&&e.message||'Fehler')+').');return;}
-  surpList().push(it);persist();clipCur=null;await clipPrepare(it);
+  if(isPic)picList().push(it);else{surpList().push(it);}persist();if(!isPic){clipCur=null;await clipPrepare(it);}
   const CH=750000,n=Math.max(1,Math.ceil(file.size/CH));
   for(let i=0;i<n;i++){say('Gespeichert ✔ Lädt jetzt für deine Freunde hoch … '+Math.round(i/n*100)+' %');let ok=false;
     for(let tr=0;tr<3&&!ok;tr++){try{ok=await dbSend('/cd/'+it+'/'+i,'PUT',await blobB64(file.slice(i*CH,(i+1)*CH)));}catch(e){ok=false;}}
     if(!ok){say('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief (Internet?). Einfach nochmal reinlegen.');return;}}
-  if(!await dbSend('/ch/'+CH_POOL+'/'+it,'PUT',{type:file.type||'video/mp4',size:file.size,n,t:{'.sv':'timestamp'}})){say('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief. Einfach nochmal reinlegen.');return;}
+  if(!await dbSend('/ch/'+CH_POOL+'/'+it,'PUT',{type:file.type||(isPic?'image/jpeg':'video/mp4'),size:file.size,n,t:{'.sv':'timestamp'}})){say('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief. Einfach nochmal reinlegen.');return;}
   say('Fertig ✔ Video ist auf deinem Handy und online. Tipp auf JETZT TESTEN oder schick den Link an Severin.');}
 const GIFT_TXT='Erinnerst du dich an unser Spiel aus dem Seminarkurs 2017? Hier ist die Fortsetzung. Mit dir, mir, den Bohnis und viel zu vielen Explosionen. Viel Spaß! – Tim';
 function showGift(){const g=$('gift');g.hidden=false;$('menu').hidden=true;
@@ -778,6 +782,25 @@ function memeStart(){memeCount++;
 function memeEnd(){if(!meme)return;if(meme.clip){clipV.pause();const sp=save.surpPos||(save.surpPos={}),ss=save.surpSeen||(save.surpSeen={});
     sp[meme.id]=clipV.currentTime>=clipV.duration-1.5?0:clipV.currentTime;ss[meme.id]=(ss[meme.id]||0)+1;clipLast=meme.id;persist();setTimeout(clipPrepare,50);}
   if(meme.kind===6){$('game').style.transform='';}meme=null;}
+let skyPic=null,picNextAt=200,picLast=null;const picImg={};
+function picLoad(id){if(picImg[id])return picImg[id];const o={ok:false};picImg[id]=o;mediaOp('get','it-'+id).then(b=>{if(!b)return;const i=new Image();i.onload=()=>{o.img=i;o.ok=true;};i.src=URL.createObjectURL(b);}).catch(()=>{});return o;}
+const PIC_PAR=.35;
+function picTick(){if(duel.active||!state||state.crashed)return;let inTut=false;try{inTut=!!(tut&&tut.run);}catch(e){}if(inTut)return;const L=picList();if(!L.length)return;
+  const z=cam.z,m=Math.max(0,(car.body.x-START_X)/PX_PER_M);
+  if(skyPic){const sx=W*.36+(skyPic.x-cam.x)*z*PIC_PAR;if(sx<-W*.5)skyPic=null;}
+  if(!skyPic&&m>=picNextAt){if(meme&&meme.clip){picNextAt=m+40;return;}picNextAt=m+260+Math.random()*340;
+    const C=L.length>1?L.filter(x=>x!==picLast):L,id=C[Math.floor(Math.random()*C.length)];picLast=id;
+    skyPic={id,x:cam.x+(W*.64+W*.3)/(z*PIC_PAR),rot:(Math.random()-.5)*.12,o:picLoad(id)};}}
+function drawSkyPic(){if(!skyPic||!skyPic.o.ok)return;const im=skyPic.o.img,z=cam.z;
+  const h=Math.min(H*.46,320),w=h*im.width/im.height,sx=W*.36+(skyPic.x-cam.x)*z*PIC_PAR,sy=H*.07+h/2+Math.sin(time*1.3)*4;
+  if(sx<-w||sx>W+w)return;
+  ctx.save();ctx.translate(sx,sy);ctx.rotate(skyPic.rot+Math.sin(time*.9)*.015);
+  ctx.strokeStyle='rgba(40,30,20,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-w*.3,-h/2-8);ctx.lineTo(-w*.18,-h/2-H);ctx.moveTo(w*.3,-h/2-8);ctx.lineTo(w*.18,-h/2-H);ctx.stroke();
+  ctx.fillStyle='rgba(0,0,0,.28)';ctx.fillRect(-w/2-8+6,-h/2-8+8,w+16,h+16);
+  ctx.fillStyle='#fffdf6';ctx.fillRect(-w/2-8,-h/2-8,w+16,h+16);
+  ctx.drawImage(im,-w/2,-h/2,w,h);
+  ctx.fillStyle='#ff5a5a';ctx.strokeStyle=INK;ctx.lineWidth=2;for(const px of [-w*.3,w*.3]){ctx.beginPath();ctx.arc(px,-h/2-4,6,0,7);ctx.fill();ctx.stroke();}
+  ctx.restore();}
 function memeTick(dt){if(duel.active||!state||(tut&&tut.run))return;if(meme){meme.t+=dt;if(meme.kind===5){const n=Math.min(9,Math.floor(meme.t*3.2)+1);if(n>meme.shown){meme.shown=n;blip(300,300,.12,'square',.07);}}if(meme.t>meme.dur)memeEnd();return;}
   const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(m>=memeNextAt){memeNextAt=m+140+Math.random()*260;if(!state.crashed)memeStart();}}
 function drawBohni(x,y,s,ph,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(ph*1.3)*.12+(o.rot||0));
@@ -839,7 +862,7 @@ function newRun(){
   if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>save.level)save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
-  memeEnd();memeNextAt=60+Math.random()*100;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
+  memeEnd();memeNextAt=60+Math.random()*100;skyPic=null;picNextAt=90+Math.random()*120;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
   car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}setTimeout(loadGhost,0);
@@ -1190,7 +1213,7 @@ function update(dt){
     acc+=dt;let n=0;while(acc>=DT&&n<40){step(DT);acc-=DT;n++;}
     if(!state.crashed)recGhost(dt);
     if(tut&&tut.run)tutTick(dt);
-    memeTick(dt);
+    memeTick(dt);picTick();
     state.misT+=dt;if(state.misT>.25){state.misT=0;if(!state.crashed)misCheck();}
     const b=car.body;
     for(const h of hazards){if(h.hit&&!h.popped){h.popped=true;popup('RUMMS!',h.x,groundY(h.x)-50,'#ffcf1f');boom(h.x,groundY(h.x)-10,.7);cam.shake=8;blip(140,60,.2,'sawtooth',.08);}}
@@ -1259,7 +1282,7 @@ const INK='#151515';
 function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(BIOMES[TRK.id])drawBG();else{drawSky();drawMountains();drawClouds();}
-  drawMemeBG();
+  drawMemeBG();drawSkyPic();
   const z=cam.z, sx=(Math.random()-.5)*cam.shake, sy=(Math.random()-.5)*cam.shake;
   const ox=W*.36-cam.x*z+sx, oy=H*.6-cam.y*z+sy;
   ctx.setTransform(DPR*z,0,0,DPR*z,DPR*ox,DPR*oy);
@@ -2172,6 +2195,6 @@ $('tutAgain').addEventListener('click',()=>{$('settings').hidden=true;tut=null;t
 $('pause').addEventListener('click',()=>{if(tut&&tut.run){tut.run=false;$('coach').hidden=true;setTimeout(()=>{if(tut)tutShow('B');},150);}});
 {const sp1=new URLSearchParams(location.search);if(!save.tutDone&&!((sp1.get('ch')||sp1.get('fuer'))&&!save.giftSeen))setTimeout(()=>{if($('tut').hidden&&!running)tutShow('A');},500);}
 // test hook
-window.__nfp={get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;},get wx(){return wx;}};
+window.__nfp={get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;},get wx(){return wx;},get skyPic(){return skyPic;}};
 })();
 </script>
