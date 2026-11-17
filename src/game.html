@@ -339,7 +339,6 @@ input#codeIn{background:rgba(255,255,255,.9)}
         <button class="gbtn orange" id="dailyBtn"><span>DAILY</span><small id="dailySub"></small></button>
         <button class="gbtn purple" id="duelBtn" hidden>LIVE-RENNEN</button>
       </div>
-      <button class="dbuy" id="dBuy" hidden></button>
       <button class="gbtn play" id="start">LOS GEHT'S!</button>
     </section>
   </div>
@@ -378,7 +377,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <details><summary>Ziel der Fahrt</summary><p>Fahr so weit wie möglich. Vorbei ist es, wenn dein Fahrer auf dem Kopf landet oder rausfliegt oder wenn der Sprit leer ist. Ohne Sprit hast du noch 5 Sekunden zum Ausrollen, oder du drückst AUFGEBEN. Unterwegs sammelst du Münzen und Sprit-Kanister. Saltos, Wheelies und Combos bringen Punkte.</p></details>
       <details><summary>Items</summary><p>Aus den <b>?-Kisten</b> kommen Items: <b>Turbo</b> (schneller), <b>Schild</b> (rettet dich einmal vor einem Crash), <b>Magnet</b> (zieht Münzen an), <b>Sprit</b> (voller Tank). Im Live-Rennen gibt es zusätzlich Fallen für die anderen: <b>Öl</b>, <b>Holzstapel</b> und <b>Blitz</b>.</p></details>
       <details><summary>Garage, Strecken, Level und Boss</summary><p>In der <b>Garage</b> kaufst du mit Münzen Upgrades für Motor, Federung, Reifen und Tank. Mit jedem Level werden neue Autos und Strecken frei. Jede Strecke hat <b>LV1 bis LV3</b>: ein Ziel auf Zeit mit bis zu 3 Sternen. Mit einem Stern kannst du gegen den <b>Boss</b> der Strecke fahren. Unter 📋 stehen deine Karriere-Aufgaben.</p></details>
-      <details><summary>Daily</summary><p>Jeden Tag gibt es eine <b>komplett neue Welt</b> mit anderer Schwerkraft, anderer Rutschigkeit und manchmal mit <b>Loopings</b>. Für einen Looping brauchst du Anlauf, sonst kommt „Zu langsam“. Du hast <b>10 Versuche am Tag</b>, danach ist das Daily <b>gesperrt 🔒</b>. Einmal am Tag kannst du unter dem Daily-Knopf 5 Extra-Versuche für 100 Münzen kaufen. Die Versuche zählen pro Spieler, auch auf mehreren Geräten. Die beste Fahrt zählt für die <b>Tages-Bestenliste</b> 🏆. Wer um Mitternacht vorne liegt, gewinnt den Tag.</p></details>
+      <details><summary>Daily</summary><p>Jeden Tag gibt es eine <b>komplett neue Welt</b> mit anderer Schwerkraft, anderer Rutschigkeit und manchmal mit <b>Loopings</b>. Für einen Looping brauchst du Anlauf, sonst kommt „Zu langsam“. Du hast <b>genau 10 Versuche am Tag</b>, danach ist das Daily <b>gesperrt 🔒</b> bis morgen. Die Versuche zählen pro Spieler, auch auf mehreren Geräten. Die beste Fahrt zählt für die <b>Tages-Bestenliste</b> 🏆. Wer um Mitternacht vorne liegt, gewinnt den Tag.</p></details>
       <details><summary>Geister</summary><p>Oben beim Fahren schaltest du mit <b>👻 GEISTER AN/AUS</b> die besten Fahrten deiner Freunde als Geister ein. Dein eigener Rekord fährt immer als blauer Geist mit.</p></details>
       <details><summary>Live-Rennen (2 bis 4 Leute)</summary><p>Tippe auf <b>LIVE-RENNEN</b>. Einer wählt den Modus und drückt <b>CODE ERSTELLEN</b>. Die anderen geben den Code ein und drücken BEITRETEN. Wenn alle in der Liste stehen, drückt der Gastgeber <b>RENNEN STARTEN</b>.<br><b>Rennen:</b> Wer zuerst im Ziel ist, gewinnt. Nach einem Crash geht es kurz davor weiter.<br><b>Auf Zeit 2000 m:</b> Bei 1000 m liegt ein Checkpoint. Nach einem Crash startest du am Checkpoint, wenn du ihn schon hattest, sonst ganz vorne.<br>Danach gibt es mit REVANCHE gleich die nächste Runde. Die Strecke wählt der Gastgeber im Menü, dein Auto wählst du selbst.</p></details>
       <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen während der Fahrt am Himmel auf, und zwar immer zuerst die, die du noch nicht gesehen hast. Erst wenn du alle kennst, kommen sie wieder. Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein.</p></details>
@@ -2167,23 +2166,18 @@ $('vPrev').addEventListener('click',()=>cycleVeh(-1));$('vNext').addEventListene
 function setPlayUI(on){$('itemBtn').hidden=!on;$('hud').hidden=!on;$('gas').hidden=!on;$('brake').hidden=!on;$('rotate').hidden=!(on&&H>W);}
 const DTRY=10,DBUY_N=5,DBUY_C=100;
 function dTryInfo(){const d=todayStr();if(!save.dTry||save.dTry.date!==d)save.dTry={date:d,n:0,extra:0};return save.dTry;}
-function dTryLeft(){const t=dTryInfo();return DTRY+t.extra-t.n;}
+function dTryLeft(){const t=dTryInfo();return DTRY-t.n;}
 function dTryKey(){return 'dt-'+String(save.acct||'x').replace(/[^a-z0-9]/g,'')+'-'+todayStr().replace(/-/g,'');}
-async function dTrySync(push){if(!acct())return;const k=dTryKey(),t=dTryInfo();try{const meta=await dbGet('/gm/'+k+'/c');const sn=Math.floor((meta&&meta.m)||0),se=meta&&+String(meta.v||'0')||0;
-  if(sn>t.n)t.n=sn;if(se>t.extra)t.extra=se;persist();
+async function dTrySync(push){if(!acct())return;const k=dTryKey(),t=dTryInfo();try{const meta=await dbGet('/gm/'+k+'/c');const sn=Math.floor((meta&&meta.m)||0);
+  if(sn>t.n)t.n=sn;persist();
   if(push&&t.n>sn)await dbSend('/','PATCH',{['gd/'+k+'/c']:String(t.n),['gm/'+k+'/c']:{n:pName(),m:t.n,v:String(t.extra),dr:'d',t:{'.sv':'timestamp'}}});}catch(e){}
   try{showDailyLock();}catch(e){}}
 function showDailyLock(){const left=dTryLeft(),t=dTryInfo(),b=$('dailyBtn'),buy=$('dBuy');if(!b)return;b.classList.toggle('locked',left<=0);
-  b.querySelector('span').textContent=left<=0?'DAILY 🔒':'DAILY';if(buy){buy.hidden=!(left<=0&&t.extra<DBUY_N);buy.textContent='+'+DBUY_N+' Versuche für '+DBUY_C+' 🪙';}}
+  b.querySelector('span').textContent=left<=0?'DAILY 🔒':'DAILY';if(buy)buy.hidden=true;}
 function dailyTry(){const t=dTryInfo();
-  if(dTryLeft()<=0){toast(t.extra<DBUY_N?'Daily für heute gesperrt 🔒 ('+(DTRY+t.extra)+' von '+(DTRY+t.extra)+'). Unter dem Daily-Knopf kannst du '+DBUY_N+' Versuche für '+DBUY_C+' Münzen kaufen.':'Daily für heute gesperrt 🔒 Morgen gibt es ein neues Level.',4.5);
+  if(dTryLeft()<=0){toast('Daily für heute gesperrt 🔒 ('+DTRY+' von '+DTRY+'). Morgen gibt es ein neues Level.',4.5);
     try{$('over').hidden=true;$('menu').hidden=false;showMenuStats();}catch(e){}return false;}
-  t.n++;persist();dTrySync(true);setTimeout(()=>toast('Daily-Versuch '+t.n+' von '+(DTRY+t.extra),2),300);return true;}
-function dailyBuy(){const t=dTryInfo();if(dTryLeft()>0||t.extra>=DBUY_N)return;
-  if(save.coins<DBUY_C){toast(DBUY_N+' neue Versuche kosten '+DBUY_C+' Münzen, du hast '+save.coins+'.',3.5);return;}
-  if(!confirm(DBUY_N+' Extra-Versuche für '+DBUY_C+' Münzen kaufen? Danach ist das Daily für heute endgültig zu.'))return;
-  save.coins-=DBUY_C;t.extra+=DBUY_N;persist();const k=dTryKey();if(acct())dbSend('/','PATCH',{['gd/'+k+'/c']:String(t.n),['gm/'+k+'/c']:{n:pName(),m:t.n+0.001*t.extra,v:String(t.extra),dr:'d',t:{'.sv':'timestamp'}}});
-  toast('+'+DBUY_N+' Daily-Versuche ✔',2.5);showMenuStats();}
+  t.n++;persist();dTrySync(true);setTimeout(()=>toast('Daily-Versuch '+t.n+' von '+DTRY,2),300);return true;}
 function startRun(){
   if(playDaily&&!duel.active&&!dailyTry())return;
   initAudio();clipUnlock();newRun();running=true;overShown=false;acc=0;
@@ -2228,7 +2222,6 @@ function gameOver(){
 }
 $('start').addEventListener('click',()=>{playDaily=false;startRun();});
 $('dailyBtn').addEventListener('click',()=>{playDaily=true;startRun();});
-$('dBuy').addEventListener('click',dailyBuy);
 setTimeout(()=>dTrySync(false),1500);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!running)dTrySync(false);});
 async function showBoard(){const di=dailyInfo();$('menu').hidden=true;$('board').hidden=false;
   $('boardSub').textContent='Heute: '+TRACKS[di.trk].name+'. Wer um Mitternacht vorne liegt, gewinnt den Tag.';$('boardList').innerHTML='<li class="empty">Lade …</li>';$('boardYest').textContent='';
