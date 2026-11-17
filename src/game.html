@@ -134,6 +134,7 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
   background:linear-gradient(180deg,#ff7a59,#ef3e36 55%,#d12a2a);box-shadow:0 6px 0 #8f1717,0 12px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35);padding:10px 20px;font-size:28px}
 .big:active,.gbtn:active{transform:translateY(4px);box-shadow:0 2px 0 #8f1717,inset 0 2px 0 rgba(255,255,255,.35)}
 .big.alt,.gbtn.blue{background:linear-gradient(180deg,#5fd0ff,#2a8cff 55%,#1f6be0);box-shadow:0 6px 0 #133f8f,0 12px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35)}
+.gbtn.locked{filter:grayscale(.85) brightness(.8)}.dbuy{font:700 14px system-ui;border:0;border-radius:12px;padding:9px 12px;background:rgba(255,200,58,.18);color:#ffd76a;border:1px solid rgba(255,200,58,.5)}
 .gbtn.purple{background:linear-gradient(180deg,#c48bff,#8a4dff 55%,#6a2fe0);box-shadow:0 6px 0 #3d1890,0 12px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35)}
 .gbtn.play{background:linear-gradient(180deg,#9dff6a,#3fd43a 55%,#25b02b);box-shadow:0 6px 0 #146b18,0 12px 28px rgba(60,220,60,.35),inset 0 2px 0 rgba(255,255,255,.45);font-size:34px}
 .big:disabled,.gbtn:disabled{background:#59607a;box-shadow:0 6px 0 #33384d;color:#c9cde0}
@@ -338,6 +339,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
         <button class="gbtn orange" id="dailyBtn"><span>DAILY</span><small id="dailySub"></small></button>
         <button class="gbtn purple" id="duelBtn" hidden>LIVE-RENNEN</button>
       </div>
+      <button class="dbuy" id="dBuy" hidden></button>
       <button class="gbtn play" id="start">LOS GEHT'S!</button>
     </section>
   </div>
@@ -376,10 +378,10 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <details><summary>Ziel der Fahrt</summary><p>Fahr so weit wie möglich. Vorbei ist es, wenn dein Fahrer auf dem Kopf landet oder rausfliegt oder wenn der Sprit leer ist. Ohne Sprit hast du noch 5 Sekunden zum Ausrollen, oder du drückst AUFGEBEN. Unterwegs sammelst du Münzen und Sprit-Kanister. Saltos, Wheelies und Combos bringen Punkte.</p></details>
       <details><summary>Items</summary><p>Aus den <b>?-Kisten</b> kommen Items: <b>Turbo</b> (schneller), <b>Schild</b> (rettet dich einmal vor einem Crash), <b>Magnet</b> (zieht Münzen an), <b>Sprit</b> (voller Tank). Im Live-Rennen gibt es zusätzlich Fallen für die anderen: <b>Öl</b>, <b>Holzstapel</b> und <b>Blitz</b>.</p></details>
       <details><summary>Garage, Strecken, Level und Boss</summary><p>In der <b>Garage</b> kaufst du mit Münzen Upgrades für Motor, Federung, Reifen und Tank. Mit jedem Level werden neue Autos und Strecken frei. Jede Strecke hat <b>LV1 bis LV3</b>: ein Ziel auf Zeit mit bis zu 3 Sternen. Mit einem Stern kannst du gegen den <b>Boss</b> der Strecke fahren. Unter 📋 stehen deine Karriere-Aufgaben.</p></details>
-      <details><summary>Daily</summary><p>Jeden Tag gibt es eine <b>komplett neue Welt</b> mit anderer Schwerkraft, anderer Rutschigkeit und manchmal mit <b>Loopings</b>. Für einen Looping brauchst du Anlauf, sonst kommt „Zu langsam“. Du hast <b>10 Versuche am Tag</b>, 5 weitere kosten 100 Münzen. Die beste Fahrt zählt für die <b>Tages-Bestenliste</b> 🏆. Wer um Mitternacht vorne liegt, gewinnt den Tag.</p></details>
+      <details><summary>Daily</summary><p>Jeden Tag gibt es eine <b>komplett neue Welt</b> mit anderer Schwerkraft, anderer Rutschigkeit und manchmal mit <b>Loopings</b>. Für einen Looping brauchst du Anlauf, sonst kommt „Zu langsam“. Du hast <b>10 Versuche am Tag</b>, danach ist das Daily <b>gesperrt 🔒</b>. Einmal am Tag kannst du unter dem Daily-Knopf 5 Extra-Versuche für 100 Münzen kaufen. Die Versuche zählen pro Spieler, auch auf mehreren Geräten. Die beste Fahrt zählt für die <b>Tages-Bestenliste</b> 🏆. Wer um Mitternacht vorne liegt, gewinnt den Tag.</p></details>
       <details><summary>Geister</summary><p>Oben beim Fahren schaltest du mit <b>👻 GEISTER AN/AUS</b> die besten Fahrten deiner Freunde als Geister ein. Dein eigener Rekord fährt immer als blauer Geist mit.</p></details>
       <details><summary>Live-Rennen (2 bis 4 Leute)</summary><p>Tippe auf <b>LIVE-RENNEN</b>. Einer wählt den Modus und drückt <b>CODE ERSTELLEN</b>. Die anderen geben den Code ein und drücken BEITRETEN. Wenn alle in der Liste stehen, drückt der Gastgeber <b>RENNEN STARTEN</b>.<br><b>Rennen:</b> Wer zuerst im Ziel ist, gewinnt. Nach einem Crash geht es kurz davor weiter.<br><b>Auf Zeit 2000 m:</b> Bei 1000 m liegt ein Checkpoint. Nach einem Crash startest du am Checkpoint, wenn du ihn schon hattest, sonst ganz vorne.<br>Danach gibt es mit REVANCHE gleich die nächste Runde. Die Strecke wählt der Gastgeber im Menü, dein Auto wählst du selbst.</p></details>
-      <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen zufällig während der Fahrt am Himmel auf, Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein.</p></details>
+      <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen während der Fahrt am Himmel auf, und zwar immer zuerst die, die du noch nicht gesehen hast. Erst wenn du alle kennst, kommen sie wieder. Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein.</p></details>
       <details><summary>Push-Nachrichten und App auf dem Handy</summary><p>Damit es wie eine App läuft: im iPhone-Safari auf <b>Teilen → „Zum Home-Bildschirm“</b> tippen, auf Android im Browser-Menü „App installieren“. Starte das Spiel dann immer vom Home-Bildschirm und melde dich dort einmal mit deiner Nummer an. Danach drückst du hier <b>PUSH AN</b>. Dann kommt eine Nachricht, wenn jemand das Daily gespielt hat oder neuer Tages-Erster ist.</p></details>
     </div>
     <div class="card glass">
@@ -796,7 +798,7 @@ function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.')+(picList().length?' '+picList().length+' Bild'+(picList().length>1?'er':'')+' für den Himmel.':'');
   const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;const te=document.getElementById('chTest');if(te)te.hidden=!surpList().length;}
 async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;return;}const seen=save.surpSeen||(save.surpSeen={});
-  let pick=want&&L.includes(want)?want:null;if(!pick){const C=L.length>1?L.filter(x=>x!==clipLast):L;let tot=0;const w=C.map(x=>{const v=(CLIP_BOOST[x]||1)/(1+(seen[x]||0));tot+=v;return v;});let r=Math.random()*tot;pick=C[C.length-1];for(let i=0;i<C.length;i++){r-=w[i];if(r<=0){pick=C[i];break;}}}
+  let pick=want&&L.includes(want)?want:null;if(!pick){const C=L.length>1?L.filter(x=>x!==clipLast):L;const ef=x=>(seen[x]||0)/(CLIP_BOOST[x]||1);const mn=Math.min(...C.map(ef));const B=C.filter(x=>ef(x)<=mn+1e-9);pick=B[Math.floor(Math.random()*B.length)];}
   if(pick===clipCur&&clipV.src)return;
   try{const b=await mediaOp('get','it-'+pick);if(!b){save.surp=L.filter(x=>x!==pick);persist();return clipPrepare();}
     if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(b);clipCur=pick;clipV.src=clipURL;clipV.load();clipUnlocked=false;
@@ -852,7 +854,7 @@ let againT=null;function overClipStop(){if(againT){clearInterval(againT);againT=
 function overClipStart(){if(!(meme&&meme.clip)||clipV.paused||clipV.ended)return;meme.inOver=true;meme.dur=1e9;const box=$('overClip');box.appendChild(clipV);box.hidden=false;$('over').classList.add('withclip');
   const a=$('again');let n=3;a.disabled=true;a.textContent='NOCHMAL ('+n+')';if(againT)clearInterval(againT);againT=setInterval(()=>{n--;if(n<=0){clearInterval(againT);againT=null;a.disabled=false;a.textContent='NOCHMAL';}else a.textContent='NOCHMAL ('+n+')';},1000);}
 function memeEnd(){overClipStop();if(!meme)return;if(meme.clip){clipV.pause();const sp=save.surpPos||(save.surpPos={}),ss=save.surpSeen||(save.surpSeen={});
-    sp[meme.id]=clipV.currentTime>=clipV.duration-1.5?0:clipV.currentTime;ss[meme.id]=(ss[meme.id]||0)+1;clipLast=meme.id;persist();setTimeout(clipPrepare,50);}
+    const fin=clipV.currentTime>=clipV.duration-1.5,far=!(clipV.duration>0)||clipV.currentTime>=clipV.duration*.6;sp[meme.id]=fin?0:clipV.currentTime;if(fin||far||!ss[meme.id])ss[meme.id]=(ss[meme.id]||0)+(fin||far?1:0);clipLast=meme.id;persist();setTimeout(clipPrepare,50);}
   if(meme.kind===6){$('game').style.transform='';}meme=null;}
 let skyPic=null,picNextAt=200,picLast=null;const picImg={};
 function picLoad(id){if(picImg[id])return picImg[id];const o={ok:false};picImg[id]=o;mediaOp('get','it-'+id).then(b=>{if(!b)return;const i=new Image();i.onload=()=>{o.img=i;o.ok=true;};i.src=URL.createObjectURL(b);}).catch(()=>{});return o;}
@@ -2106,7 +2108,7 @@ function drawPreview(id){
 
 /* ---------- Flow ---------- */
 function showMenuStats(){
-  {const di=dailyInfo(),db=dailyBest(),base='Heute: '+TRACKS[di.trk].name+' · '+TRACKS[di.trk].tags.join(' · ')+(db.score?' · '+db.score+' Pkt':'')+' · noch '+Math.max(0,dTryLeft())+' Versuche';$('dailySub').textContent=base;
+  {const di=dailyInfo(),db=dailyBest(),base='Heute: '+TRACKS[di.trk].name+' · '+TRACKS[di.trk].tags.join(' · ')+(db.score?' · '+db.score+' Pkt':'')+' · noch '+Math.max(0,dTryLeft())+' Versuche';$('dailySub').textContent=base;showDailyLock();
     loadBoard(di.date).then(l=>{if(l&&db.score){const mine=l.find(e=>e.k===pKey());if(!mine||mine.s<db.score){submitDaily(di.date,db.best,db.score);l=l.filter(e=>e!==mine).concat({k:pKey(),n:pName(),m:db.best,s:db.score}).sort((a,b)=>b.s-a.s);}}
     if(l&&l.length){const me=l.findIndex(e=>e.k===pKey());$('dailySub').textContent=base+(me===0?' · Du führst! 👑':' · 👑 '+l[0].n+(me>0?' · Du: Platz '+(me+1):''));}});}
   svShow();$('pName').value=save.pname||'';$('pName').readOnly=!!acct();$('pName').placeholder=myInfo().name;
@@ -2166,10 +2168,22 @@ function setPlayUI(on){$('itemBtn').hidden=!on;$('hud').hidden=!on;$('gas').hidd
 const DTRY=10,DBUY_N=5,DBUY_C=100;
 function dTryInfo(){const d=todayStr();if(!save.dTry||save.dTry.date!==d)save.dTry={date:d,n:0,extra:0};return save.dTry;}
 function dTryLeft(){const t=dTryInfo();return DTRY+t.extra-t.n;}
+function dTryKey(){return 'dt-'+String(save.acct||'x').replace(/[^a-z0-9]/g,'')+'-'+todayStr().replace(/-/g,'');}
+async function dTrySync(push){if(!acct())return;const k=dTryKey(),t=dTryInfo();try{const meta=await dbGet('/gm/'+k+'/c');const sn=Math.floor((meta&&meta.m)||0),se=meta&&+String(meta.v||'0')||0;
+  if(sn>t.n)t.n=sn;if(se>t.extra)t.extra=se;persist();
+  if(push&&t.n>sn)await dbSend('/','PATCH',{['gd/'+k+'/c']:String(t.n),['gm/'+k+'/c']:{n:pName(),m:t.n,v:String(t.extra),dr:'d',t:{'.sv':'timestamp'}}});}catch(e){}
+  try{showDailyLock();}catch(e){}}
+function showDailyLock(){const left=dTryLeft(),t=dTryInfo(),b=$('dailyBtn'),buy=$('dBuy');if(!b)return;b.classList.toggle('locked',left<=0);
+  b.querySelector('span').textContent=left<=0?'DAILY 🔒':'DAILY';if(buy){buy.hidden=!(left<=0&&t.extra<DBUY_N);buy.textContent='+'+DBUY_N+' Versuche für '+DBUY_C+' 🪙';}}
 function dailyTry(){const t=dTryInfo();
-  if(dTryLeft()<=0){if(save.coins>=DBUY_C&&confirm('Deine '+(DTRY+t.extra)+' Daily-Versuche für heute sind weg. '+DBUY_N+' neue Versuche für '+DBUY_C+' Münzen kaufen? Du hast '+save.coins+'.')){save.coins-=DBUY_C;t.extra+=DBUY_N;persist();}
-    else{toast(save.coins<DBUY_C?'Keine Daily-Versuche mehr. '+DBUY_N+' neue kosten '+DBUY_C+' Münzen, du hast '+save.coins+'.':'Keine Daily-Versuche mehr für heute.',4);try{showMenuStats();}catch(e){}return false;}}
-  t.n++;persist();setTimeout(()=>toast('Daily-Versuch '+t.n+' von '+(DTRY+t.extra),2),300);return true;}
+  if(dTryLeft()<=0){toast(t.extra<DBUY_N?'Daily für heute gesperrt 🔒 ('+(DTRY+t.extra)+' von '+(DTRY+t.extra)+'). Unter dem Daily-Knopf kannst du '+DBUY_N+' Versuche für '+DBUY_C+' Münzen kaufen.':'Daily für heute gesperrt 🔒 Morgen gibt es ein neues Level.',4.5);
+    try{$('over').hidden=true;$('menu').hidden=false;showMenuStats();}catch(e){}return false;}
+  t.n++;persist();dTrySync(true);setTimeout(()=>toast('Daily-Versuch '+t.n+' von '+(DTRY+t.extra),2),300);return true;}
+function dailyBuy(){const t=dTryInfo();if(dTryLeft()>0||t.extra>=DBUY_N)return;
+  if(save.coins<DBUY_C){toast(DBUY_N+' neue Versuche kosten '+DBUY_C+' Münzen, du hast '+save.coins+'.',3.5);return;}
+  if(!confirm(DBUY_N+' Extra-Versuche für '+DBUY_C+' Münzen kaufen? Danach ist das Daily für heute endgültig zu.'))return;
+  save.coins-=DBUY_C;t.extra+=DBUY_N;persist();const k=dTryKey();if(acct())dbSend('/','PATCH',{['gd/'+k+'/c']:String(t.n),['gm/'+k+'/c']:{n:pName(),m:t.n+0.001*t.extra,v:String(t.extra),dr:'d',t:{'.sv':'timestamp'}}});
+  toast('+'+DBUY_N+' Daily-Versuche ✔',2.5);showMenuStats();}
 function startRun(){
   if(playDaily&&!duel.active&&!dailyTry())return;
   initAudio();clipUnlock();newRun();running=true;overShown=false;acc=0;
@@ -2214,6 +2228,8 @@ function gameOver(){
 }
 $('start').addEventListener('click',()=>{playDaily=false;startRun();});
 $('dailyBtn').addEventListener('click',()=>{playDaily=true;startRun();});
+$('dBuy').addEventListener('click',dailyBuy);
+setTimeout(()=>dTrySync(false),1500);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!running)dTrySync(false);});
 async function showBoard(){const di=dailyInfo();$('menu').hidden=true;$('board').hidden=false;
   $('boardSub').textContent='Heute: '+TRACKS[di.trk].name+'. Wer um Mitternacht vorne liegt, gewinnt den Tag.';$('boardList').innerHTML='<li class="empty">Lade …</li>';$('boardYest').textContent='';
   const y=new Date();y.setDate(y.getDate()-1);const [l,ly]=await Promise.all([loadBoard(di.date),loadBoard(ymd(y))]);
