@@ -738,7 +738,7 @@ function rid(n){const a='abcdefghijklmnopqrstuvwxyz0123456789',b=crypto.getRando
 function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
 const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;
 let clipLast=null,clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
-const CH_POOL='nfpgemein1';const CLIP_BOOST={m1lej5dt7h:2};/* clip id -> how much more often it is picked *//* shared pool: every device loads it, every upload goes there */
+const CH_POOL='nfpgemein1';const CLIP_BOOST={m1lej5dt7h:2,6oga15b8c8:2};/* clip id -> how much more often it is picked *//* shared pool: every device loads it, every upload goes there */
 function picList(){return save.pics||(save.pics=[]);}
 function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.')+(picList().length?' '+picList().length+' Bild'+(picList().length>1?'er':'')+' für den Himmel.':'');
