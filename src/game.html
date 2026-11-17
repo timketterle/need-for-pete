@@ -370,6 +370,8 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <p class="note" style="margin:10px 0 4px"><b>YouTube Shorts</b> 📺 Füg Shorts-Links oder einen Playlist-Link ein. Die Videos laufen bei allen am Himmel, ungesehene zuerst.</p>
       <div class="row" style="justify-content:flex-start;gap:8px;margin:0;flex-wrap:wrap"><input id="ytIn" placeholder="https://youtube.com/shorts/…" style="flex:1;min-width:180px;padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);color:#fff;font:15px system-ui"><button class="gbtn blue mid" id="ytAdd">HINZUFÜGEN</button><button class="gbtn mid" id="ytTest" hidden>TESTEN</button></div>
       <p class="note" id="ytInfo"></p>
+      <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><button class="gbtn orange mid" id="ytLogin" hidden>MEIN YOUTUBE VERBINDEN</button><button class="gbtn mid" id="ytLogout" hidden>TRENNEN</button></div>
+      <p class="note" id="ytMeInfo"></p>
     </div>
         <div class="card glass">
       <h3>Motorsound</h3>
@@ -2536,10 +2538,10 @@ const YT_KEY='yt-cfg';let ytCfg={v:[]},ytP=null,ytReady=false,ytApi=false,ytCur=
 function ytParse(t){const ids=[];let l=null;for(const part of String(t||'').split(/[\s,]+/)){if(!part)continue;
   const m=part.match(/(?:shorts\/|youtu\.be\/|[?&]v=|embed\/|live\/)([A-Za-z0-9_-]{11})/);if(m)ids.push(m[1]);else if(/^[A-Za-z0-9_-]{11}$/.test(part))ids.push(part);
   const q=part.match(/[?&]list=([A-Za-z0-9_-]{10,64})/);if(q)l=q[1];}return {v:ids,l};}
-function ytAll(){const v=[...(ytCfg.v||[])];if(ytP&&ytCfg.l&&ytP.__pl)for(const x of ytP.__pl)if(!v.includes(x))v.push(x);return v;}
+function ytAll(){const me=ytMine();const own=me&&me.on?me.v||[]:[];const v=[...own];for(const x of (ytCfg.v||[]))if(!v.includes(x))v.push(x);if(ytP&&ytCfg.l&&ytP.__pl)for(const x of ytP.__pl)if(!v.includes(x))v.push(x);return v;}
 function ytInfo(){const el=$('ytInfo');if(!el)return;const n=(ytCfg.v||[]).length;const seen=save.ytSeen||{};const un=ytAll().filter(x=>!seen[x]).length;
   el.textContent=(n||ytCfg.l)?(n?n+' Short'+(n>1?'s':''):'')+(ytCfg.l?(n?' + ':'')+'1 Playlist':'')+' drin. Für dich noch neu: '+un+'.':'Noch keine Shorts drin.';$('ytTest').hidden=!(n||ytCfg.l);}
-async function ytLoadCfg(){const d=await dbGet('/gd/'+YT_KEY+'/k');if(typeof d==='string'){try{const o=JSON.parse(d);if(o&&Array.isArray(o.v))ytCfg=o;}catch(e){}}ytInfo();if((ytCfg.v||[]).length||ytCfg.l)ytLoadApi();}
+async function ytLoadCfg(){const d=await dbGet('/gd/'+YT_KEY+'/k');if(typeof d==='string'){try{const o=JSON.parse(d);if(o&&Array.isArray(o.v))ytCfg=o;}catch(e){}}ytInfo();ytMeShow();const me0=ytMine();if((ytCfg.v||[]).length||ytCfg.l||(me0&&me0.on))ytLoadApi();}
 async function ytSaveCfg(o){const meta=await dbGet('/gm/'+YT_KEY+'/k');const m=((meta&&meta.m)||0)+1;
   const ok=await dbSend('/','PATCH',{['gd/'+YT_KEY+'/k']:JSON.stringify(o),['gm/'+YT_KEY+'/k']:{n:String(pName()).slice(0,16),m,v:'yt',dr:'yt',t:{'.sv':'timestamp'}}});if(ok)ytCfg=o;ytInfo();return ok;}
 function ytLoadApi(){if(ytApi)return;ytApi=true;window.onYouTubeIframeAPIReady=ytMake;const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.onerror=()=>{ytApi=false;};document.head.appendChild(sc);}
@@ -2548,7 +2550,7 @@ function ytMake(){if(ytP||!window.YT||!YT.Player)return;
     events:{onReady:()=>{ytReady=true;if(ytCfg.l){try{ytP.cuePlaylist({list:ytCfg.l,listType:'playlist'});setTimeout(()=>{try{ytP.__pl=ytP.getPlaylist()||[];ytInfo();}catch(e){}},2500);}catch(e){}}},
       onStateChange:e=>{if(e.data===0&&meme&&meme.yt)meme.dur=Math.min(meme.dur,meme.t+.3);if(e.data===1&&meme&&meme.yt){meme.playing=true;try{const d=ytP.getDuration();if(d>0)meme.dur=Math.min(62,meme.t+d-(ytP.getCurrentTime()||0)+.5);}catch(x){}}},
       onError:()=>{if(meme&&meme.yt){(save.ytSeen||(save.ytSeen={}))[meme.id]=(save.ytSeen[meme.id]||0)+1;persist();meme.dur=0;}}}});}
-function ytPick(onlyNew){const L=ytAll().filter(x=>x!==ytCur);const all=L.length?L:ytAll();if(!all.length)return null;const seen=save.ytSeen||{};
+function ytPick(onlyNew){const me=ytMine(),seen0=save.ytSeen||{};if(me&&me.on){const o=(me.v||[]).filter(x=>!seen0[x]&&x!==ytCur);if(o.length)return o[Math.floor(Math.random()*Math.min(o.length,5))];}const L=ytAll().filter(x=>x!==ytCur);const all=L.length?L:ytAll();if(!all.length)return null;const seen=save.ytSeen||{};
   const mn=Math.min(...all.map(x=>seen[x]||0));if(onlyNew&&mn>0)return null;const B=all.filter(x=>(seen[x]||0)===mn);return B[Math.floor(Math.random()*B.length)];}
 function ytPlace(x,y,w,h,rr){const bx=$('ytBox').style;bx.left=x+'px';bx.top=y+'px';bx.width=w+'px';bx.height=h+'px';bx.borderRadius=rr+'px';
   const sn=$('ytSnd').style;sn.left=(x+w/2)+'px';sn.top=(y+h-8)+'px';}
@@ -2561,7 +2563,7 @@ function ytEnd(){if(!meme||!meme.yt)return;let watched=meme.t>8;try{const d=ytP.
   if(watched||!meme.playing){const ss=save.ytSeen||(save.ytSeen={});ss[meme.id]=(ss[meme.id]||0)+1;persist();}try{ytP.pauseVideo();}catch(e){}$('ytBox').hidden=true;$('ytSnd').hidden=true;ytInfo();}
 $('ytSnd').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();ytMuted=false;try{ytP.unMute();ytP.setVolume(Math.min(100,clipVolume()*100));ytP.playVideo();}catch(x){}$('ytSnd').hidden=true;});
 $('ytAdd').addEventListener('click',async()=>{const r=ytParse($('ytIn').value);if(!r.v.length&&!r.l){$('ytInfo').textContent='Das sieht nicht wie ein YouTube-Link aus.';return;}
-  const o={v:[...new Set([...(ytCfg.v||[]),...r.v])].slice(-300),l:r.l||ytCfg.l||null};$('ytInfo').textContent='Speichere …';
+  const o={v:[...new Set([...(ytCfg.v||[]),...r.v])].slice(-300),l:r.l||ytCfg.l||null,cid:ytCfg.cid||null};$('ytInfo').textContent='Speichere …';
   if(await ytSaveCfg(o)){$('ytIn').value='';$('ytInfo').textContent='Drin ✔ '+(r.v.length?r.v.length+' Short'+(r.v.length>1?'s':''):'Playlist')+' hinzugefügt. Tipp auf TESTEN.';ytLoadApi();if(ytP&&r.l){ytP.__pl=null;try{ytP.cuePlaylist({list:r.l,listType:'playlist'});setTimeout(()=>{try{ytP.__pl=ytP.getPlaylist()||[];ytInfo();}catch(e){}},2500);}catch(e){}}}
   else $('ytInfo').textContent='Speichern hat nicht geklappt (Internet?).';});
 $('ytTest').addEventListener('click',()=>{$('settings').hidden=true;playDaily=false;startRun();state.forceYt=true;memeNextAt=20;toast('Fahr los: bei 20 m kommt das YouTube-Video.',3);});
@@ -2570,5 +2572,35 @@ $('ytTest').addEventListener('click',()=>{$('settings').hidden=true;playDaily=fa
 {const _me=memeEnd;memeEnd=function(){if(meme&&meme.yt)ytEnd();return _me();};}
 {const _sr=startRun;startRun=function(){ytUnlock();return _sr.apply(this,arguments);};}
 setTimeout(ytLoadCfg,900);
+
+/* ---------- eigenes YouTube (Abos + Likes) ---------- */
+let ytTok=null,ytTokExp=0,ytTc=null,ytGis=false;
+function ytMine(){try{return JSON.parse(localStorage.getItem('nfp-ytme')||'null');}catch(e){return null;}}
+function ytMeShow(){const cid=ytCfg.cid,me=ytMine();const li=$('ytLogin'),lo=$('ytLogout'),inf=$('ytMeInfo');if(!li)return;
+  li.hidden=!cid;lo.hidden=!(me&&me.on);if(!cid){inf.textContent='';return;}
+  inf.textContent=me&&me.on?'Dein YouTube ist verbunden: '+(me.v||[]).length+' Shorts aus deinen Abos und Likes'+(me.at?' (Stand '+new Date(me.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+')':'')+'. Die laufen bei dir zuerst.':'Verbinde dein YouTube, dann laufen am Himmel die neuesten Shorts deiner Abos und deine Likes.';
+  li.textContent=me&&me.on?'NEU LADEN':'MEIN YOUTUBE VERBINDEN';}
+function ytGisLoad(){return new Promise(res=>{if(window.google&&google.accounts&&google.accounts.oauth2)return res(true);if(ytGis){const iv=setInterval(()=>{if(window.google&&google.accounts){clearInterval(iv);res(true);}},200);setTimeout(()=>{clearInterval(iv);res(false);},8000);return;}
+  ytGis=true;const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.onload=()=>res(true);sc.onerror=()=>{ytGis=false;res(false);};document.head.appendChild(sc);});}
+async function ytAuth(interactive){if(ytTok&&Date.now()<ytTokExp-60000)return ytTok;if(!ytCfg.cid)return null;if(!await ytGisLoad())return null;
+  return new Promise(res=>{try{ytTc=google.accounts.oauth2.initTokenClient({client_id:ytCfg.cid,scope:'https://www.googleapis.com/auth/youtube.readonly',
+    callback:r=>{if(r&&r.access_token){ytTok=r.access_token;ytTokExp=Date.now()+(+r.expires_in||3600)*1000;res(ytTok);}else res(null);},error_callback:()=>res(null)});
+    ytTc.requestAccessToken({prompt:interactive?'':'none'});}catch(e){res(null);}});}
+async function ytApiGet(path){const r=await fetch('https://www.googleapis.com/youtube/v3/'+path,{headers:{Authorization:'Bearer '+ytTok}});if(!r.ok)throw new Error('yt '+r.status);return r.json();}
+function ytSecs(d){const m=String(d||'').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);return m?(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0):0;}
+async function ytFetchMine(interactive){const inf=$('ytMeInfo');if(inf)inf.textContent='Lade deine Shorts …';
+  if(!await ytAuth(interactive)){if(inf)inf.textContent=interactive?'Anmeldung hat nicht geklappt. Ist deine Google-Adresse als Testnutzer eingetragen?':'';ytMeShow();return;}
+  try{const cand=[];let page='';const subs=[];for(let i=0;i<2;i++){const r=await ytApiGet('subscriptions?part=snippet&mine=true&maxResults=50&order=relevance'+(page?'&pageToken='+page:''));for(const it of r.items||[])subs.push(it.snippet.resourceId.channelId);page=r.nextPageToken;if(!page)break;}
+    const ch=subs.slice(0,60);let k=0;await Promise.all([0,1,2,3,4,5].map(async()=>{while(k<ch.length){const c=ch[k++];try{const r=await ytApiGet('playlistItems?part=contentDetails&maxResults=8&playlistId=UU'+c.slice(2));for(const it of r.items||[])cand.push({id:it.contentDetails.videoId,t:Date.parse(it.contentDetails.videoPublishedAt||0)||0});}catch(e){}}}));
+    try{const r=await ytApiGet('videos?part=contentDetails,snippet&myRating=like&maxResults=50');for(const it of r.items||[])if(ytSecs(it.contentDetails.duration)<=180)cand.push({id:it.id,t:Date.now()-864e5*3,ok:true});}catch(e){}
+    const need=[...new Set(cand.filter(c=>!c.ok).map(c=>c.id))],ok=new Set(cand.filter(c=>c.ok).map(c=>c.id));
+    for(let i=0;i<need.length;i+=50){try{const r=await ytApiGet('videos?part=contentDetails,status&id='+need.slice(i,i+50).join(','));for(const it of r.items||[]){const d=ytSecs(it.contentDetails.duration);if(d>0&&d<=180&&(!it.status||it.status.embeddable!==false))ok.add(it.id);}}catch(e){}}
+    const v=[...new Map(cand.filter(c=>ok.has(c.id)).sort((a,b)=>b.t-a.t).map(c=>[c.id,c])).keys()].slice(0,200);
+    localStorage.setItem('nfp-ytme',JSON.stringify({on:true,v,at:Date.now()}));ytLoadApi();}
+  catch(e){if(inf)inf.textContent='YouTube hat abgelehnt ('+(e.message||'Fehler')+').';}
+  ytMeShow();ytInfo();}
+$('ytLogin').addEventListener('click',()=>ytFetchMine(true));
+$('ytLogout').addEventListener('click',()=>{try{if(ytTok&&window.google)google.accounts.oauth2.revoke(ytTok,()=>{});}catch(e){}ytTok=null;localStorage.removeItem('nfp-ytme');ytMeShow();ytInfo();});
+{const me=ytMine();if(me&&me.on&&Date.now()-(me.at||0)>3*3600e3)setTimeout(()=>ytFetchMine(false),4000);}
 })();
 </script>
