@@ -186,10 +186,11 @@ input#codeIn{background:rgba(255,255,255,.9)}
 
 /* Hub layout (main menu) */
 .hub{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;color:var(--txt)}
-.hub::before{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:-1;
-  background:conic-gradient(from 0deg at 35% 60%,rgba(255,255,255,0) 0deg,rgba(120,170,255,.10) 12deg,rgba(255,255,255,0) 24deg,rgba(120,170,255,.08) 40deg,rgba(255,255,255,0) 52deg,rgba(255,220,120,.08) 70deg,rgba(255,255,255,0) 84deg);
+.hub::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:conic-gradient(from var(--ra) at 35% 60%,rgba(255,255,255,0) 0deg,rgba(120,170,255,.10) 12deg,rgba(255,255,255,0) 24deg,rgba(120,170,255,.08) 40deg,rgba(255,255,255,0) 52deg,rgba(255,220,120,.08) 70deg,rgba(255,255,255,0) 84deg);
   animation:rays 40s linear infinite}
-@keyframes rays{to{transform:rotate(360deg)}}
+@property --ra{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes rays{to{--ra:360deg}}
 .hubbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .hublogo{margin:0;font-family:var(--hd);font-weight:400;font-size:clamp(26px,4.4vw,40px);line-height:1;color:#fff;letter-spacing:.02em;
   text-shadow:0 3px 0 #1f3a8f,0 6px 18px rgba(0,0,0,.5);white-space:nowrap}
@@ -226,7 +227,11 @@ input#codeIn{background:rgba(255,255,255,.9)}
 @media (max-height:520px){.hub{gap:8px;padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}#vNote,.tdesc{display:none}#tInfo br{display:none}.side .card{padding:7px 10px}.trk .vsel h3{font-size:19px}.trk .arrow{width:34px;height:34px;font-size:24px}#modes button{font-size:13px;padding:5px 4px}.hubmain{gap:10px}.side{gap:8px}.gbtn.play{font-size:28px;padding:7px 14px}.hubbtns .gbtn{font-size:18px;padding:6px 8px}.stat{font-size:11px}.stats{gap:3px}.side .card{padding:8px 10px}.stage .vsel h3{font-size:20px}.iconbtn{width:36px;height:36px}.coinpill{font-size:17px;padding:4px 12px}}
 @media (min-width:1100px) and (min-height:650px){.hub{zoom:1.45}}
 @media (min-width:1700px) and (min-height:900px){.hub{zoom:1.9}}
-.side{justify-content:center}
+.side{justify-content:flex-start;overflow-x:hidden;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.side>:first-child{margin-top:auto}.side>:last-child{margin-bottom:auto}
+#menu{overflow-x:hidden;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
+.side .card,.side>*{flex-shrink:0;max-width:100%}
+@media (orientation:portrait){.side{overflow:visible}.hubmain{flex:none}}
 @media (max-width:640px) and (orientation:portrait){.hubmain{grid-template-columns:1fr}.hubbar{justify-content:space-between}.lvlpill{order:3;flex-basis:100%}}
 
 /* HUD + pedals in HD style */
