@@ -376,18 +376,30 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div class="card glass">
       <h3>Dein Name</h3>
       <input id="pName" maxlength="16" autocomplete="off" placeholder="z. B. Tim" class="namein">
+      <div class="row" style="justify-content:flex-start;margin:8px 0 0"><button class="gbtn blue mid" id="logout">SPIELER WECHSELN</button></div>
       <p class="note">So erscheinst du in der Tages-Bestenliste und als Geist bei deinen Freunden.</p>
     </div>
     <div class="card glass">
       <h3>Spielstand online ☁️</h3>
-      <p class="note" style="margin-top:0">Dein Fortschritt wird nach jeder Fahrt automatisch gesichert. Mit deinem Speichercode holst du ihn auf jedes andere Handy oder an den PC.</p>
-      <p class="note">Dein Speichercode: <b id="svCode" style="font-size:20px;letter-spacing:1px">…</b> <span id="svState"></span></p>
+      <p class="note" style="margin-top:0">Dein Fortschritt wird nach jeder Fahrt automatisch gesichert. Auf einem anderen Handy oder am PC gibst du einfach deine Nummer ein.</p>
+      <p class="note">Dein Konto: <b id="svCode" style="font-size:20px;letter-spacing:1px">…</b> <span id="svState"></span></p>
       <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><input id="svIn" maxlength="24" autocomplete="off" placeholder="Code, z. B. tim-4821" class="namein" style="max-width:220px"><button class="gbtn blue mid" id="svLoad">LADEN</button><button class="gbtn orange mid" id="svNow">JETZT SICHERN</button></div>
     </div>
     <div class="row"><button class="gbtn play mid" id="closeSettings">FERTIG</button></div>
   </div>
 </div>
 
+<div class="overlay" id="login" hidden style="z-index:80">
+  <div class="panel" style="max-width:420px;text-align:center;margin:auto">
+    <h2 class="logo" style="font-size:44px">Wer bist du?</h2>
+    <p class="tag">Gib deine Nummer ein. Dann spielst du mit deinem Fahrer und dein Spielstand wird online gespeichert.</p>
+    <input id="loginIn" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="Nummer"
+      style="font-family:var(--display);font-size:40px;text-align:center;letter-spacing:.2em;width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:10px;padding:4px 10px;margin-top:6px">
+    <div class="row" style="margin-top:12px;gap:8px"><button class="gbtn play mid" id="loginGo">LOS</button></div>
+    <p class="tag" id="loginMsg" aria-live="polite"></p>
+    <div class="row" style="margin-top:4px"><button class="big alt mid" id="loginGuest">ALS GAST (PETE)</button></div>
+  </div>
+</div>
 <div class="overlay" id="gift" hidden>
   <canvas id="confetti"></canvas>
   <div class="giftbox">
@@ -506,6 +518,7 @@ const $=id=>document.getElementById(id);
 let save={best:0,coins:0,xp:0,level:1,ctl:'buttons',inv:false,veh:'f1',up:{}};
 try{const s=JSON.parse(localStorage.getItem('nfp-save')||'null');if(s)save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem('nfp-save',JSON.stringify(save));}catch(e){}}
+const ACCTS={'1':{n:'Tim',d:'tim',k:'tim'},'2':{n:'Jonny',d:'jonny',k:'jonny'},'3':{n:'Severin',d:'sev',k:'sevi'}};
 const xpNeed=l=>150+l*100;
 
 /* ---------- World ---------- */
@@ -2064,10 +2077,10 @@ function drawPreview(id){
 
 /* ---------- Flow ---------- */
 function showMenuStats(){
-  {const di=dailyInfo(),db=dailyBest(),base='Heute: '+TRACKS[di.trk].name+' · '+TRACKS[di.trk].tags.join(' · ')+(db.score?' · '+db.score+' Pkt':'');$('dailySub').textContent=base;
+  {const di=dailyInfo(),db=dailyBest(),base='Heute: '+TRACKS[di.trk].name+' · '+TRACKS[di.trk].tags.join(' · ')+(db.score?' · '+db.score+' Pkt':'')+' · noch '+Math.max(0,dTryLeft())+' Versuche';$('dailySub').textContent=base;
     loadBoard(di.date).then(l=>{if(l&&db.score){const mine=l.find(e=>e.k===pKey());if(!mine||mine.s<db.score){submitDaily(di.date,db.best,db.score);l=l.filter(e=>e!==mine).concat({k:pKey(),n:pName(),m:db.best,s:db.score}).sort((a,b)=>b.s-a.s);}}
     if(l&&l.length){const me=l.findIndex(e=>e.k===pKey());$('dailySub').textContent=base+(me===0?' · Du führst! 👑':' · 👑 '+l[0].n+(me>0?' · Du: Platz '+(me+1):''));}});}
-  svShow();$('pName').value=save.pname||'';$('pName').placeholder=myInfo().name;
+  svShow();$('pName').value=save.pname||'';$('pName').readOnly=!!acct();$('pName').placeholder=myInfo().name;
   const need=xpNeed(save.level);
   $('lvlTxt').textContent='Level '+save.level;$('mCoins').textContent=save.coins;$('xpTxt').textContent=save.xp+' / '+need+' XP';$('lvlBar').style.width=Math.min(100,save.xp/need*100)+'%';
   $('ctlBtn').setAttribute('aria-pressed',String(!tiltOn));$('ctlTilt').setAttribute('aria-pressed',String(tiltOn));$('tiltInv').checked=!!save.inv;$('leanInv').checked=!!save.leanInv;
@@ -2082,7 +2095,7 @@ function showVehicle(){
   $('openGarage').disabled=locked;$('start').disabled=locked;$('start').textContent=locked?'GESPERRT':"LOS GEHT'S!";
   if(!locked&&save.veh!==menuVeh){save.veh=menuVeh;persist();newRun();}
   drawPreview(menuVeh);
-  $('drv').innerHTML=DORDER.map(([k,n])=>'<button data-d="'+k+'" aria-pressed="'+((save.driver||'pete')===k)+'">'+n.toUpperCase()+'</button>').join('');
+  $('drv').innerHTML=DORDER.filter(d=>allowedDrivers().includes(d[0])).map(([k,n])=>'<button data-d="'+k+'" aria-pressed="'+((save.driver||'pete')===k)+'">'+n.toUpperCase()+'</button>').join('');
   showTrack();
 }
 let menuTrk=save.trk||'hills';
@@ -2118,10 +2131,18 @@ $('openSettings').addEventListener('click',()=>{$('menu').hidden=true;$('setting
 $('closeSettings').addEventListener('click',()=>{$('settings').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('openGarage').addEventListener('click',()=>{$('menu').hidden=true;$('garage').hidden=false;showGarage();});
 $('closeGarage').addEventListener('click',()=>{$('garage').hidden=true;newRun();showMenuStats();$('menu').hidden=false;});
-$('drv').addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt)return;save.driver=bt.dataset.d;persist();showVehicle();});
+$('drv').addEventListener('click',e=>{const bt=e.target.closest('button');if(!bt||!allowedDrivers().includes(bt.dataset.d))return;save.driver=bt.dataset.d;persist();showVehicle();});
 $('vPrev').addEventListener('click',()=>cycleVeh(-1));$('vNext').addEventListener('click',()=>cycleVeh(1));
 function setPlayUI(on){$('itemBtn').hidden=!on;$('hud').hidden=!on;$('gas').hidden=!on;$('brake').hidden=!on;$('rotate').hidden=!(on&&H>W);}
+const DTRY=10,DBUY_N=5,DBUY_C=100;
+function dTryInfo(){const d=todayStr();if(!save.dTry||save.dTry.date!==d)save.dTry={date:d,n:0,extra:0};return save.dTry;}
+function dTryLeft(){const t=dTryInfo();return DTRY+t.extra-t.n;}
+function dailyTry(){const t=dTryInfo();
+  if(dTryLeft()<=0){if(save.coins>=DBUY_C&&confirm('Deine '+(DTRY+t.extra)+' Daily-Versuche für heute sind weg. '+DBUY_N+' neue Versuche für '+DBUY_C+' Münzen kaufen? Du hast '+save.coins+'.')){save.coins-=DBUY_C;t.extra+=DBUY_N;persist();}
+    else{toast(save.coins<DBUY_C?'Keine Daily-Versuche mehr. '+DBUY_N+' neue kosten '+DBUY_C+' Münzen, du hast '+save.coins+'.':'Keine Daily-Versuche mehr für heute.',4);try{showMenuStats();}catch(e){}return false;}}
+  t.n++;persist();setTimeout(()=>toast('Daily-Versuch '+t.n+' von '+(DTRY+t.extra),2),300);return true;}
 function startRun(){
+  if(playDaily&&!duel.active&&!dailyTry())return;
   initAudio();clipUnlock();newRun();running=true;overShown=false;acc=0;
   $('menu').hidden=true;$('over').hidden=true;setPlayUI(true);
   if(tiltOn){
@@ -2228,16 +2249,33 @@ const PEER_OPTS=(()=>{const q=new URLSearchParams(location.search);return q.get(
 if(typeof Peer!=='undefined')$('duelBtn').hidden=false;
 function duelSend(m){try{if(duel.conn&&duel.conn.open)duel.conn.send(m);}catch(e){}}
 function duelStatus(t){$('duelStatus').textContent=t;}
+/* ---------- Accounts: a number per friend, each one owns his driver ---------- */
+function acct(){return save.acct&&ACCTS[save.acct]||null;}
+function allowedDrivers(){const a=acct();if(!a)return ['pete'];return DORDER.some(d=>d[0]===a.d)?[a.d]:['pete'];}
+function acctFix(){const a=acct();if(a){save.pname=a.n;save.sk='sv-'+a.k+'-000'+save.acct;}const al=allowedDrivers();if(!al.includes(save.driver||'pete'))save.driver=al[0];}
+function stScore(o){return (o.level||1)*1e6+(o.xp||0)*10+(o.coins||0)/1e3;}
+async function loginWith(num){num=String(num||'').trim();const a=ACCTS[num];if(!a){$('loginMsg').textContent='Diese Nummer gibt es nicht.';return;}
+  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-000'+num,d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}
+  const local=save.acct?null:save;let next=o&&(!local||stScore(o)>=stScore(local))?o:Object.assign({},local||{},{});
+  next.acct=num;next.sk=k;next.pname=a.n;next.giftSeen=true;if(!next.tutDone&&local&&local.tutDone)next.tutDone=true;
+  localStorage.setItem('nfp-save',JSON.stringify(next));save=Object.assign(save,next);acctFix();persist();
+  $('loginMsg').textContent='Hallo '+a.n+'!';if(next===o)location.reload();else{await cloudSave(true);location.reload();}}
+$('loginGo').addEventListener('click',()=>loginWith($('loginIn').value));
+$('loginIn').addEventListener('keydown',e=>{if(e.key==='Enter')loginWith($('loginIn').value);});
+$('loginGuest').addEventListener('click',()=>{save.acct='guest';save.driver='pete';persist();$('login').hidden=true;});
+$('logout').addEventListener('click',async()=>{if(!confirm('Spieler wechseln? Dein Stand wird vorher online gesichert.'))return;if(acct())await cloudSave(true);localStorage.removeItem('nfp-save');location.reload();});
+if(!save.acct)$('login').hidden=false;
+acctFix();
 /* ---------- Cloud savegame (stored in the ghost tables, works with the current database rules) ---------- */
 function svKey(){if(!save.sk||!/^sv-[a-z0-9_-]{1,16}-[0-9]{4}$/.test(save.sk)){save.sk='sv-'+pKey()+'-'+String(1000+Math.floor(Math.random()*9000));persist();}return save.sk;}
 function svCode(){return svKey().slice(3);}
 let svBusy=false,svLast=0;
-async function cloudSave(force){if(svBusy)return false;if(!force&&Date.now()-svLast<15000)return false;svBusy=true;svLast=Date.now();
+async function cloudSave(force){if(svBusy||!acct())return false;if(!force&&Date.now()-svLast<15000)return false;svBusy=true;svLast=Date.now();
   try{const k=svKey(),meta=await dbGet('/gm/'+k+'/s'),m=Math.max(save.svN||0,(meta&&meta.m)||0)+1;
     const data=JSON.stringify(save);if(data.length>390000)return false;
     const ok=await dbSend('/','PATCH',{['gd/'+k+'/s']:data,['gm/'+k+'/s']:{n:pName(),m,v:String(save.veh||'f1').slice(0,12),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});
     if(ok){save.svN=m;save.svAt=Date.now();persist();}svShow();return ok;}catch(e){return false;}finally{svBusy=false;}}
-function svShow(){try{$('svCode').textContent=svCode();$('svState').textContent=save.svAt?'· gesichert '+new Date(save.svAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'· noch nicht gesichert';}catch(e){}}
+function svShow(){try{$('svIn').hidden=$('svLoad').hidden=true;if(!acct()){$('svCode').textContent='nur mit Login';$('svState').textContent='';return;}$('svCode').textContent='Nr. '+save.acct+' · '+acct().n;$('svState').textContent=save.svAt?'· gesichert '+new Date(save.svAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'· noch nicht gesichert';}catch(e){}}
 async function cloudLoad(code){code=String(code||'').trim().toLowerCase().replace(/\s+/g,'-');if(!/^[a-z0-9_-]{1,16}-[0-9]{4}$/.test(code)){toast('Der Code sieht so aus: name-1234',3);return;}
   const d=await dbGet('/gd/sv-'+code+'/s');if(typeof d!=='string'){toast('Zu diesem Code gibt es keinen Spielstand.',3);return;}
   let o;try{o=JSON.parse(d);}catch(e){toast('Spielstand kaputt.',3);return;}
