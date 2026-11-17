@@ -706,6 +706,7 @@ function rid(n){const a='abcdefghijklmnopqrstuvwxyz0123456789',b=crypto.getRando
 function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
 const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;
 let clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
+const CH_POOL='nfpgemein1';/* shared pool: every device loads it, every upload goes there */
 function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.');
   const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;const te=document.getElementById('chTest');if(te)te.hidden=!surpList().length;}
@@ -714,8 +715,7 @@ async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;r
   try{const b=await mediaOp('get','it-'+pick);if(!b){save.surp=L.filter(x=>x!==pick);persist();return clipPrepare();}
     if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(b);clipCur=pick;clipV.src=clipURL;clipV.load();clipUnlocked=false;
     clipV.addEventListener('loadedmetadata',()=>{const pos=(save.surpPos||{})[pick]||0;if(pos<clipV.duration-1)clipV.currentTime=pos;},{once:true});}catch(e){}}
-async function chSync(){if(chBusy)return;chBusy=true;try{let all=[];try{const r=await fetch(DBU+'/ch.json?shallow=true',{cache:'no-store'});const j=r.ok?await r.json():null;if(j&&typeof j==='object')all=Object.keys(j);}catch(e){}
-  const ids=[...new Set([save.chOwn,...(save.chSub||[]),...all].filter(x=>x&&/^[a-z0-9]{10}$/.test(x)))];
+async function chSync(){if(chBusy)return;chBusy=true;try{const ids=[...new Set([CH_POOL,save.chOwn,...(save.chSub||[])].filter(x=>x&&/^[a-z0-9]{10}$/.test(x)))];
   for(const id of ids){const list=await dbGet('/ch/'+id);if(!list||typeof list!=='object')continue;
     for(const [it,meta] of Object.entries(list)){if(surpList().includes(it)||!meta||!meta.n)continue;const parts=[];let ok=true;
       for(let i=0;i<meta.n;i++){const c=await dbGet('/cd/'+it+'/'+i);if(typeof c!=='string'){ok=false;break;}parts.push(b64ToBytes(c));}
@@ -730,7 +730,7 @@ async function chUpload(file,k,N){const say=(t)=>chInfo(N>1?'Video '+k+' von '+N
   for(let i=0;i<n;i++){say('Gespeichert ✔ Lädt jetzt für deine Freunde hoch … '+Math.round(i/n*100)+' %');let ok=false;
     for(let tr=0;tr<3&&!ok;tr++){try{ok=await dbSend('/cd/'+it+'/'+i,'PUT',await blobB64(file.slice(i*CH,(i+1)*CH)));}catch(e){ok=false;}}
     if(!ok){say('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief (Internet?). Einfach nochmal reinlegen.');return;}}
-  if(!await dbSend('/ch/'+save.chOwn+'/'+it,'PUT',{type:file.type||'video/mp4',size:file.size,n,t:{'.sv':'timestamp'}})){say('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief. Einfach nochmal reinlegen.');return;}
+  if(!await dbSend('/ch/'+CH_POOL+'/'+it,'PUT',{type:file.type||'video/mp4',size:file.size,n,t:{'.sv':'timestamp'}})){say('Auf deinem Handy ist das Video drin ✔ Das Hochladen für Freunde ging schief. Einfach nochmal reinlegen.');return;}
   say('Fertig ✔ Video ist auf deinem Handy und online. Tipp auf JETZT TESTEN oder schick den Link an Severin.');}
 const GIFT_TXT='Erinnerst du dich an unser Spiel aus dem Seminarkurs 2017? Hier ist die Fortsetzung. Mit dir, mir, den Bohnis und viel zu vielen Explosionen. Viel Spaß! – Tim';
 function showGift(){const g=$('gift');g.hidden=false;$('menu').hidden=true;
@@ -745,6 +745,7 @@ function chLink(){return location.origin+location.pathname+'?ch='+save.chOwn;}
 {const q=new URLSearchParams(location.search).get('ch');if(q&&/^[a-z0-9]{10}$/.test(q)){save.chSub=save.chSub||[];if(!save.chSub.includes(q)&&q!==save.chOwn){save.chSub.push(q);}persist();
   try{history.replaceState(null,'',location.pathname);}catch(e){}}}
 setTimeout(()=>{chInfo();clipPrepare().then(chSync);},400);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!running)chSync();});
 function clipUnlock(){if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.muted=muted;try{const p=clipV.play();clipV.pause();if(p&&p.catch)p.catch(()=>{clipUnlocked=false;});}catch(e){clipUnlocked=false;}}
 function headline(){return '+++ EILMELDUNG +++ '+memeWords().join(' ')+' +++ '+memeWords().join(' ')+' +++';}
 function memeStart(){memeCount++;
