@@ -453,7 +453,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <div class="row" style="margin-top:12px;gap:8px"><button class="gbtn play mid" id="loginGo">LOS</button></div>
     </div>
     <p class="tag" id="loginMsg" aria-live="polite"></p>
-    <div id="pkPick" hidden><p class="tag"><b>Wer bist du im Blue Chip Club?</b><br>Das gilt dann auch im Pokerspiel und lässt sich danach nicht mehr ändern.</p><div id="pkList" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:46vh;overflow:auto"></div></div>
+    <div id="pkPick" hidden><p class="tag"><b>Wer bist du im Blue Chip Club?</b><br>Tipp einmal auf deinen Namen. Das gilt dann auch im Pokerspiel und in der Lounge und lässt sich danach nicht mehr ändern.</p><div id="pkList" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:46vh;overflow:auto"></div></div>
     <div class="row" style="margin-top:4px"><button class="big alt mid" id="loginGuest">ALS GAST (PETE)</button></div>
   </div>
 </div>
@@ -2739,8 +2739,12 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
       await sbFetch('/rest/v1/nfp_players',{method:'POST',headers:{Prefer:'return=minimal'},body:{id:sbSess.uid,email:sbSess.email,name:nm}});pr=await sbProfile();}}catch(e){msg.textContent='Spieler-Liste nicht erreichbar: '+sbErr(e);return;}
   save.sbAdmin=!!(pr&&pr.admin);persist();await charsLoad();
   // Blue-Chip-Pokerspiel ist die Quelle: wer dort schon ein Spieler ist, fährt automatisch diese Figur.
-  if(pr&&(!pr.driver||pr.driver==='pete')){let pk=null;try{pk=await pkFetch('/api/konto/ich');}catch(e){}
+  if(pr&&(!pr.driver||pr.driver==='pete')){let pk=null;try{pk=await pkFetch('/api/konto/ich');}catch(e){
+      if(e&&e.status===403){$('login').hidden=false;$('sbBox').hidden=true;msg.textContent='Bitte bestätige deine E-Mail (Link in der Mail antippen), dann nochmal anmelden.';return 'wait';}
+      if(e&&e.status===401){$('login').hidden=false;$('sbBox').hidden=false;msg.textContent='Bitte melde dich neu an.';return 'wait';}}
     if(pk&&pk.name){pr.driver=pkDrv(pk.key||pk.name);pr.name=pk.name;const pn=PK_NUM[String(pk.name).trim().toLowerCase()];if(pn)pr.num=pn;}
+    // Noch kein Spieler im Blue Chip Club: einmal auswählen (gilt dann für Poker, Lounge und Need For Pete, für immer)
+    else if(pk&&Array.isArray(pk.frei)){pkShow(pk.frei.filter(n=>{const id=String(n).trim().toLowerCase();return id!=='tim'&&pkDrv(n)!=='chippy';}));return 'pick';}
     }
   // Ohne eigene Figur (z. B. neues Konto ohne Poker-Spieler): Chippy. Tim kann später unter Spieler verwalten eine andere Figur geben.
   if(pr&&(!pr.driver||pr.driver==='pete'))pr.driver='chippy';
@@ -2777,14 +2781,18 @@ const PK_URL='https://blue-chip-game-production.up.railway.app',PK_MAP={domi:'do
 function pkDrv(n){const id=String(n||'').trim().toLowerCase(),k=PK_MAP[id]||id;return k!=='pete'&&k!=='chippy'&&DORDER.some(d=>d[0]===k)?k:'chippy';}   // Poker-Spieler-Id (Gastspieler haben eigene Ids -> Chippy)
 async function pkFetch(path,opt){opt=opt||{};const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
   try{const r=await fetch(PK_URL+path,{method:opt.method||'GET',signal:c.signal,headers:Object.assign({Authorization:'Bearer '+sbSess.access_token},opt.body?{'Content-Type':'application/json'}:{}),body:opt.body?JSON.stringify(opt.body):undefined});
-    const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('Fehler '+r.status));return j;}finally{clearTimeout(t);}}
+    const j=await r.json().catch(()=>({}));if(!r.ok){const er=new Error(j.error||('Fehler '+r.status));er.status=r.status;throw er;}return j;}finally{clearTimeout(t);}}
 function pkShow(frei){const L=$('pkList');$('sbBox').hidden=true;$('pkPick').hidden=false;$('login').hidden=false;$('loginMsg').textContent='';L.innerHTML='';
   for(const n of frei.slice().sort((a,b)=>a.localeCompare(b))){const k=pkDrv(n),b=document.createElement('button');b.className='gbtn blue mid';b.style.cssText='display:flex;flex-direction:column;align-items:center;min-width:84px;padding:6px 8px';
     if(POSES[k]&&POSES[k].src&&POSES[k].src.sit){const im=new Image();im.src=POSES[k].src.sit;im.style.cssText='height:64px;margin-bottom:2px';b.appendChild(im);}
     b.appendChild(document.createTextNode(String(n).toUpperCase()));
     b.onclick=async()=>{if(!confirm('Du bist '+n+'? Das gilt auch im Pokerspiel und lässt sich nicht mehr ändern.'))return;$('loginMsg').textContent='Einen Moment …';
       try{await pkFetch('/api/konto/verknuepfen',{method:'POST',body:{spieler:n}});$('pkPick').hidden=true;await sbEnter();}catch(e){$('loginMsg').textContent=String(e&&e.message||e);}};
-    L.appendChild(b);}}
+    L.appendChild(b);}
+  const g=document.createElement('button');g.className='gbtn play mid';g.style.cssText='flex-basis:100%;margin-top:6px';g.textContent='ICH STEHE NICHT AUF DER LISTE';
+  g.onclick=async()=>{if(!confirm('Dann fährst du als Chippy und bist im Blue Chip Club als Gast dabei. Das lässt sich nicht mehr ändern. Weiter?'))return;$('loginMsg').textContent='Einen Moment …';
+    try{await pkFetch('/api/konto/neu',{method:'POST',body:{}});$('pkPick').hidden=true;await sbEnter();}catch(e){$('loginMsg').textContent=String(e&&e.message||e);}};
+  L.appendChild(g);}
 // ♠ oben: gleicher Tab in die 3D-Lounge, mit Anmeldung (nur Access-Token im #, kein Refresh-Token)
 $('toPoker').addEventListener('click',e=>{e.preventDefault();let u='https://bluechipclub.github.io/lounge/';
   try{if(sbSess&&sbSess.access_token&&Date.now()<sbSess.exp-60000)u+='#access_token='+encodeURIComponent(sbSess.access_token)+'&expires_in='+Math.floor((sbSess.exp-Date.now())/1000)+'&token_type=bearer&from=nfp';}catch(x){}
