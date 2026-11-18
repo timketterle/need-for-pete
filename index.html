@@ -334,7 +334,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <button class="iconbtn" id="openMis" aria-label="Karriere-Aufgaben">📋</button>
     <button class="iconbtn" id="openBoard" aria-label="Bestenliste">🏆</button>
     <button class="iconbtn" id="openAlbum" aria-label="Reel-Album">📼</button>
-    <a class="iconbtn" id="toPoker" href="https://blue-chip-game-production.up.railway.app/" target="_blank" rel="noopener" aria-label="Zum Blue-Chip-Pokerspiel" title="Zum Pokerspiel" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#2f6bff;font-size:24px">♠</a>
+    <a class="iconbtn" id="toPoker" href="https://bluechipclub.github.io/lounge/" aria-label="Zur Blue-Chip-Lounge" title="Zur Lounge" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#2f6bff;font-size:24px">♠</a>
     <button class="iconbtn" id="openSettings" aria-label="Einstellungen">⚙</button>
   </div>
   <div class="hubmain">
@@ -2711,6 +2711,10 @@ function pkShow(frei){const L=$('pkList');$('sbBox').hidden=true;$('pkPick').hid
     b.onclick=async()=>{if(!confirm('Du bist '+n+'? Das gilt auch im Pokerspiel und lässt sich nicht mehr ändern.'))return;$('loginMsg').textContent='Einen Moment …';
       try{await pkFetch('/api/konto/verknuepfen',{method:'POST',body:{spieler:n}});$('pkPick').hidden=true;await sbEnter();}catch(e){$('loginMsg').textContent=String(e&&e.message||e);}};
     L.appendChild(b);}}
+// ♠ oben: gleicher Tab in die 3D-Lounge, mit Anmeldung (nur Access-Token im #, kein Refresh-Token)
+$('toPoker').addEventListener('click',e=>{e.preventDefault();let u='https://bluechipclub.github.io/lounge/';
+  try{if(sbSess&&sbSess.access_token&&Date.now()<sbSess.exp-60000)u+='#access_token='+encodeURIComponent(sbSess.access_token)+'&expires_in='+Math.floor((sbSess.exp-Date.now())/1000)+'&token_type=bearer&from=nfp';}catch(x){}
+  try{cloudSave(true);}catch(x){}setTimeout(()=>{location.href=u;},250);});
 async function sbAdminShow(){const box=$('sbAdmin');if(!box)return;box.hidden=!(SB_ON&&save.sbAdmin&&sbSess);if(box.hidden)return;const L=$('sbAdmList');L.textContent='Lade …';
   try{await sbFresh();const rows=await sbFetch('/rest/v1/nfp_players?select=*&order=created_at.asc');
     L.innerHTML='<table class="sbadm"><tr><td><b>Name</b></td><td><b>Nr.</b></td><td><b>Fahrer</b></td><td></td></tr>'+rows.map(r=>'<tr data-id="'+r.id+'"><td>'+String(r.name||'').replace(/[<&]/g,'')+'<br><small>'+String(r.email||'').replace(/[<&]/g,'')+'</small></td><td><input class="sbNum" type="number" min="1" max="9999" style="width:58px" value="'+(r.num||'')+'"></td><td><select class="sbDrv"><option value="">wartet</option>'+DORDER.map(([k,n])=>'<option value="'+k+'"'+(r.driver===k?' selected':'')+'>'+n+'</option>').join('')+'</select></td><td><button class="sbSv" data-num="'+(r.num||'')+'">Stand</button></td></tr><tr class="sbSvRow" hidden><td colspan="4"></td></tr>').join('')+'</table>';}
