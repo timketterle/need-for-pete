@@ -694,7 +694,7 @@ const UPS=[
   {k:'susp',name:'Federung',desc:'Dämpft Landungen, weniger Hüpfen'},
   {k:'tires',name:'Reifen',desc:'Mehr Grip am Hang'},
   {k:'tank',name:'Tank',desc:'Sprit hält länger'}];
-const UPCOST=[40,100,200,350,600];
+const UPCOST=[150,350,700,1200,2000];   // 18.11.: teurer (Tim: nach 15 min war alles maximal)
 function upsOf(id){save.up=save.up||{};return save.up[id]=Object.assign({engine:0,susp:0,tires:0,tank:0},save.up[id]||{});}
 function buildCar(id){
   const v=VEH[id], u=upsOf(id);
@@ -792,7 +792,7 @@ const MIS=[
  {t:'distT',trk:'junk',v:500,d:'500 m durch die Schrottplatz-Stadt'},
 ];
 const RANKS=['Anfänger','Hügel-Rookie','Salto-Azubi','Schrottplatz-Profi','Dino-Flüsterer','Bergkönig','Legende von Pete'];
-function misReward(i){return {c:40+i*15,x:60+i*20};}
+function misReward(i){return {c:20+i*8,x:60+i*20};}
 function misDone(){return save.misDone||(save.misDone=[]);}
 function misRank(){return RANKS[Math.min(RANKS.length-1,Math.floor(misDone().length/4))];}
 function lvlCap(){return save.allOpen?999:save.level;}
@@ -1121,6 +1121,10 @@ function initAudio(){
     if(AC.state==='suspended')AC.resume();
   }catch(e){AC=null;}
 }
+// Münz-Geräusch (18.11.: leiser, weicher, nicht bei jeder Münze einzeln)
+let coinT=0,coinN=0;function coinSnd(){if(!AC||muted)return;const t=AC.currentTime;if(t-coinT<.11)return;coinN=t-coinT<.6?(coinN+1)%5:0;coinT=t;
+  try{const o=AC.createOscillator(),g=AC.createGain(),f=[988,1109,1245,1319,1480][coinN];o.type='sine';o.frequency.setValueAtTime(f,t);
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.022,t+.008);g.gain.exponentialRampToValueAtTime(.0005,t+.12);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.14);}catch(e){}}
 function blip(f1,f2,dur,type,vol){
   if(!AC||muted)return;try{const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=type||'square';
   o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(vol||.07,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
@@ -1314,9 +1318,9 @@ function step(dt){
 function land(){
   const b=car.body, rot=state.airRot, flips=Math.floor((Math.abs(rot)+.7)/(Math.PI*2));
   const imp=Math.max(...car.wheels.map(w=>w.impact)), clean=imp<520&&(!car.rider||car.rider.on);
-  if(flips>0){const bonus=25*flips;state.coins+=bonus;state.saltos+=flips;addTrick((flips>1?flips+'× ':'')+(rot<0?'BACKFLIP':'FRONTFLIP'),Math.round(300*flips*(flips>1?1.5:1)));blip(500,1400,.3,'square',.08);}
+  if(flips>0){const bonus=8*flips;state.coins+=bonus;state.saltos+=flips;addTrick((flips>1?flips+'× ':'')+(rot<0?'BACKFLIP':'FRONTFLIP'),Math.round(300*flips*(flips>1?1.5:1)));blip(500,1400,.3,'square',.08);}
   state.maxAir=Math.max(state.maxAir,state.air);
-  if(state.air>2.6)addTrick('MEGA AIR',250);else if(state.air>1.3){state.coins+=10;addTrick('AIRTIME',100);blip(600,1100,.2,'triangle',.08);}
+  if(state.air>2.6)addTrick('MEGA AIR',250);else if(state.air>1.3){state.coins+=3;addTrick('AIRTIME',100);blip(600,1100,.2,'triangle',.08);}
   if((flips>0||state.air>1.3)&&clean)addTrick('SAUBER GELANDET',150);
   if(imp>650){popup(imp>1000?'KAWUMM!':'BAMM!',b.x+30,b.y-30,'#ff7a5c');if(imp>1000)boom(b.x,b.y+20,.6);cam.shake=Math.min(14,imp/90);blip(160,60,.18,'sawtooth',.09);}
   car.wheels.forEach(w=>w.impact=0);
@@ -1378,8 +1382,8 @@ function update(dt){
       if(it.got||Math.abs(it.x-b.x)>90)continue;
       const near=Math.hypot(it.x-b.x,it.y-b.y)<46||car.wheels.some(w=>Math.hypot(it.x-w.x,it.y-w.y)<34);
       if(near){it.got=true;
-        if(it.t==='coin'){state.coins+=1;blip(880,1320,.09,'square',.05);}
-        else if(it.t==='box'){if(!state.item){state.item=rollItem();popup(ITEMS[state.item].name,it.x,it.y-30,ITEMS[state.item].col);blip(600,1200,.15,'square',.07);}else{state.coins+=3;popup('+3',it.x,it.y-30);}}
+        if(it.t==='coin'){state.coins+=1;coinSnd();}
+        else if(it.t==='box'){if(!state.item){state.item=rollItem();popup(ITEMS[state.item].name,it.x,it.y-30,ITEMS[state.item].col);blip(600,1200,.15,'square',.07);}else{state.coins+=2;popup('+2',it.x,it.y-30);}}
         else{state.fuel=100;popup('VOLLGETANKT!',it.x,it.y-30,'#9be15d');blip(300,900,.25,'triangle',.08);}}
     }
     if(items.length>400)items=items.filter(i=>i.x>b.x-1500);
@@ -2242,8 +2246,8 @@ function gameOver(){
   misCheck();
   const xp=m+state.coins*2+Math.round(state.score/10)+state.xpBonus;
   const lv=curLevel();let lvBonus=0;
-  let bossWin=false,bossFirst=false;if(boss&&save.mode===4){bossWin=state.reason==='finish';if(bossWin){save.bossWon=save.bossWon||{};bossFirst=!save.bossWon[TRK.id];save.bossWon[TRK.id]=true;lvBonus=bossFirst?150+100*(TRK.diff||1):40;state.coins+=lvBonus;}}
-  if(lv&&state.reason==='finish'&&save.mode<4){const st=starsOf(TRK.id);st[save.mode-1]=Math.max(st[save.mode-1],state.stars);lvBonus=30*state.stars;state.coins+=lvBonus;}
+  let bossWin=false,bossFirst=false;if(boss&&save.mode===4){bossWin=state.reason==='finish';if(bossWin){save.bossWon=save.bossWon||{};bossFirst=!save.bossWon[TRK.id];save.bossWon[TRK.id]=true;lvBonus=bossFirst?80+50*(TRK.diff||1):15;state.coins+=lvBonus;}}
+  if(lv&&state.reason==='finish'&&save.mode<4){const st=starsOf(TRK.id);st[save.mode-1]=Math.max(st[save.mode-1],state.stars);lvBonus=12*state.stars;state.coins+=lvBonus;}
   const rec=!lv&&!playDaily&&m>bestOf(TRK.id); if(rec){save.bests=save.bests||{};save.bests[TRK.id]=m;}
   save.tot=save.tot||{};save.tot.flips=(save.tot.flips||0)+state.saltos;if(playDaily)save.tot.dailies=(save.tot.dailies||0)+1;
   saveGhost(m);
@@ -2499,7 +2503,7 @@ function duelOver(){
   $('overTitle').textContent=win?'GEWONNEN!':'VERLOREN!';
   const tt=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0');
   $('overSub').textContent=win?'Du warst zuerst im Ziel, in '+tt(state.t)+'.':(duel.winner||'Dein Gegner')+' war schneller'+(duel.oppTime?' ('+tt(duel.oppTime)+')':'')+'.';
-  const bonus=win?60:15;state.coins+=bonus;save.coins+=state.coins;const xp=win?120:40;save.xp+=xp;
+  const bonus=win?25:8;state.coins+=bonus;save.coins+=state.coins;const xp=win?120:40;save.xp+=xp;
   while(save.xp>=xpNeed(save.level)){save.xp-=xpNeed(save.level);save.level++;}persist();
   $('rDist').textContent=Math.floor((state.maxX-START_X)/PX_PER_M);$('rCoins').textContent=state.coins;$('rXp').textContent='+'+xp;
   $('lvlTxt2').textContent='Level '+save.level;$('lvlBar2').style.width=Math.min(100,save.xp/xpNeed(save.level)*100)+'%';$('lvlUp').hidden=true;
