@@ -567,6 +567,29 @@ input#codeIn{background:rgba(255,255,255,.9)}
   </div>
 </div>
 
+<!-- Blue-Chip-Pausen-Rennen (nur rennen.html) -->
+<div class="overlay" id="rnLobby" hidden style="z-index:70">
+  <div class="panel" style="text-align:center;gap:4px;padding:10px 16px">
+    <p class="boom" style="font-size:clamp(26px,6vw,40px);margin:0">♠ PAUSEN-RENNEN</p>
+    <p class="tag" id="rnWho" style="margin:4px 0">Melde dich an …</p>
+    <div style="display:flex;align-items:baseline;justify-content:center;gap:10px"><span class="tag" id="rnSub" style="margin:0">Verbinde …</span><span class="boom" id="rnCount" style="font-size:clamp(34px,9vh,60px);line-height:1">…</span></div>
+    <p class="tag" style="margin:4px 0;font-size:12px">Ziel bei <b>3000 m</b>. Crash = zurück zum Start, ab <b>1500 m</b> zum Checkpoint. Wer zuerst im Ziel ist, gewinnt <b>10 Big Blinds</b>.</p>
+    <ul id="rnList" style="list-style:none;padding:0;margin:4px 0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center"></ul>
+    <div class="row" style="align-items:center;justify-content:center;flex-wrap:wrap;gap:8px"><div class="seg" id="rnCtl" role="group" aria-label="Steuerung" style="margin:0"><button data-c="buttons" aria-pressed="true">KNÖPFE</button><button data-c="tilt" aria-pressed="false">NEIGEN</button></div><button class="gbtn play mid" id="rnReady">BEREIT</button></div>
+    <div class="row" id="rnAdm" hidden><button class="gbtn blue mid" id="rnNow">JETZT STARTEN</button><button class="gbtn orange mid" id="rnStop">RENNEN BEENDEN</button></div>
+    <p class="tag" id="rnMsg" aria-live="polite" style="margin:4px 0">Tipp: Handy quer halten.</p>
+  </div>
+</div>
+<div class="overlay" id="rnEnd" hidden style="z-index:75">
+  <div class="panel" style="text-align:center">
+    <p class="boom" id="rnEndT" style="font-size:clamp(28px,7vw,48px);margin:0">🏆</p>
+    <p class="tag" id="rnEndS"></p>
+    <ol class="lb" id="rnRank" style="text-align:left;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:5px"></ol>
+    <p class="tag" id="rnBye"></p>
+    <div class="row"><button class="big" id="rnBack">ZURÜCK IN DIE LOUNGE</button></div>
+  </div>
+</div>
+<button class="small" id="rnStopRun" hidden style="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:40;background:#c0392b;color:#fff">⛔ RENNEN BEENDEN</button>
 <button id="ytSnd" hidden>🔇 Tippen für Ton</button>
 <script>
 (()=>{
@@ -579,14 +602,18 @@ function resize(){DPR=Math.min(2,window.devicePixelRatio||1);W=window.innerWidth
 const $=id=>document.getElementById(id);
 
 /* ---------- Save ---------- */
+const RENNEN=!!window.NFP_RENNEN;   // Blue-Chip-Pausen-Rennen (rennen.html): eigener Spielstand nur im Speicher, nichts wird gespeichert
 let save={best:0,coins:0,xp:0,level:1,ctl:'buttons',inv:false,veh:'f1',up:{}};
-try{const s=JSON.parse(localStorage.getItem('nfp-save')||'null');if(s)save=Object.assign(save,s);}catch(e){}
-function persist(){try{localStorage.setItem('nfp-save',JSON.stringify(save));}catch(e){}}
+if(RENNEN){let o={};try{o=JSON.parse(localStorage.getItem('nfp-save')||'{}')||{};}catch(e){}
+  save=Object.assign(save,{ctl:o.ctl==='tilt'?'tilt':'buttons',inv:!!o.inv,leanInv:!!o.leanInv,engVol:o.engVol,engSnd:o.engSnd,clipVol:o.clipVol,giftSeen:true,tutDone:true,acct:'guest',season:'rennen',
+    veh:'truck',trk:'bluechip',level:10,allOpen:true,mode:0,driver:'pete',up:{truck:{engine:2,susp:2,tires:2,tank:2}}});}
+else try{const s=JSON.parse(localStorage.getItem('nfp-save')||'null');if(s)save=Object.assign(save,s);}catch(e){}
+function persist(){if(RENNEN)return;try{localStorage.setItem('nfp-save',JSON.stringify(save));}catch(e){}}
 const SEASON='s3', SEASON_T=1794933800186, SEASON_KEEP=['1','3'], LB_T=1795006946536;   // s3 (18.11. 13:05): alle Stände auf 0 außer Tim (1) und Sevi (3)
 function seasonReset(o){for(const k of ['best','coins','xp','level','up','veh','trk','bests','stars','bossWon','misDone','tot','daily','dTry','allOpen','mode','driver'])delete o[k];
   Object.assign(o,{best:0,coins:0,xp:0,level:1,veh:'f1',up:{},season:SEASON});return o;}
-if(save.season!==SEASON&&SEASON_KEEP.includes(String(save.acct))){save.season=SEASON;persist();}
-if(save.season!==SEASON){seasonReset(save);try{for(const k of Object.keys(localStorage))if(k.startsWith('nfp-ghost-'))localStorage.removeItem(k);}catch(e){}persist();}
+if(!RENNEN&&save.season!==SEASON&&SEASON_KEEP.includes(String(save.acct))){save.season=SEASON;persist();}
+if(!RENNEN&&save.season!==SEASON){seasonReset(save);try{for(const k of Object.keys(localStorage))if(k.startsWith('nfp-ghost-'))localStorage.removeItem(k);}catch(e){}persist();}
 const ACCTS={'1':{n:'Tim',d:'tim',k:'tim'},'2':{n:'Jonny',d:'jonny',k:'jonny'},'3':{n:'Severin',d:'sev',k:'sevi'}};
 const xpNeed=l=>150+l*100;
 
@@ -644,6 +671,19 @@ TRACKS.junk={id:'junk',name:'Schrottplatz-Stadt',unlock:6,diff:2,seed:71,g:1400,
     sky:['#2b3a67','#c76b5a','#f6c48a'],orb:['#ffd27a','#ff9a3c'],stars:false,
     mtn:[['#6a5a6e','#584a5c'],['#7a5a4e','#634a40'],['#5a4a44','#4a3c38']],snow:false,
     ter:{top:'#8a8f96',stripe:'#767b82',lip:'#c4682e',soil:'#6b5446',strata:'#5a463a',rock:'#a85a2a'}};
+// Blue-Chip-Pausen-Rennen (nur rennen.html): schwere Casino-Strecke, Ziel 3000 m, Checkpoint 1500 m (flache Plattform)
+if(RENNEN){const D0=400-START_X,cpD=1500*PX_PER_M-D0,glD=3000*PX_PER_M-D0,sm=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+  const chips=(d,D)=>{const L=520,q=d/L,i=Math.floor(q),f=q-i,v=j=>(hash(j*3+7)-.5)*2*(18+34*D),t=f<.72?0:(f-.72)/.28,ss=t*t*(3-2*t);return v(i)*(1-ss)+v(i+1)*ss;};
+  const ramps=(d,D)=>{const L=900,q=d/L,i=Math.floor(q),f=q-i,hi=hash(i*5+3)>.45?(30+70*D)*(.6+.4*hash(i*7+1)):0,rp=f<.75?Math.pow(f/.75,1.7):Math.max(0,1-(f-.75)/.25*1.2);return hi*Math.max(0,rp);};
+  const base=d=>{const m=d/PX_PER_M,D=m<1500?.28+.42*m/1500:.72+.43*Math.min(1,(m-1500)/1500);
+    return n2(d/820,130+140*D)+n2(d/240+50,28+40*D)+n2(d/62+9,4+9*D)+chips(d,D)+ramps(d,D);};
+  const flatK=(d,c,w)=>1-sm((Math.abs(d-c)-w)/w);
+  TRACKS.bluechip={id:'bluechip',name:'Blue Chip Pausen-Rennen',tags:['Casino','3000 m'],unlock:1,diff:3,seed:777,g:1400,grip:.95,wx:[['clear',1]],
+    desc:'Schwere Casino-Strecke. Ziel bei 3000 m, Checkpoint bei 1500 m.',
+    gen:(d,h)=>{const k=Math.max(flatK(d,cpD,260),flatK(d,glD,320));const v=base(d);return k>0?v*(1-k)+base(Math.abs(d-cpD)<Math.abs(d-glD)?cpD:glD)*k:v;},
+    sky:['#04140c','#0d3b26','#1f6b45'],orb:['#fff3c4','#ffcf1f'],stars:true,cloud:null,
+    mtn:[['#123a28','#0e2e20'],['#0e2e20','#0a2418'],['#081c14','#06150f']],snow:false,
+    ter:{top:'#1f9a55',stripe:'#188646',lip:'#ffcf1f',soil:'#0f4d2c',strata:'#0b3d23',rock:'#ffcf1f'}};}
 const TORDER=['hills','moon','glacier','dunes','jungle','junk','volcano'];
 const DAILY_T=()=>todayStr()>='2026-11-18'?TORDER:TORDER.filter(k=>k!=='junk');
 let TRK=TRACKS.hills;
@@ -1045,9 +1085,9 @@ function drawBoss(){if(!boss)return;const B=boss,sC=CAR,sc=car,c=Math.cos(B.a),s
     ctx.beginPath();ctx.moveTo(hx-8,by+14);ctx.lineTo(hx,by+26);ctx.lineTo(hx+8,by+14);ctx.fill();ctx.fillStyle=INK;ctx.fillText(B.msg,hx,by+7);ctx.globalAlpha=1;}
 }
 let drawingGhost=false;
-const duel={active:false,lv:null,opps:{},race:0,host:false,goal:800,result:null,mode:'race'};const CP_M=1000;
+const duel={active:false,lv:null,opps:{},race:0,host:false,goal:800,result:null,mode:'race'};let CP_M=1000;
 function starsOf(t){save.stars=save.stars||{};return save.stars[t]=save.stars[t]||[0,0,0];}
-function rollItem(){if(duel.active)return duelRoll();const lv=curLevel(),hz=lv?lv.haz:0;const pool=[['turbo',40],['shield',12+hz*25],['magnet',25],['fuel',15]];
+function rollItem(){if(duel.active&&!RENNEN)return duelRoll();const lv=curLevel(),hz=lv?lv.haz:0;const pool=[['turbo',40],['shield',12+hz*25],['magnet',25],['fuel',15]];
   let tot=pool.reduce((a,x)=>a+x[1],0),r=Math.random()*tot;for(const [k,w] of pool){if((r-=w)<0)return k;}return 'turbo';}
 function useItem(){
   if(!running||!state.item||state.crashed)return;const it=state.item;state.item=null;const b=car.body;
@@ -1423,7 +1463,8 @@ function hud(){
   $('coinN').textContent=state.coins;$('fuel').style.width=state.fuel+'%';
   $('speed').textContent=Math.round(Math.abs(car.body.vx)/PX_PER_M*3.6)+' km/h';
   const lv=curLevel();$('goal').hidden=!lv;
-  if(lv&&duel.active){const xs=Object.values(duel.opps).map(o=>o.x),pl=1+xs.filter(x=>x>car.body.x).length;$('goal').textContent='Ziel '+lv.goal+' m · Platz '+pl+'/'+(xs.length+1)+(duel.mode==='zeit'?' · '+Math.floor(state.t/60)+':'+String(Math.floor(state.t%60)).padStart(2,'0'):'');}
+  if(lv&&RENNEN)$('goal').textContent=rnGoalTxt();
+  else if(lv&&duel.active){const xs=Object.values(duel.opps).map(o=>o.x),pl=1+xs.filter(x=>x>car.body.x).length;$('goal').textContent='Ziel '+lv.goal+' m · Platz '+pl+'/'+(xs.length+1)+(duel.mode==='zeit'?' · '+Math.floor(state.t/60)+':'+String(Math.floor(state.t%60)).padStart(2,'0'):'');}
   else if(lv&&boss){const g=Math.round((boss.x-car.body.x)/PX_PER_M);$('goal').textContent='Ziel '+lv.goal+' m · 👑 '+(Math.abs(g)<3?'Kopf an Kopf!':g>0?'Boss '+g+' m vorn':'Boss '+(-g)+' m hinten');}
   else if(lv){const left=Math.max(0,lv.time-state.t);$('goal').textContent='Ziel '+lv.goal+' m · '+Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0');}
   const ib=$('itemBtn');const txt=state.item?ITEMS[state.item].name:(state.turbo>0?'TURBO AN':state.shield>0?'SCHILD AN':state.magnet>0?'MAGNET AN':'KEIN ITEM');
@@ -2274,6 +2315,7 @@ function startRun(){
   hud();
 }
 function gameOver(){
+  if(RENNEN){overShown=true;running=false;setPlayUI(false);return rnOver();}
   setTimeout(()=>cloudSave(true),1500);overShown=true;running=false;setPlayUI(false);
   if(duel.active)return duelOver();
   const m=Math.max(0,Math.floor((state.maxX-START_X)/PX_PER_M));
@@ -2409,7 +2451,7 @@ async function netSend(){if(!NET.key)return;NET.busy=true;NET.dirty=false;NET.la
   await dbSend('/','PATCH',{['gd/'+key+'/'+me]:st,['gm/'+key+'/'+me]:{n:pName(),m,v:String(save.veh||'f1').slice(0,12),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});
   NET.busy=false;if(NET.dirty)setTimeout(netKick,Math.max(0,110-(performance.now()-NET.lastSend)));}
 function netKick(){if(!NET.key)return;if(NET.busy){NET.dirty=true;return;}netSend();}
-function duelSend(m){if(!NET.key)return;m=Object.assign({race:duel.race},m);if(m.type==='pos'){NET.pos=m;}else{NET.ev.push(Object.assign({id:++NET.evId,at:Date.now()},m));if(NET.ev.length>30)NET.ev.splice(0,NET.ev.length-30);}netKick();}
+function duelSend(m){if(RENNEN)return rnSend(m);if(!NET.key)return;m=Object.assign({race:duel.race},m);if(m.type==='pos'){NET.pos=m;}else{NET.ev.push(Object.assign({id:++NET.evId,at:Date.now()},m));if(NET.ev.length>30)NET.ev.splice(0,NET.ev.length-30);}netKick();}
 function duelStatus(t){$('duelStatus').textContent=t;}
 function netPlayers(){const now=performance.now(),L=[{id:NET.me,name:pName(),me:true,host:NET.host}];for(const id in NET.peers){const P=NET.peers[id];if(now-P.seen<9000)L.push({id,name:(P.info&&P.info.name)||'?',host:P.host});}return L;}
 function netLobby(){if(!NET.key||duel.active)return;const L=netPlayers();
@@ -2699,7 +2741,7 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
   save.sbAdmin=!!(pr&&pr.admin);persist();await charsLoad();
   // Blue-Chip-Pokerspiel ist die Quelle: wer dort schon ein Spieler ist, fährt automatisch diese Figur.
   if(pr&&(!pr.driver||pr.driver==='pete')){let pk=null;try{pk=await pkFetch('/api/konto/ich');}catch(e){}
-    if(pk&&pk.name){pr.driver=pkDrv(pk.name);pr.name=pk.name;const pn=PK_NUM[String(pk.name).trim().toLowerCase()];if(pn)pr.num=pn;}
+    if(pk&&pk.name){pr.driver=pkDrv(pk.key||pk.name);pr.name=pk.name;const pn=PK_NUM[String(pk.name).trim().toLowerCase()];if(pn)pr.num=pn;}
     }
   // Ohne eigene Figur (z. B. neues Konto ohne Poker-Spieler): Chippy. Tim kann später unter Spieler verwalten eine andere Figur geben.
   if(pr&&(!pr.driver||pr.driver==='pete'))pr.driver='chippy';
@@ -2733,7 +2775,7 @@ let charsBusy=null;function charsLoad(){if(charsBusy)return charsBusy;charsBusy=
 setTimeout(charsLoad,0);
 // Verbindung zum Blue-Chip-Pokerspiel (gleiche Supabase-Konten)
 const PK_URL='https://blue-chip-game-production.up.railway.app',PK_MAP={domi:'domic'},PK_NUM={tim:1,jonny:2,severin:3,sevi:3};
-function pkDrv(n){const id=String(n||'').trim().toLowerCase(),k=PK_MAP[id]||id.replace(/[^a-z0-9]/g,'');return DORDER.some(d=>d[0]===k)?k:'chippy';}
+function pkDrv(n){const id=String(n||'').trim().toLowerCase(),k=PK_MAP[id]||id;return k!=='pete'&&k!=='chippy'&&DORDER.some(d=>d[0]===k)?k:'chippy';}   // Poker-Spieler-Id (Gastspieler haben eigene Ids -> Chippy)
 async function pkFetch(path,opt){opt=opt||{};const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
   try{const r=await fetch(PK_URL+path,{method:opt.method||'GET',signal:c.signal,headers:Object.assign({Authorization:'Bearer '+sbSess.access_token},opt.body?{'Content-Type':'application/json'}:{}),body:opt.body?JSON.stringify(opt.body):undefined});
     const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('Fehler '+r.status));return j;}finally{clearTimeout(t);}}
@@ -2764,7 +2806,7 @@ $('sbAdmList').addEventListener('change',async e=>{const tr=e.target.closest('tr
   try{await sbFresh();await sbFetch('/rest/v1/nfp_players?id=eq.'+tr.dataset.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{driver:drv,num:num||null}});toast('Gespeichert ✔',1.5);}catch(x){toast('Ging nicht: '+sbErr(x),3);}});
 $('sbGo').addEventListener('click',()=>sbLogin(false));$('sbReg').addEventListener('click',()=>sbLogin(true));$('sbForgot').addEventListener('click',e=>{e.preventDefault();sbForgot();});
 $('sbPw').addEventListener('keydown',e=>{if(e.key==='Enter')sbLogin(false);});
-if(SB_ON){$('numBox').hidden=true;$('sbBox').hidden=false;
+if(SB_ON&&!RENNEN){$('numBox').hidden=true;$('sbBox').hidden=false;
   // Rückkehr vom Bestätigungs- oder Passwort-Link: #access_token=…
   const hp=new URLSearchParams(location.hash.slice(1));if(hp.get('access_token')){sbKeep({access_token:hp.get('access_token'),refresh_token:hp.get('refresh_token'),expires_in:hp.get('expires_in')});
     try{history.replaceState(null,'',location.pathname);}catch(e){}
@@ -2773,9 +2815,168 @@ if(SB_ON){$('numBox').hidden=true;$('sbBox').hidden=false;
       $('login').hidden=false;$('loginMsg').textContent=hp.get('type')?'E-Mail bestätigt ✔':'Vom Pokerspiel angemeldet ✔';await sbEnter();}catch(e){$('loginMsg').textContent=sbErr(e);}})();}
   else if(sbSess){sbEnter();}   // eingeloggt bleiben: Fahrer-Zuweisung bei jedem Start prüfen
   else if(save.acct&&save.acct!=='guest'){save.acct=null;persist();$('login').hidden=false;}   // alte Nummern-Logins: einmal neu mit E-Mail anmelden
-}else{$('numBox').hidden=false;$('sbBox').hidden=true;}
+}else if(!RENNEN){$('numBox').hidden=false;$('sbBox').hidden=true;}
 {const _lo=document.getElementById('logout');_lo.addEventListener('click',()=>{if(SB_ON){try{if(sbSess)fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+sbSess.access_token}});}catch(e){}sbStore(null);}},true);}
 {const _os=document.getElementById('openSettings');if(_os)_os.addEventListener('click',()=>setTimeout(sbAdminShow,50));}
+/* ---------- Blue-Chip-Pausen-Rennen (nur rennen.html?rennen=<id>, Firebase-Raum gm/pr-<id>) ----------
+   Jeder Fahrer schreibt gd/pr-<id>/<p> (Info-JSON, einmal) und gm/pr-<id>/<p> (Zustand, ~6x pro Sekunde, gepackt in n/v).
+   Alle hören mit EINEM Stream auf gm/pr-<id>. Nichts davon zählt für Spielstand, XP, Daily oder Bestenlisten. */
+const RN_GOAL=3000,RN_CP=1500,RN_LIMIT=360,RN_WAIT=40,RN_LOUNGE='https://bluechipclub.github.io/lounge/';
+const RN={key:null,id:'',me:null,m:0,tok:null,exp:0,uid:null,email:null,name:'Gast',poker:null,drv:'pete',adm:false,info:null,meta:{},peers:{},off:null,offS:[],
+  start:0,urlStart:0,adminStart:0,started:false,phase:'w',fin:0,mx:0,pos:null,abortSent:false,ended:false,endKind:'',finSeen:0,busy:false,dirty:false,lastSend:0,kickT:0,
+  joinT:0,joined:false,snap:false,whoOk:false,ready:false,es:null,rank:null,winner:null,closeAt:0,closing:false,back:null};
+function rnNow(){return Date.now()+(RN.off||0);}
+const rnB36=(v,n)=>{const mx=Math.pow(36,n)-1;v=Math.max(0,Math.min(mx,Math.round(+v||0)));return v.toString(36).padStart(n,'0');};
+const rnU36=s=>parseInt(s||'0',36)||0;
+const rnEsc=t=>String(t==null?'':t).replace(/[<>&"]/g,'');
+const rnFmt=ms=>{const s=Math.max(0,ms/1000);return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')+','+String(Math.floor(s*10)%10);};
+function rnMsg(t){try{$('rnMsg').textContent=t;}catch(e){}}
+function rnSend(m){if(!m||!RN.key)return;
+  if(m.type==='pos'){RN.pos=m;rnKick();return;}
+  if(m.type==='win'&&!RN.fin&&!RN.ended){RN.fin=Math.max(1,rnNow()-RN.start);RN.phase='f';RN.mx=RN_GOAL;if(!RN.finSeen)RN.finSeen=performance.now();rnKick();}}
+function rnCmd(){if(RN.abortSent)return ['X','000'];const st=RN.adm&&RN.adminStart?RN.adminStart:RN.start;if(!st)return ['-','000'];
+  return [RN.adm&&RN.adminStart?'A':'S',rnB36(Math.floor(st/1000)%46656,3)];}
+function rnPack(){const p=RN.pos,run=running&&duel.active&&p;let ph=RN.phase;if(ph==='r'&&state&&state.crashed&&state.reason!=='finish')ph='c';
+  if(state&&duel.active&&!RN.fin)RN.mx=Math.max(RN.mx,Math.min(RN_GOAL,Math.floor((state.maxX-START_X)/PX_PER_M)));
+  const x=run?p.x:START_X,y=run?p.y:0,a=run?p.a:0,aa=((a%6.2832)+6.2832)%6.2832,[c,arg]=rnCmd();
+  return {n:ph+rnB36(x,4)+rnB36(y+800000,4)+rnB36(aa*1000,3)+rnB36(RN.mx,3),v:rnB36((run?p.vx:0)/4+648,2)+rnB36((run?p.vy:0)/4+648,2)+rnB36(RN.fin/10,4)+c+arg};}
+async function rnWrite(){if(!RN.key||RN.busy)return;RN.busy=true;RN.dirty=false;RN.lastSend=performance.now();
+  try{const {n,v}=rnPack(),m=++RN.m,body={['gm/'+RN.key+'/'+RN.me]:{n,m,v,dr:String(RN.drv||'pete').slice(0,12),t:{'.sv':'timestamp'}}};
+    if(!RN.joined)body['gd/'+RN.key+'/'+RN.me]=JSON.stringify(RN.info);
+    const ok=await dbSend('/','PATCH',body);
+    if(ok)RN.joined=true;else{const mt=await dbGet('/gm/'+RN.key+'/'+RN.me);RN.m=Math.max(RN.m,(mt&&mt.m)||0);RN.dirty=true;}}catch(e){}
+  RN.busy=false;if(RN.dirty)rnKick();}
+function rnKick(){if(!RN.key)return;if(RN.busy){RN.dirty=true;return;}const w=110-(performance.now()-RN.lastSend);
+  if(w>0){RN.dirty=true;if(!RN.kickT)RN.kickT=setTimeout(()=>{RN.kickT=0;rnKick();},w);return;}rnWrite();}
+function rnListen(){try{const es=new EventSource(DBU+'/gm/'+RN.key+'.json');RN.es=es;
+    const on=merge=>e=>{try{const d=JSON.parse(e.data);if(d.path==='/'&&!merge&&(d.data===null||typeof d.data==='object'))RN.snap=true;netPath(RN.meta,d.path,d.data,merge);rnScan();}catch(x){}};
+    es.addEventListener('put',on(false));es.addEventListener('patch',on(true));}catch(e){rnMsg('Keine Live-Verbindung auf diesem Gerät.');}}
+function rnArgT(arg,t){const base=Math.floor(t/1000),a=rnU36(arg);let s=base-((base-a)%46656+46656)%46656;if(base-s>23328)s+=46656;return s*1000;}
+async function rnInfo(id){const d=await dbGet('/gd/'+RN.key+'/'+id);let o=null;try{o=typeof d==='string'?JSON.parse(d):null;}catch(e){}
+  const P=RN.peers[id];if(!P)return;if(!o||typeof o!=='object'){setTimeout(()=>{if(RN.peers[id]&&!RN.peers[id].info)rnInfo(id);},2500);return;}
+  P.info=o;P.ctl=P.ctl||!!o.ctl;P.adm=!!o.adm||P.ctl;if(duel.opps[id])duel.opps[id].name=String(o.n||'Fahrer');rnLobbyShow();}
+function rnScan(){const now=rnNow();
+  for(const id in RN.meta){const mt=RN.meta[id];if(!mt||typeof mt!=='object')continue;
+    if(id===RN.me){if(mt.m>=RN.m-1&&mt.t){RN.offS.push(mt.t-Date.now());if(RN.offS.length>30)RN.offS.shift();RN.off=Math.max(...RN.offS);}continue;}
+    let P=RN.peers[id];if(!P){P=RN.peers[id]={id,info:null,lastM:-1,t:0,ctl:id==='ctl',adm:id==='ctl'};rnInfo(id);}
+    if(mt.m===P.lastM)continue;P.lastM=mt.m;P.t=+mt.t||0;P.stale=!(P.t>now-120000);if(P.stale)continue;
+    const n=String(mt.n||''),v=String(mt.v||'');P.ph=n[0]||'w';P.x=rnU36(n.slice(1,5));P.y=rnU36(n.slice(5,9))-800000;P.a=rnU36(n.slice(9,12))/1000;P.mx=rnU36(n.slice(12,15));
+    P.vx=(rnU36(v.slice(0,2))-648)*4;P.vy=(rnU36(v.slice(2,4))-648)*4;P.fin=rnU36(v.slice(4,8))*10;P.cmd=v[8]||'-';P.startAt=(P.cmd==='S'||P.cmd==='A')?rnArgT(v.slice(9,12),P.t):0;P.dr=mt.dr;
+    if(P.ph==='q'||P.ph==='e'||P.ph==='w')delete duel.opps[id];else if(duel.active&&running&&!P.ctl)rnOpp(P);}
+  rnDecide();}
+function rnOpp(P){const V=VEH.truck,c=Math.cos(P.a),s=Math.sin(P.a),o=duel.opps[P.id]=duel.opps[P.id]||{wa:0};
+  o.wa=(o.wa||0)+(P.x-(o.x==null?P.x:o.x))/28;
+  Object.assign(o,{x:P.x,y:P.y,a:P.a,vx:P.ph==='r'?P.vx:0,vy:P.ph==='r'?P.vy:0,veh:'truck',driver:(P.info&&P.info.dr)||P.dr||'pete',name:String((P.info&&P.info.n)||'Fahrer'),seen:performance.now()});
+  o.w=V.wheels.map(w=>[P.x+w.ax*c-(w.ay+V.rest)*s,P.y+w.ax*s+(w.ay+V.rest)*c,o.wa]);
+  if(o.sx==null||Math.abs(o.sx-P.x)>600){o.sx=P.x;o.sy=P.y;o.sa=P.a;}}
+function rnLive(){const now=rnNow();return Object.values(RN.peers).filter(P=>!P.stale&&P.t>now-30000&&P.ph&&P.ph!=='q');}
+function rnDecide(){if(RN.ended)return;const now=rnNow();
+  if(RN.abortSent||Object.values(RN.peers).some(P=>P.adm&&!P.stale&&P.cmd==='X'&&P.t>now-120000)){rnEnd('abbruch');return;}
+  const live=rnLive();
+  if(!RN.started){const adm=live.filter(P=>P.adm&&P.cmd==='A'&&P.startAt).map(P=>P.startAt);if(RN.adm&&RN.adminStart)adm.push(RN.adminStart);
+    if(adm.length)RN.start=Math.max(...adm);
+    else{const L=live.filter(P=>P.startAt&&P.startAt>now-RN_LIMIT*1000).map(P=>P.startAt);if(RN.start)L.push(RN.start);if(L.length)RN.start=Math.min(...L);}}
+  else{if(!RN.finSeen&&live.some(P=>!P.ctl&&P.ph==='f'&&P.fin>0))RN.finSeen=performance.now();
+    if(RN.finSeen&&performance.now()-RN.finSeen>1500){rnEnd('ziel');return;}
+    if(now>RN.start+RN_LIMIT*1000){rnEnd('zeit');return;}}}
+function rnTick(){if(!RN.key)return;rnDecide();const now=rnNow();
+  if(RN.ended){const left=Math.ceil((RN.closeAt-performance.now())/1000);$('rnBye').textContent=left>0?'Zurück in die Lounge in '+left+' s …':'Zurück in die Lounge …';if(left<=0)rnClose();return;}
+  if(!RN.start&&RN.off!=null&&RN.snap&&performance.now()-RN.joinT>1500){RN.start=RN.urlStart>now-RN_LIMIT*1000?RN.urlStart:Math.ceil((now+RN_WAIT*1000)/1000)*1000;rnKick();}
+  if(RN.start&&!RN.started&&now>=RN.start-3000&&(RN.whoOk||now>=RN.start))rnBegin();
+  rnLobbyShow();}
+function rnBegin(){RN.started=true;RN.phase='r';save.driver=RN.drv;save.pname=RN.name;
+  duel.active=true;duel.mode='zeit';duel.result=null;duel.winner=null;duel.opps={};duel.goal=RN_GOAL;CP_M=RN_CP;duel.lv={goal:RN_GOAL,time:1e9,drain:.75,haz:.8};
+  $('rnLobby').hidden=true;startRun();const left=(RN.start-rnNow())/1000;state.freeze=left>.3?Math.min(10,left):3;state.cp=false;
+  $('countdown').hidden=false;$('pause').hidden=true;$('coins').hidden=true;$('rnStopRun').hidden=!RN.adm;
+  setTimeout(()=>{if(running)toast('Crash = zurück zum Start. Ab 1500 m startest du am Checkpoint.',4);},600);rnKick();
+  for(const id in RN.peers){const P=RN.peers[id];if(!P.stale&&!P.ctl&&(P.ph==='r'||P.ph==='c'||P.ph==='f'))rnOpp(P);}}
+function rnGoalTxt(){try{$('best').textContent=state.cp?'Checkpoint ✓':'Checkpoint bei 1500 m';}catch(e){}
+  const me=(car.body.x-START_X)/PX_PER_M,L=rnLive().filter(P=>!P.ctl&&(P.ph==='r'||P.ph==='c'||P.ph==='f'));
+  const pl=RN.fin?1+L.filter(P=>P.fin>0&&P.fin<RN.fin).length:1+L.filter(P=>P.fin>0||(P.x-START_X)/PX_PER_M>me).length,left=Math.max(0,Math.ceil((RN.start+RN_LIMIT*1000-rnNow())/1000));
+  return 'Ziel 3000 m · Platz '+pl+'/'+(L.length+1)+' · noch '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0');}
+function rnOver(){if(!RN.ended&&RN.fin){RN.finSeen=RN.finSeen||performance.now();}}
+function rnPose(dr){try{const P=POSES[dr];return P&&P.src&&(P.src.sit||P.src.grin)||'';}catch(e){return '';}}
+function rnLobbyShow(){if(RN.started||RN.ended)return;const now=rnNow();
+  const L=[{n:RN.name,dr:RN.drv,me:true}].concat(rnLive().filter(P=>!P.ctl).map(P=>({n:(P.info&&P.info.n)||'…',dr:(P.info&&P.info.dr)||P.dr||'pete'})));
+  const html=L.map(p=>{const im=rnPose(p.dr);return '<li style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.08);border-radius:12px;padding:3px 9px;font-family:var(--hd,inherit);font-size:17px">'+(im?'<img src="'+im+'" alt="" style="height:34px">':'🏎️')+rnEsc(p.n)+(p.me?' (du)':'')+'</li>';}).join('');
+  const key=L.map(p=>p.n+p.dr+(rnPose(p.dr)?1:0)).join('|');if(RN.listKey!==key){RN.listKey=key;$('rnList').innerHTML=html;}
+  const left=RN.start?Math.max(0,Math.ceil((RN.start-now)/1000)):null;
+  $('rnSub').textContent=!RN.joined?'Verbinde …':left==null?'Warte auf die anderen …':'Start in';
+  $('rnCount').textContent=left==null?'…':left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'LOS!';
+  $('rnAdm').hidden=!RN.adm;}
+function rnEnd(kind){if(RN.ended)return;RN.ended=true;RN.endKind=kind;
+  const me={id:RN.me,me:true,info:RN.info,fin:RN.fin,mx:RN.fin?RN_GOAL:RN.mx};
+  const L=[me].concat(rnLive().filter(P=>!P.ctl&&(P.ph!=='w'||P.mx>0))).map(P=>({me:!!P.me,uid:(P.info&&P.info.uid)||null,name:String((P.info&&P.info.n)||'Fahrer'),poker:(P.info&&P.info.pk)||null,
+    meter:P.fin>0?RN_GOAL:Math.min(RN_GOAL,P.mx||0),zeit:P.fin>0?P.fin:null}));
+  L.sort((a,b)=>((a.zeit!=null?0:1)-(b.zeit!=null?0:1))||((a.zeit||0)-(b.zeit||0))||(b.meter-a.meter));L.forEach((e,i)=>e.platz=i+1);
+  const w=kind==='abbruch'?null:(L[0]&&(L[0].zeit!=null||L[0].meter>0)?L[0]:null);RN.rank=L;RN.winner=w;
+  if(running){running=false;setPlayUI(false);}try{eng&&engineUpdate();}catch(e){}$('countdown').hidden=true;$('rnStopRun').hidden=true;$('rnLobby').hidden=true;
+  RN.phase=RN.fin?'f':'e';rnKick();
+  $('rnEndT').textContent=kind==='abbruch'?'RENNEN ABGEBROCHEN':w?(w.me?'🏆 DU GEWINNST!':'🏆 '+w.name.toUpperCase()+' GEWINNT!'):'KEIN SIEGER';
+  $('rnEndS').textContent=kind==='abbruch'?'Das Rennen wurde beendet. Es gibt keinen Gewinner.':!w?'Niemand ist losgefahren.':kind==='zeit'?'Die Zeit ist um. Gewonnen hat, wer am weitesten gekommen ist: '+w.name+' mit '+w.meter+' m. Dafür gibt es 10 Big Blinds!':
+    w.name+' war zuerst bei 3000 m ('+rnFmt(w.zeit)+'). Dafür gibt es 10 Big Blinds!';
+  $('rnRank').innerHTML=kind==='abbruch'?'':L.map(e=>'<li data-r="'+e.platz+'"'+(e.me?' class="me"':'')+'><span class="nm">'+rnEsc(e.name)+(e.me?' (du)':'')+'</span><span class="pt">'+(e.zeit!=null?rnFmt(e.zeit):e.meter+' m')+'</span></li>').join('');
+  $('rnEnd').hidden=false;RN.closeAt=performance.now()+(kind==='abbruch'?5000:12000);
+  try{if(w&&w.me)[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>blip(f,f,.18,'square',.07),i*110));else blip(400,200,.3,'triangle',.06);}catch(e){}
+  rnReport(kind,w,L);}
+function rnReport(kind,w,L){const msg={type:'nfp-rennen-ende',rennen:RN.id,grund:kind,abgebrochen:kind==='abbruch',
+    sieger:w?{uid:w.uid,name:w.name,poker:w.poker,zeitMs:w.zeit,meter:w.meter}:null,
+    rangliste:L.map(e=>({platz:e.platz,uid:e.uid,name:e.name,poker:e.poker,meter:e.meter,zeitMs:e.zeit})),von:RN.uid,at:Date.now()};
+  RN.report=msg;try{window.__nfpRennen=msg;}catch(e){}
+  try{if(window.parent&&window.parent!==window)window.parent.postMessage(msg,'*');}catch(e){}
+  try{if(window.opener)window.opener.postMessage(msg,'*');}catch(e){}
+  if(RN.tok)try{fetch(PK_URL+'/api/rennen/ergebnis',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',Authorization:'Bearer '+RN.tok},body:JSON.stringify(msg)}).catch(()=>{});}catch(e){}}
+function rnBackUrl(){let u=RN.back||RN_LOUNGE;if(RN.tok&&Date.now()<RN.exp-60000&&!/#/.test(u))u+='#access_token='+encodeURIComponent(RN.tok)+'&expires_in='+Math.floor((RN.exp-Date.now())/1000)+'&token_type=bearer&from=nfp';return u;}
+function rnClose(){if(RN.closing)return;RN.closing=true;RN.phase='q';RN.busy=false;rnWrite();
+  const msg={type:'nfp-rennen-schliessen',rennen:RN.id};
+  try{if(window.parent&&window.parent!==window)window.parent.postMessage(msg,'*');}catch(e){}
+  try{if(window.opener)window.opener.postMessage(msg,'*');}catch(e){}
+  setTimeout(()=>{try{if(window.opener)window.close();}catch(e){}
+    setTimeout(()=>{if(window.parent&&window.parent!==window){$('rnBye').textContent='Du kannst das Fenster jetzt schließen.';return;}location.href=rnBackUrl();},500);},400);}
+function rnJwt(t){try{let p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');while(p.length%4)p+='=';return JSON.parse(decodeURIComponent(escape(atob(p))));}catch(e){return null;}}
+async function rnWho(){const hp=new URLSearchParams(location.hash.slice(1));let tok=hp.get('access_token'),exp=Date.now()+(+hp.get('expires_in')||3600)*1000;
+  if(tok){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
+  else{let s=null;try{s=JSON.parse(localStorage.getItem('nfp-sb')||'null');}catch(e){}if(s&&s.access_token&&s.exp>Date.now()+60000){tok=s.access_token;exp=s.exp;}}
+  RN.tok=tok||null;RN.exp=exp;
+  if(tok){const pl=rnJwt(tok)||{};RN.uid=pl.sub||null;RN.email=pl.email||null;RN.name=String((pl.user_metadata&&pl.user_metadata.name)||String(RN.email||'Spieler').split('@')[0]).slice(0,16);
+    sbSess={access_token:tok,exp,uid:RN.uid,email:RN.email};   // nur im Speicher, wird nicht gespeichert (kein Refresh-Token)
+    const [pk,pr]=await Promise.all([pkFetch('/api/konto/ich').catch(()=>null),sbFetch('/rest/v1/nfp_players?select=*&id=eq.'+RN.uid).then(r=>r&&r[0]).catch(()=>null),charsLoad()]);
+    if(pk&&pk.name){RN.poker=String(pk.name);RN.name=RN.poker.slice(0,16);RN.drv=pkDrv(pk.name);}
+    if(pr){RN.adm=!!pr.admin;if(pr.driver&&pr.driver!=='pete'&&DORDER.some(d=>d[0]===pr.driver))RN.drv=pr.driver;if(!RN.poker&&pr.name)RN.name=String(pr.name).slice(0,16);}}
+  else RN.name='Gast';
+  save.driver=RN.drv;save.pname=RN.name;
+  $('rnWho').textContent=tok?'Du fährst als '+RN.name+' im Monster-Muck.'+(RN.adm?' (Admin)':''):'Nicht angemeldet: Du fährst als Gast mit (ohne Gewinn). Öffne das Rennen am besten aus der Lounge.';}
+async function rnJoin(){const q=new URLSearchParams(location.search);
+  RN.id=String(q.get('rennen')||('t'+todayStr().replace(/-/g,''))).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24)||'x';RN.key='pr-'+RN.id;
+  const st=+q.get('start')||0;if(st>Date.now()-RN_LIMIT*1000&&st<Date.now()+15*60000)RN.urlStart=Math.ceil(st/1000)*1000;
+  const zb=q.get('zurueck');if(zb&&/^https:\/\/(bluechipclub\.github\.io|blue-chip-game-production\.up\.railway\.app)\//.test(zb))RN.back=zb.split('#')[0];
+  await rnWho();RN.whoOk=true;
+  RN.me=RN.uid?'u'+RN.uid.replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,15):'g'+Math.random().toString(36).slice(2,12);
+  RN.info={n:RN.name,dr:RN.drv,uid:RN.uid,pk:RN.poker,adm:RN.adm,j:Date.now()};
+  const mt=await dbGet('/gm/'+RN.key+'/'+RN.me);RN.m=(mt&&mt.m)||0;
+  RN.joinT=performance.now();rnListen();await rnWrite();if(!RN.joined)rnMsg('Keine Verbindung zum Renn-Server. Ich versuche es weiter …');
+  setInterval(()=>{if(!RN.closing)rnKick();},1000);setInterval(rnTick,200);rnLobbyShow();}
+if(RENNEN){
+  BIO.casino={sky:['#020d08','#0b3322','#1d6b45'],sun:'#fff3c4',glow:'#ffcf1f',far:'#14432e',mid:'#0e3123',near:'#082018',haze:'#1f5a3c',tree:'tower',stars:.9,neon:.7};
+  BIOMES.bluechip=[[0,'casino'],[800,'neon'],[1500,'casino'],[2300,'neon']];
+  try{document.title='Blue Chip Pausen-Rennen';}catch(e){}
+  for(const id of ['menu','login','gift','tut','coach','over'])try{$(id).hidden=true;}catch(e){}
+  $('rnLobby').hidden=false;$('pause').hidden=true;
+  {const seg=$('rnCtl'),mark=()=>[...seg.children].forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.c===(tiltOn?'tilt':'buttons'))));mark();
+    seg.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;initAudio();
+      if(b.dataset.c==='tilt'){const ok=await enableTilt();tiltOn=!!ok;save.ctl=ok?'tilt':'buttons';rnMsg(ok?'Neigen ist an. Gas und Bremse gehen trotzdem.':'Neigen geht hier leider nicht, nimm die Knöpfe.');}
+      else{tiltOn=false;save.ctl='buttons';rnMsg('Gas rechts, Bremse links.');}mark();});}
+  $('rnReady').addEventListener('click',async()=>{initAudio();try{clipUnlock();}catch(e){}if(tiltOn)await enableTilt();RN.ready=true;$('rnReady').textContent='BEREIT ✔';$('rnReady').disabled=true;rnMsg('Super! Das Rennen startet automatisch.');});
+  document.addEventListener('pointerdown',()=>{try{initAudio();}catch(e){}},{once:true});
+  $('rnNow').addEventListener('click',()=>{if(!RN.adm||RN.started)return;RN.adminStart=Math.ceil((rnNow()+5000)/1000)*1000;rnDecide();rnKick();});
+  const stop=()=>{if(!RN.adm||RN.ended)return;if(!confirm('Rennen für alle abbrechen? Es gibt dann keinen Gewinner.'))return;RN.abortSent=true;RN.busy=false;rnWrite();rnEnd('abbruch');};
+  $('rnStop').addEventListener('click',stop);$('rnStopRun').addEventListener('click',stop);
+  $('rnBack').addEventListener('click',()=>{RN.closeAt=0;rnClose();});
+  addEventListener('message',e=>{if(!/^https:\/\/(bluechipclub\.github\.io|blue-chip-game-production\.up\.railway\.app|timketterle\.github\.io)$/.test(e.origin))return;const d=e.data;
+    if(d&&d.type==='nfp-rennen-abbruch'&&!RN.ended)rnEnd('abbruch');});
+  if(/[?&]rtest=1/.test(location.search))window.__rn={RN,get car(){return car;},get state(){return state;},get running(){return running;},duel};
+  rnJoin();
+}
 })();
 </script>
 
