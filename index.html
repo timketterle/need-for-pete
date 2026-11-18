@@ -440,7 +440,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div id="sbBox">
       <p class="tag" id="sbTag">Melde dich an. Dann fährst du deinen eigenen Fahrer und dein Spielstand wird online gespeichert.</p>
       <input id="sbMail" type="email" autocomplete="email" placeholder="E-Mail" class="sbin">
-      <input id="sbPw" type="password" autocomplete="current-password" placeholder="Passwort (mind. 6 Zeichen)" class="sbin">
+      <input id="sbPw" type="password" autocomplete="current-password" placeholder="Passwort (mind. 8 Zeichen)" class="sbin">
       <input id="sbName" maxlength="16" autocomplete="nickname" placeholder="Dein Spielername" class="sbin" hidden>
       <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="gbtn play mid" id="sbGo">ANMELDEN</button><button class="gbtn blue mid" id="sbReg">NEU REGISTRIEREN</button></div>
       <p class="tag"><a href="#" id="sbForgot" style="color:inherit">Passwort vergessen?</a></p>
@@ -2638,7 +2638,7 @@ async function sbFetch(path,opt){opt=opt||{};const h=Object.assign({apikey:SB_KE
 function sbKeep(j){if(!j||!j.access_token)return null;const x={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(+j.expires_in||3600)*1000,uid:(j.user&&j.user.id)||(sbSess&&sbSess.uid),email:(j.user&&j.user.email)||(sbSess&&sbSess.email)};sbStore(x);return x;}
 async function sbFresh(){if(!sbSess)return null;if(Date.now()<sbSess.exp-120000)return sbSess;
   try{return sbKeep(await sbFetch('/auth/v1/token?grant_type=refresh_token',{method:'POST',auth:false,body:{refresh_token:sbSess.refresh_token}}));}catch(e){if(e.status===400||e.status===401)sbStore(null);return null;}}
-function sbErr(e){const m=String(e&&e.message||e);if(/Invalid login/i.test(m))return 'E-Mail oder Passwort falsch.';if(/not confirmed/i.test(m))return 'Bitte erst den Link in deiner E-Mail antippen.';if(/already registered/i.test(m))return 'Diese E-Mail ist schon registriert. Tipp auf ANMELDEN.';if(/Password should/i.test(m))return 'Das Passwort braucht mindestens 6 Zeichen.';if(/rate limit/i.test(m))return 'Zu viele Versuche. Warte ein paar Minuten.';return m;}
+function sbErr(e){const m=String(e&&e.message||e);if(/Invalid login/i.test(m))return 'E-Mail oder Passwort falsch.';if(/not confirmed/i.test(m))return 'Bitte erst den Link in deiner E-Mail antippen.';if(/already registered/i.test(m))return 'Diese E-Mail ist schon registriert. Tipp auf ANMELDEN.';if(/Password should/i.test(m))return 'Das Passwort braucht mindestens 8 Zeichen.';if(/rate limit/i.test(m))return 'Zu viele Versuche. Warte ein paar Minuten.';return m;}
 async function sbProfile(){return (await sbFetch('/rest/v1/nfp_players?select=*&id=eq.'+sbSess.uid))[0]||null;}
 async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textContent='Bitte melde dich neu an.';return;}
   let pr=null;try{pr=await sbProfile();if(!pr){const nm=(($('sbName').value||'').trim()||String(sbSess.email||'Spieler').split('@')[0]).slice(0,16);
@@ -2651,7 +2651,7 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
   ACCTS[num]=Object.assign({},ACCTS[num]||{},info);save.acctInfo=info;return loginWith(num,true);}
 async function sbLogin(reg){const msg=$('loginMsg'),em=($('sbMail').value||'').trim(),pw=$('sbPw').value||'';
   if(reg&&$('sbName').hidden){$('sbName').hidden=false;$('sbName').focus();msg.textContent='Gib noch deinen Spielernamen ein und tipp nochmal auf NEU REGISTRIEREN.';return;}
-  if(!/^\S+@\S+\.\S+$/.test(em)){msg.textContent='Bitte gib deine E-Mail ein.';return;}if(pw.length<6){msg.textContent='Das Passwort braucht mindestens 6 Zeichen.';return;}
+  if(!/^\S+@\S+\.\S+$/.test(em)){msg.textContent='Bitte gib deine E-Mail ein.';return;}if(pw.length<8&&reg){msg.textContent='Das Passwort braucht mindestens 8 Zeichen.';return;}if(!pw){msg.textContent='Bitte gib dein Passwort ein.';return;}
   msg.textContent=reg?'Registriere …':'Melde an …';
   try{if(reg){const nm=($('sbName').value||'').trim().slice(0,16);if(!nm){msg.textContent='Bitte gib einen Spielernamen ein.';return;}
       localStorage.setItem('nfp-sbname',nm);const j=await sbFetch('/auth/v1/signup?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{email:em,password:pw,data:{name:nm}}});
@@ -2674,7 +2674,7 @@ if(SB_ON){$('numBox').hidden=true;$('sbBox').hidden=false;
   const hp=new URLSearchParams(location.hash.slice(1));if(hp.get('access_token')){sbKeep({access_token:hp.get('access_token'),refresh_token:hp.get('refresh_token'),expires_in:hp.get('expires_in')});
     try{history.replaceState(null,'',location.pathname);}catch(e){}
     (async()=>{try{const u=await sbFetch('/auth/v1/user');sbSess.uid=u.id;sbSess.email=u.email;sbStore(sbSess);if(!$('sbName').value)$('sbName').value=localStorage.getItem('nfp-sbname')||(u.user_metadata&&u.user_metadata.name)||'';
-      if(hp.get('type')==='recovery'){const pw=prompt('Neues Passwort (mind. 6 Zeichen):');if(pw&&pw.length>=6){await sbFetch('/auth/v1/user',{method:'PUT',body:{password:pw}});toast('Passwort geändert ✔',2.5);}}
+      if(hp.get('type')==='recovery'){const pw=prompt('Neues Passwort (mind. 8 Zeichen):');if(pw&&pw.length>=8){await sbFetch('/auth/v1/user',{method:'PUT',body:{password:pw}});toast('Passwort geändert ✔',2.5);}}
       $('login').hidden=false;$('loginMsg').textContent='E-Mail bestätigt ✔';await sbEnter();}catch(e){$('loginMsg').textContent=sbErr(e);}})();}
   else if(sbSess){sbEnter();}   // eingeloggt bleiben: Fahrer-Zuweisung bei jedem Start prüfen
   else if(save.acct&&save.acct!=='guest'){save.acct=null;persist();$('login').hidden=false;}   // alte Nummern-Logins: einmal neu mit E-Mail anmelden
