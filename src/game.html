@@ -2706,7 +2706,7 @@ if(SB_ON){$('numBox').hidden=true;$('sbBox').hidden=false;
     try{history.replaceState(null,'',location.pathname);}catch(e){}
     (async()=>{try{const u=await sbFetch('/auth/v1/user');sbSess.uid=u.id;sbSess.email=u.email;sbStore(sbSess);if(!$('sbName').value)$('sbName').value=localStorage.getItem('nfp-sbname')||(u.user_metadata&&u.user_metadata.name)||'';
       if(hp.get('type')==='recovery'){const pw=prompt('Neues Passwort (mind. 8 Zeichen):');if(pw&&pw.length>=8){await sbFetch('/auth/v1/user',{method:'PUT',body:{password:pw}});toast('Passwort geändert ✔',2.5);}}
-      $('login').hidden=false;$('loginMsg').textContent='E-Mail bestätigt ✔';await sbEnter();}catch(e){$('loginMsg').textContent=sbErr(e);}})();}
+      $('login').hidden=false;$('loginMsg').textContent=hp.get('type')?'E-Mail bestätigt ✔':'Vom Pokerspiel angemeldet ✔';await sbEnter();}catch(e){$('loginMsg').textContent=sbErr(e);}})();}
   else if(sbSess){sbEnter();}   // eingeloggt bleiben: Fahrer-Zuweisung bei jedem Start prüfen
   else if(save.acct&&save.acct!=='guest'){save.acct=null;persist();$('login').hidden=false;}   // alte Nummern-Logins: einmal neu mit E-Mail anmelden
 }else{$('numBox').hidden=false;$('sbBox').hidden=true;}
