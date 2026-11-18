@@ -234,7 +234,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
 .stage .vprev{width:100%;max-width:520px;height:auto;flex:1;min-height:0;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
 .stage .vsel{width:100%;max-width:420px}
 .stage .vsel h3{font-size:24px;margin:0;color:#fff}
-.drvseg{width:100%;max-width:420px}
+.drvseg{width:100%;max-width:420px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.drvseg::-webkit-scrollbar{display:none}.drvseg button{flex:1 0 auto}
 .side{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto}
 .side .card{padding:10px 12px}
 .side .note{margin:4px 0 0;color:var(--mute);font-size:12px}
@@ -2157,6 +2157,7 @@ function showVehicle(){
   if(!locked&&save.veh!==menuVeh){save.veh=menuVeh;persist();newRun();}
   drawPreview(menuVeh);
   $('drv').innerHTML=DORDER.filter(d=>allowedDrivers().includes(d[0])).map(([k,n])=>'<button data-d="'+k+'" aria-pressed="'+((save.driver||'pete')===k)+'">'+n.toUpperCase()+'</button>').join('');
+  {const sel=$('drv').querySelector('[aria-pressed="true"]');if(sel&&$('drv').scrollWidth>$('drv').clientWidth)$('drv').scrollLeft=sel.offsetLeft-$('drv').clientWidth/2+sel.offsetWidth/2;}
   showTrack();
 }
 let menuTrk=save.trk||'hills';
@@ -2370,7 +2371,8 @@ $('duelBack').addEventListener('click',()=>{leaveDuel();$('duel').hidden=true;$(
 function leaveDuel(){if(NET.key)duelSend({type:'bye'});const k=NET.key;setTimeout(()=>{if(NET.key===k)netClose();},400);duel.active=false;duel.opps={};duel.result=null;}
 /* ---------- Accounts: a number per friend, each one owns his driver ---------- */
 function acct(){if(!save.acct||save.acct==='guest')return null;return ACCTS[save.acct]||save.acctInfo||null;}
-function allowedDrivers(){const a=acct();if(!a)return ['pete'];return DORDER.some(d=>d[0]===a.d)?[a.d]:['pete'];}
+function allowedDrivers(){const a=acct();if(!a)return ['pete'];if(save.sbAdmin)return DORDER.map(d=>d[0]);   // Admin (Tim): alle Fahrer
+  return DORDER.some(d=>d[0]===a.d)?[a.d]:['pete'];}
 function acctFix(){const a=acct();if(a){save.pname=a.n;save.sk='sv-'+a.k+'-'+String(save.acct).padStart(4,'0');}const al=allowedDrivers();if(!al.includes(save.driver||'pete'))save.driver=al[0];}
 function stScore(o){return (o.level||1)*1e6+(o.xp||0)*10+(o.coins||0)/1e3;}
 async function loginWith(num,viaSb){num=String(num||'').trim();if(SB_ON&&!viaSb){$('loginMsg').textContent='Bitte melde dich mit deiner E-Mail an.';return;}const a=ACCTS[num];if(!a){$('loginMsg').textContent='Diese Nummer gibt es nicht.';return;}
@@ -2639,7 +2641,7 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
     else if(pk&&Array.isArray(pk.frei)&&pk.frei.length){pkShow(pk.frei);return 'pick';}}
   if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Bis dahin kannst du als Gast spielen.';
     if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
-  const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||slug};
+  const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||'p'};
   if(save.acct===num&&save.acctInfo&&save.acctInfo.d===info.d){save.acctInfo=info;acctFix();persist();$('login').hidden=true;return 'ok';}
   ACCTS[num]=Object.assign({},ACCTS[num]||{},info);save.acctInfo=info;return loginWith(num,true);}
 async function sbLogin(reg){const msg=$('loginMsg'),em=($('sbMail').value||'').trim(),pw=$('sbPw').value||'';
@@ -2680,8 +2682,15 @@ function pkShow(frei){const L=$('pkList');$('sbBox').hidden=true;$('pkPick').hid
     L.appendChild(b);}}
 async function sbAdminShow(){const box=$('sbAdmin');if(!box)return;box.hidden=!(SB_ON&&save.sbAdmin&&sbSess);if(box.hidden)return;const L=$('sbAdmList');L.textContent='Lade …';
   try{await sbFresh();const rows=await sbFetch('/rest/v1/nfp_players?select=*&order=created_at.asc');
-    L.innerHTML='<table class="sbadm"><tr><td><b>Name</b></td><td><b>Nr.</b></td><td><b>Fahrer</b></td></tr>'+rows.map(r=>'<tr data-id="'+r.id+'"><td>'+String(r.name||'').replace(/[<&]/g,'')+'<br><small>'+String(r.email||'').replace(/[<&]/g,'')+'</small></td><td><input class="sbNum" type="number" min="1" max="9999" style="width:58px" value="'+(r.num||'')+'"></td><td><select class="sbDrv"><option value="">wartet</option>'+DORDER.map(([k,n])=>'<option value="'+k+'"'+(r.driver===k?' selected':'')+'>'+n+'</option>').join('')+'</select></td></tr>').join('')+'</table>';}
+    L.innerHTML='<table class="sbadm"><tr><td><b>Name</b></td><td><b>Nr.</b></td><td><b>Fahrer</b></td><td></td></tr>'+rows.map(r=>'<tr data-id="'+r.id+'"><td>'+String(r.name||'').replace(/[<&]/g,'')+'<br><small>'+String(r.email||'').replace(/[<&]/g,'')+'</small></td><td><input class="sbNum" type="number" min="1" max="9999" style="width:58px" value="'+(r.num||'')+'"></td><td><select class="sbDrv"><option value="">wartet</option>'+DORDER.map(([k,n])=>'<option value="'+k+'"'+(r.driver===k?' selected':'')+'>'+n+'</option>').join('')+'</select></td><td><button class="sbSv" data-num="'+(r.num||'')+'">Stand</button></td></tr><tr class="sbSvRow" hidden><td colspan="4"></td></tr>').join('')+'</table>';}
   catch(e){L.textContent='Liste nicht ladbar: '+sbErr(e);}}
+$('sbAdmList').addEventListener('click',async e=>{const b=e.target.closest('.sbSv');if(!b)return;const num=String(b.dataset.num||''),row=b.closest('tr').nextElementSibling,td=row.firstElementChild;
+  if(!row.hidden){row.hidden=true;return;}row.hidden=false;if(!num){td.textContent='Noch keine Nummer.';return;}td.textContent='Lade …';
+  const k=(ACCTS[num]&&ACCTS[num].k)||'p',d=await dbGet('/gd/sv-'+k+'-'+num.padStart(4,'0')+'/s');let o=null;try{o=typeof d==='string'?JSON.parse(d):null;}catch(x){}
+  if(!o){td.textContent='Noch kein Spielstand online.';return;}const E=x=>String(x==null?'':x).replace(/[<&]/g,'');
+  const bests=Object.entries(o.bests||{}).filter(([,m])=>m>0).map(([id,m])=>E((TRACKS[id]&&TRACKS[id].name)||id)+' '+Math.round(m)+' m').join(', ')||'–';
+  const tot=o.tot||{};td.innerHTML='<small><b>'+E(o.pname)+'</b> · Fahrer '+E((DORDER.find(x=>x[0]===o.driver)||[0,o.driver||'Pete'])[1])+' · Level '+(o.level||1)+' · '+(o.xp||0)+' XP · '+(o.coins||0)+' Münzen'+
+    '<br>Bestweiten: '+bests+(tot.flips?'<br>Saltos gesamt: '+tot.flips:'')+(o.svAt?'<br>Zuletzt gesichert: '+new Date(o.svAt).toLocaleString('de-DE'):'')+'</small>';});
 $('sbAdmList').addEventListener('change',async e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const rows=[...$('sbAdmList').querySelectorAll('.sbNum')].map(x=>+x.value||0);
   let num=+tr.querySelector('.sbNum').value||0;const drv=tr.querySelector('.sbDrv').value||null;if(drv&&!num){num=Math.max(3,...rows)+1;tr.querySelector('.sbNum').value=num;}
   try{await sbFresh();await sbFetch('/rest/v1/nfp_players?id=eq.'+tr.dataset.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{driver:drv,num:num||null}});toast('Gespeichert ✔',1.5);}catch(x){toast('Ging nicht: '+sbErr(x),3);}});
