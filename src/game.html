@@ -568,9 +568,10 @@ const $=id=>document.getElementById(id);
 let save={best:0,coins:0,xp:0,level:1,ctl:'buttons',inv:false,veh:'f1',up:{}};
 try{const s=JSON.parse(localStorage.getItem('nfp-save')||'null');if(s)save=Object.assign(save,s);}catch(e){}
 function persist(){try{localStorage.setItem('nfp-save',JSON.stringify(save));}catch(e){}}
-const SEASON='s2', SEASON_T=1794933800186;
+const SEASON='s3', SEASON_T=1794933800186, SEASON_KEEP=['1','3'], LB_T=1795006946536;   // s3 (18.11. 13:05): alle Stände auf 0 außer Tim (1) und Sevi (3)
 function seasonReset(o){for(const k of ['best','coins','xp','level','up','veh','trk','bests','stars','bossWon','misDone','tot','daily','dTry','allOpen','mode','driver'])delete o[k];
   Object.assign(o,{best:0,coins:0,xp:0,level:1,veh:'f1',up:{},season:SEASON});return o;}
+if(save.season!==SEASON&&SEASON_KEEP.includes(String(save.acct))){save.season=SEASON;persist();}
 if(save.season!==SEASON){seasonReset(save);try{for(const k of Object.keys(localStorage))if(k.startsWith('nfp-ghost-'))localStorage.removeItem(k);}catch(e){}persist();}
 const ACCTS={'1':{n:'Tim',d:'tim',k:'tim'},'2':{n:'Jonny',d:'jonny',k:'jonny'},'3':{n:'Severin',d:'sev',k:'sevi'}};
 const xpNeed=l=>150+l*100;
@@ -2275,7 +2276,7 @@ let lbLast=0;async function lbPush(force){if(!acct())return;if(!force&&Date.now(
     const best=Math.max(0,...Object.values(save.bests||{}).map(x=>+x||0)),v=('L'+(save.level||1)+' '+Math.min(99999,Math.round(best))+'m').slice(0,12);
     await dbSend('/','PATCH',{['gd/lb-all/'+k]:'1',['gm/lb-all/'+k]:{n:pName(),m,v,dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});}catch(e){}}
 async function lbLoad(){const d=await dbGet('/gm/lb-all');if(d===null)return [];if(!d||typeof d!=='object')return null;
-  return Object.entries(d).map(([k,e])=>{const mm=/^L(\d+) (\d+)m/.exec(e.v||'')||[0,1,0];return {k,n:e.n||k,dr:e.dr,lv:+mm[1],best:+mm[2],t:e.t||0};}).sort((a,b)=>b.lv-a.lv||b.best-a.best);}
+  return Object.entries(d).map(([k,e])=>{const mm=/^L(\d+) (\d+)m/.exec(e.v||'')||[0,1,0];return {k,n:e.n||k,dr:e.dr,lv:+mm[1],best:+mm[2],t:e.t||0};}).filter(e=>e.t>=LB_T).sort((a,b)=>b.lv-a.lv||b.best-a.best);}
 $('openBoard').addEventListener('click',showBoard);
 function albSeen(){const ss=save.surpSeen||{};return surpList().filter(id=>ss[id]>0);}
 let albURL=null;
@@ -2393,7 +2394,7 @@ function allowedDrivers(){const a=acct();if(!a)return ['pete'];if(save.sbAdmin)r
 function acctFix(){const a=acct();if(a){save.pname=a.n;save.sk='sv-'+a.k+'-'+String(save.acct).padStart(4,'0');}const al=allowedDrivers();if(!al.includes(save.driver||'pete'))save.driver=al[0];}
 function stScore(o){return (o.level||1)*1e6+(o.xp||0)*10+(o.coins||0)/1e3;}
 async function loginWith(num,viaSb){num=String(num||'').trim();if(SB_ON&&!viaSb){$('loginMsg').textContent='Bitte melde dich mit deiner E-Mail an.';return;}const a=ACCTS[num];if(!a){$('loginMsg').textContent='Diese Nummer gibt es nicht.';return;}
-  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-'+num.padStart(4,'0'),d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}if(o&&o.season!==SEASON)o=null;
+  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-'+num.padStart(4,'0'),d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}if(o&&o.season!==SEASON){if(SEASON_KEEP.includes(num))o.season=SEASON;else o=null;}
   const local=save.acct?null:save;let next=o&&(!local||stScore(o)>stScore(local))?o:Object.assign({},local||{},{});
   next.acct=num;next.sk=k;next.pname=a.n;if(save.acctInfo)next.acctInfo=save.acctInfo;next.sbAdmin=save.sbAdmin;next.giftSeen=true;if(!next.tutDone&&local&&local.tutDone)next.tutDone=true;
   localStorage.setItem('nfp-save',JSON.stringify(next));save=Object.assign(save,next);acctFix();persist();
@@ -2654,7 +2655,7 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
   save.sbAdmin=!!(pr&&pr.admin);persist();await charsLoad();
   // Blue-Chip-Pokerspiel ist die Quelle: wer dort schon ein Spieler ist, fährt automatisch diese Figur.
   if(pr&&(!pr.driver||pr.driver==='pete')){let pk=null;try{pk=await pkFetch('/api/konto/ich');}catch(e){}
-    if(pk&&pk.name){pr.driver=pkDrv(pk.name);pr.name=pk.name;}
+    if(pk&&pk.name){pr.driver=pkDrv(pk.name);pr.name=pk.name;const pn=PK_NUM[String(pk.name).trim().toLowerCase()];if(pn)pr.num=pn;}
     else if(pk&&Array.isArray(pk.frei)&&pk.frei.length){pkShow(pk.frei);return 'pick';}}
   if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Bis dahin kannst du als Gast spielen.';
     if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
@@ -2685,7 +2686,7 @@ function charsAdd(rows){if(!Array.isArray(rows))return;for(const r of rows){if(!
 let charsBusy=null;function charsLoad(){if(charsBusy)return charsBusy;charsBusy=fetch('chars.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(rows=>charsAdd(rows)).catch(()=>{}).finally(()=>{charsBusy=null;});return charsBusy;}
 setTimeout(charsLoad,0);
 // Verbindung zum Blue-Chip-Pokerspiel (gleiche Supabase-Konten)
-const PK_URL='https://blue-chip-game-production.up.railway.app',PK_MAP={domi:'domic'};
+const PK_URL='https://blue-chip-game-production.up.railway.app',PK_MAP={domi:'domic'},PK_NUM={tim:1,jonny:2,severin:3,sevi:3};
 function pkDrv(n){const id=String(n||'').trim().toLowerCase(),k=PK_MAP[id]||id.replace(/[^a-z0-9]/g,'');return DORDER.some(d=>d[0]===k)?k:'pete';}
 async function pkFetch(path,opt){opt=opt||{};const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
   try{const r=await fetch(PK_URL+path,{method:opt.method||'GET',signal:c.signal,headers:Object.assign({Authorization:'Bearer '+sbSess.access_token},opt.body?{'Content-Type':'application/json'}:{}),body:opt.body?JSON.stringify(opt.body):undefined});
