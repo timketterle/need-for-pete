@@ -439,7 +439,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
   <div class="panel" style="max-width:420px;text-align:center;margin:auto">
     <h2 class="logo" style="font-size:44px">Wer bist du?</h2>
     <div id="sbBox">
-      <p class="tag" id="sbTag">Melde dich an. Dann fährst du deinen eigenen Fahrer und dein Spielstand wird online gespeichert.</p>
+      <p class="tag" id="sbTag"><b>Gleiche E-Mail und Passwort wie im Blue Chip Club (Pokerspiel).</b><br>Dann fährst du deine eigene Figur und dein Spielstand wird online gespeichert. Noch kein Konto? Einfach neu registrieren, das gilt dann auch fürs Pokerspiel.</p>
       <input id="sbMail" type="email" autocomplete="email" placeholder="E-Mail" class="sbin">
       <input id="sbPw" type="password" autocomplete="current-password" placeholder="Passwort (mind. 8 Zeichen)" class="sbin">
       <input id="sbName" maxlength="16" autocomplete="nickname" placeholder="Dein Spielername" class="sbin" hidden>
@@ -505,6 +505,8 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <p class="tag" id="boardSub"></p>
     <ol class="lb" id="boardList"></ol>
     <p class="note" id="boardYest"></p>
+    <h3 style="margin:10px 0 4px">Alle Spieler</h3><p class="tag" style="margin:0 0 4px">Level und weiteste Fahrt von allen, die je mitgezockt haben.</p>
+    <ol class="lb" id="boardAll"></ol>
     <div class="row"><button class="gbtn orange mid" id="boardPlay">DAILY FAHREN</button><button class="gbtn blue mid" id="boardBack">ZURÜCK</button></div>
   </div>
 </div>
@@ -2255,7 +2257,7 @@ function gameOver(){
     const dd=db.date;(dRec?submitDaily(dd,m,pts):Promise.resolve()).then(()=>loadBoard(dd)).then(l=>{if(!$('over').hidden&&playDaily){$('overBoard').innerHTML=boardHTML(l,5);$('overBoard').hidden=false;}});}
   save.coins+=state.coins;save.xp+=xp;let ups=0;
   while(save.xp>=xpNeed(save.level)){save.xp-=xpNeed(save.level);save.level++;ups++;}
-  persist();
+  persist();lbPush(true);
   const T={fuel:'SPRIT LEER!',time:'ZEIT UM!',finish:'ZIEL!',crash:'AUTSCH!'};$('overTitle').textContent=T[state.reason]||'AUTSCH!';
   const tt=Math.floor(state.t/60)+':'+String(Math.floor(state.t%60)).padStart(2,'0');
   $('overSub').textContent=state.reason==='finish'?'★'.repeat(state.stars)+'☆'.repeat(3-state.stars)+'  in '+tt+'. Bonus: '+lvBonus+' Münzen.'+(save.mode<3&&state.stars?' Nächstes Level ist offen!':''):
@@ -2275,7 +2277,18 @@ setTimeout(()=>dTrySync(false),1500);document.addEventListener('visibilitychange
 async function showBoard(){const di=dailyInfo();$('menu').hidden=true;$('board').hidden=false;
   $('boardSub').textContent='Heute: '+TRACKS[di.trk].name+'. Wer um Mitternacht vorne liegt, gewinnt den Tag.';$('boardList').innerHTML='<li class="empty">Lade …</li>';$('boardYest').textContent='';
   const y=new Date();y.setDate(y.getDate()-1);const [l,ly]=await Promise.all([loadBoard(di.date),loadBoard(ymd(y))]);
-  $('boardList').innerHTML=boardHTML(l,10);$('boardYest').textContent=ly&&ly.length?'Gestern gewann '+ly[0].n+' mit '+ly[0].s+' Punkten.':'';}
+  $('boardList').innerHTML=boardHTML(l,10);$('boardYest').textContent=ly&&ly.length?'Gestern gewann '+ly[0].n+' mit '+ly[0].s+' Punkten.':'';
+  $('boardAll').innerHTML='<li class="empty">Lade …</li>';const all=await lbLoad();
+  if(!all){$('boardAll').innerHTML='<li class="empty">Keine Verbindung.</li>';return;}if(!all.length){$('boardAll').innerHTML='<li class="empty">Noch niemand drin.</li>';return;}
+  const me=acct()?'a'+save.acct:'',esc=t=>String(t).replace(/[<>&"]/g,'');
+  $('boardAll').innerHTML=all.map((e,i)=>'<li data-r="'+(i+1)+'"'+(e.k===me?' class="me"':'')+'><span class="nm">'+esc(e.n)+' <small>Level '+e.lv+(e.dr&&e.dr!=='pete'?' · '+esc((DORDER.find(d=>d[0]===e.dr)||[0,''])[1]):'')+'</small></span><span class="pt">'+e.best+' m</span></li>').join('');}
+// Gesamt-Bestenliste: jeder eingeloggte Spieler steht unter gm/lb-all/a<Nummer> (v = 'L<level> <weite>m')
+let lbLast=0;async function lbPush(force){if(!acct())return;if(!force&&Date.now()-lbLast<15000)return;lbLast=Date.now();
+  try{const k='a'+String(save.acct).replace(/[^0-9a-z]/gi,'').slice(0,12),old=await dbGet('/gm/lb-all/'+k),m=((old&&old.m)||0)+1;if(m>=50000)return;
+    const best=Math.max(0,...Object.values(save.bests||{}).map(x=>+x||0)),v=('L'+(save.level||1)+' '+Math.min(99999,Math.round(best))+'m').slice(0,12);
+    await dbSend('/','PATCH',{['gd/lb-all/'+k]:'1',['gm/lb-all/'+k]:{n:pName(),m,v,dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});}catch(e){}}
+async function lbLoad(){const d=await dbGet('/gm/lb-all');if(d===null)return [];if(!d||typeof d!=='object')return null;
+  return Object.entries(d).map(([k,e])=>{const mm=/^L(\d+) (\d+)m/.exec(e.v||'')||[0,1,0];return {k,n:e.n||k,dr:e.dr,lv:+mm[1],best:+mm[2],t:e.t||0};}).sort((a,b)=>b.lv-a.lv||b.best-a.best);}
 $('openBoard').addEventListener('click',showBoard);
 function albSeen(){const ss=save.surpSeen||{};return surpList().filter(id=>ss[id]>0);}
 let albURL=null;
@@ -2659,7 +2672,7 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
   if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Bis dahin kannst du als Gast spielen.';
     if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
   const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||'p'};
-  if(save.acct===num&&save.acctInfo&&save.acctInfo.d===info.d){save.acctInfo=info;acctFix();persist();$('login').hidden=true;return 'ok';}
+  if(save.acct===num&&save.acctInfo&&save.acctInfo.d===info.d){save.acctInfo=info;acctFix();persist();$('login').hidden=true;lbPush(true);return 'ok';}
   ACCTS[num]=Object.assign({},ACCTS[num]||{},info);save.acctInfo=info;return loginWith(num,true);}
 async function sbLogin(reg){const msg=$('loginMsg'),em=($('sbMail').value||'').trim(),pw=$('sbPw').value||'';
   if(reg&&$('sbName').hidden){$('sbName').hidden=false;$('sbName').focus();msg.textContent='Gib noch deinen Spielernamen ein und tipp nochmal auf NEU REGISTRIEREN.';return;}
