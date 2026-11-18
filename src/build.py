@@ -11,7 +11,7 @@ head='''<!doctype html><html lang="de"><head><meta charset="utf-8">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<script>if(/[?&]modus=rennen(&|$)/.test(location.search)&&!window.NFP_RENNEN)location.replace('rennen.html'+location.search+location.hash);</script>
+<script>if((/[?&]modus=rennen(&|$)/.test(location.search)||/[#&]rennen=[^&]/.test(location.hash))&&!window.NFP_RENNEN)location.replace('rennen.html'+location.search+location.hash);</script>
 <style>[hidden]{display:none!important}:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}</style>
 <script src="peerjs.min.js"></script>
 </head><body>
@@ -24,7 +24,7 @@ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had){had=tr
 open('../index.html','w').write(head+src+tail)
 # Blue-Chip-Pausen-Rennen: eigener Link, gleicher Spielcode, aber kein Speichern, kein Menü, kein Service-Worker-Update-Neuladen
 rhead=head.replace('<script src="peerjs.min.js"></script>','<title>Blue Chip Pausen-Rennen</title><script>window.NFP_RENNEN=1;</script>')
-rhead=rhead[:rhead.index("<script>if(/[?&]modus=rennen")]+rhead[rhead.index("<style>[hidden]"):]
+rhead=rhead[:rhead.index("<script>if((/[?&]modus=rennen")]+rhead[rhead.index("<style>[hidden]"):]
 assert rhead!=head
 open('../rennen.html','w').write(rhead+src+'\n</body></html>')
 ver=time.strftime('%Y%m%d%H%M%S')

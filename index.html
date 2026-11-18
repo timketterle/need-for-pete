@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<script>if(/[?&]modus=rennen(&|$)/.test(location.search)&&!window.NFP_RENNEN)location.replace('rennen.html'+location.search+location.hash);</script>
+<script>if((/[?&]modus=rennen(&|$)/.test(location.search)||/[#&]rennen=[^&]/.test(location.hash))&&!window.NFP_RENNEN)location.replace('rennen.html'+location.search+location.hash);</script>
 <style>[hidden]{display:none!important}:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}</style>
 <script src="peerjs.min.js"></script>
 </head><body>
@@ -585,6 +585,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <p class="boom" id="rnEndT" style="font-size:clamp(28px,7vw,48px);margin:0">🏆</p>
     <p class="tag" id="rnEndS"></p>
     <ol class="lb" id="rnRank" style="text-align:left;padding:0;margin:8px 0;display:flex;flex-direction:column;gap:5px"></ol>
+    <p class="tag" id="rnSrv" hidden style="font-weight:900;font-size:16px"></p>
     <p class="tag" id="rnBye"></p>
     <div class="row"><button class="big" id="rnBack">ZURÜCK IN DIE LOUNGE</button></div>
   </div>
@@ -2841,7 +2842,7 @@ const rnFmt=ms=>{const s=Math.max(0,ms/1000);return Math.floor(s/60)+':'+String(
 function rnMsg(t){try{$('rnMsg').textContent=t;}catch(e){}}
 function rnSend(m){if(!m||!RN.key)return;
   if(m.type==='pos'){RN.pos=m;rnKick();return;}
-  if(m.type==='win'&&!RN.fin&&!RN.ended){RN.fin=Math.max(1,rnNow()-RN.start);RN.phase='f';RN.mx=RN_GOAL;if(!RN.finSeen)RN.finSeen=performance.now();rnKick();}}
+  if(m.type==='win'&&!RN.fin&&!RN.ended){rnZiel();RN.fin=Math.max(1,rnNow()-RN.start);RN.phase='f';RN.mx=RN_GOAL;if(!RN.finSeen)RN.finSeen=performance.now();rnKick();}}
 function rnCmd(){if(RN.abortSent)return ['X','000'];const st=RN.adm&&RN.adminStart?RN.adminStart:RN.start;if(!st)return ['-','000'];
   return [RN.adm&&RN.adminStart?'A':'S',rnB36(Math.floor(st/1000)%46656,3)];}
 function rnPack(){const p=RN.pos,run=running&&duel.active&&p;let ph=RN.phase;if(ph==='r'&&state&&state.crashed&&state.reason!=='finish')ph='c';
@@ -2921,10 +2922,10 @@ function rnEnd(kind){if(RN.ended)return;RN.ended=true;RN.endKind=kind;
   if(running){running=false;setPlayUI(false);}try{eng&&engineUpdate();}catch(e){}$('countdown').hidden=true;$('rnStopRun').hidden=true;$('rnLobby').hidden=true;
   RN.phase=RN.fin?'f':'e';rnKick();
   $('rnEndT').textContent=kind==='abbruch'?'RENNEN ABGEBROCHEN':w?(w.me?'🏆 DU GEWINNST!':'🏆 '+w.name.toUpperCase()+' GEWINNT!'):'KEIN SIEGER';
-  $('rnEndS').textContent=kind==='abbruch'?'Das Rennen wurde beendet. Es gibt keinen Gewinner.':!w?'Niemand ist losgefahren.':kind==='zeit'?'Die Zeit ist um. Gewonnen hat, wer am weitesten gekommen ist: '+w.name+' mit '+w.meter+' m. Dafür gibt es 10 Big Blinds!':
-    w.name+' war zuerst bei 3000 m ('+rnFmt(w.zeit)+'). Dafür gibt es 10 Big Blinds!';
+  $('rnEndS').textContent=kind==='abbruch'?'Das Rennen wurde beendet. Es gibt keinen Gewinner.':!w?'Niemand ist losgefahren.':kind==='zeit'?'Die Zeit ist um. Gewonnen hat, wer am weitesten gekommen ist: '+w.name+' mit '+w.meter+' m. Die 10 Big Blinds gibt es nur für die Zielflagge.':
+    w.name+' war zuerst bei 3000 m ('+rnFmt(w.zeit)+').';
   $('rnRank').innerHTML=kind==='abbruch'?'':L.map(e=>'<li data-r="'+e.platz+'"'+(e.me?' class="me"':'')+'><span class="nm">'+rnEsc(e.name)+(e.me?' (du)':'')+'</span><span class="pt">'+(e.zeit!=null?rnFmt(e.zeit):e.meter+' m')+'</span></li>').join('');
-  $('rnEnd').hidden=false;RN.closeAt=performance.now()+(kind==='abbruch'?5000:12000);
+  if(RN.zielSt===409&&w&&w.me)$('rnEndT').textContent='KNAPP DANEBEN!';if(RN.zielMsg){$('rnSrv').textContent=RN.zielMsg;$('rnSrv').hidden=false;}$('rnEnd').hidden=false;RN.closeAt=performance.now()+(kind==='abbruch'?5000:12000);
   try{if(w&&w.me)[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>blip(f,f,.18,'square',.07),i*110));else blip(400,200,.3,'triangle',.06);}catch(e){}
   rnReport(kind,w,L);}
 function rnReport(kind,w,L){const msg={type:'nfp-rennen-ende',rennen:RN.id,grund:kind,abgebrochen:kind==='abbruch',
@@ -2933,7 +2934,12 @@ function rnReport(kind,w,L){const msg={type:'nfp-rennen-ende',rennen:RN.id,grund
   RN.report=msg;try{window.__nfpRennen=msg;}catch(e){}
   try{if(window.parent&&window.parent!==window)window.parent.postMessage(msg,'*');}catch(e){}
   try{if(window.opener)window.opener.postMessage(msg,'*');}catch(e){}
-  if(RN.tok)try{fetch(PK_URL+'/api/rennen/ergebnis',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',Authorization:'Bearer '+RN.tok},body:JSON.stringify(msg)}).catch(()=>{});}catch(e){}}
+}
+// Zielmeldung an den Blue-Chip-Server (genau einmal, nur wer selbst die Zielflagge erreicht; der Server entscheidet, wer Erster war)
+async function rnZiel(){if(RN.zielSent||!RN.rawId)return;RN.zielSent=true;let r=null;
+  for(let i=0;i<3&&!r;i++){try{r=await fetch(PK_URL+'/api/rennen/ziel',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+(RN.tok||'')},body:JSON.stringify({id:RN.rawId})});}catch(e){r=null;if(i<2)await new Promise(ok=>setTimeout(ok,1200*(i+1)));}}
+  const t=!r?'Keine Verbindung zum Pokerserver. Sag Tim Bescheid.':r.status===200?'Du hast gewonnen! +10 Big Blinds am Turniertisch':r.status===409?'Jemand war schneller.':r.status===401?'Bitte melde dich an, damit dein Sieg zählt.':'Der Pokerserver antwortet nicht richtig ('+r.status+').';
+  RN.zielMsg=t;RN.zielSt=r?r.status:0;try{if(r&&r.status===200)$('rnEndT').textContent='🏆 DU GEWINNST!';if(r&&r.status===409&&RN.winner&&RN.winner.me)$('rnEndT').textContent='KNAPP DANEBEN!';$('rnSrv').textContent=t;$('rnSrv').hidden=false;}catch(e){}toast(t,5);}
 function rnBackUrl(){let u=RN.back||RN_LOUNGE;if(RN.tok&&Date.now()<RN.exp-60000&&!/#/.test(u))u+='#access_token='+encodeURIComponent(RN.tok)+'&expires_in='+Math.floor((RN.exp-Date.now())/1000)+'&token_type=bearer&from=nfp';return u;}
 function rnClose(){if(RN.closing)return;RN.closing=true;RN.phase='q';RN.busy=false;rnWrite();
   const msg={type:'nfp-rennen-schliessen',rennen:RN.id};
@@ -2955,7 +2961,8 @@ async function rnWho(){const hp=new URLSearchParams(location.hash.slice(1));let 
   save.driver=RN.drv;save.pname=RN.name;
   $('rnWho').textContent=tok?'Du fährst als '+RN.name+' im Monster-Muck.'+(RN.adm?' (Admin)':''):'Nicht angemeldet: Du fährst als Gast mit (ohne Gewinn). Öffne das Rennen am besten aus der Lounge.';}
 async function rnJoin(){const q=new URLSearchParams(location.search);
-  RN.id=String(q.get('rennen')||('t'+todayStr().replace(/-/g,''))).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24)||'x';RN.key='pr-'+RN.id;
+  const hq=new URLSearchParams(location.hash.slice(1)),raw=String(hq.get('rennen')||q.get('rennen')||'').trim().slice(0,120);RN.rawId=raw||null;
+  RN.id=String(raw||('t'+todayStr().replace(/-/g,''))).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,36)||'x';RN.key='pr-'+RN.id;
   const st=+q.get('start')||0;if(st>Date.now()-RN_LIMIT*1000&&st<Date.now()+15*60000)RN.urlStart=Math.ceil(st/1000)*1000;
   const zb=q.get('zurueck');if(zb&&/^https:\/\/(bluechipclub\.github\.io|blue-chip-game-production\.up\.railway\.app)\//.test(zb))RN.back=zb.split('#')[0];
   await rnWho();RN.whoOk=true;
