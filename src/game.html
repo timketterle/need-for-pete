@@ -2325,7 +2325,7 @@ function dailyTry(){const t=dTryInfo();
   t.n++;persist();dTrySync(true);setTimeout(()=>toast('Daily-Versuch '+t.n+' von '+DTRY,2),300);return true;}
 function startRun(){
   if(playDaily&&!duel.active&&!dailyTry())return;
-  initAudio();clipUnlock();newRun();running=true;overShown=false;acc=0;
+  initAudio();clipUnlock();newRun();running=true;overShown=false;acc=0;try{setTimeout(()=>stBeat(true),500);}catch(e){}
   $('menu').hidden=true;$('over').hidden=true;setPlayUI(true);
   if(tiltOn){
     if(tiltRaw!=null)tiltNeutral=tiltRaw;
@@ -3014,14 +3014,14 @@ if(RENNEN){
   rnJoin();
 }
 /* ---------- Spieler live: Anwesenheit, Statistik, Raum-Ansagen (gm/st + gd/st, gleiche Regeln wie Spielstand) ---------- */
-const ST_ON=!RENNEN,ST_BEAT=75e3,ST_ONLINE=200e3;
+const ST_ON=!RENNEN,ST_BEAT=45e3,ST_ONLINE=200e3;
 function stObj(){const s=save.st=save.st&&typeof save.st==='object'?save.st:{};s.daily=s.daily||{};s.tr=s.tr||{};s.play=s.play||0;s.drive=s.drive||0;s.runs=s.runs||0;s.sess=s.sess||0;if(!s.first)s.first=Date.now();return s;}
 function stPk(){if(acct())return 'a'+String(save.acct).replace(/[^0-9a-z]/gi,'').slice(0,12);if(!save.gid||!/^[a-z0-9]{6}$/.test(save.gid)){let r='';const A='abcdefghijkmnpqrstuvwxyz23456789';for(let i=0;i<6;i++)r+=A[Math.floor(Math.random()*A.length)];save.gid=r;persist();}return 'g'+save.gid;}
 let stT=performance.now(),stVis=!document.hidden,stM=0,stBusy=false,stLastBeat=0,stInv=null,stOn={};
 function stTick(){const now=performance.now(),d=Math.min(120,Math.max(0,(now-stT)/1000));stT=now;if(!stVis)return;const s=stObj();s.play+=d;if(running&&!overShown)s.drive+=d;}
 function stWhat(){if(!running)return 'Menü';if(duel.active)return 'Live-Rennen';if(playDaily)return 'Daily';const md=save.mode||0;return ((TRK&&TRK.name)||'Strecke')+(md===4?' Boss':md?' LV '+md:' frei');}
 function stRoom(){return NET.key&&NET.host&&!duel.active?NET.code:null;}
-function stV(){const r=stRoom();if(r)return ('R'+r+(stInv?'@'+stInv:'')).slice(0,12);return ((running?'P':'M')+(save.level||1)).slice(0,12);}
+function stV(){const r=stRoom();if(r)return ('R'+r+(stInv?'@'+stInv:'')).slice(0,12);return ((!stVis?'X':running?'P':'M')+(save.level||1)).slice(0,12);}
 function stRec(){const s=stObj(),days=Object.keys(s.daily).sort().slice(-21),dl={};days.forEach(k=>dl[k]=s.daily[k]);s.daily=dl;
   return {n:pName(),pk:stPk(),num:acct()?String(save.acct):null,guest:!acct(),dr:save.driver||'pete',lv:save.level||1,xp:save.xp||0,coins:save.coins||0,veh:save.veh||'f1',
     play:Math.round(s.play),drive:Math.round(s.drive),runs:s.runs,sess:s.sess,first:s.first,last:Date.now(),what:stWhat(),room:stRoom(),
@@ -3043,7 +3043,7 @@ let stES=null;
 function stListen(on){if(!ST_ON)return;if(!on){try{stES&&stES.close();}catch(e){}stES=null;return;}if(stES)return;
   try{const es=new EventSource(DBU+'/gm/st.json');stES=es;const h=e=>{try{const d=JSON.parse(e.data);netPath(stOn,d.path,d.data,e.type==='patch');stUpd();}catch(x){}};
     es.addEventListener('put',h);es.addEventListener('patch',h);es.onerror=()=>{};}catch(e){}}
-function stOnline(){const now=Date.now(),me=stPk();return Object.entries(stOn).filter(([k,e])=>e&&typeof e==='object'&&(e.t||0)>now-ST_ONLINE).map(([k,e])=>({k,me:k===me,n:e.n||k,dr:e.dr,v:String(e.v||''),t:e.t,m:e.m}));}
+function stOnline(){const now=Date.now(),me=stPk();return Object.entries(stOn).filter(([k,e])=>e&&typeof e==='object'&&(e.t||0)>now-ST_ONLINE&&String(e.v||'')[0]!=='X').map(([k,e])=>({k,me:k===me,n:e.n||k,dr:e.dr,v:String(e.v||''),t:e.t,m:e.m}));}
 const stSeen={};let banT=null,banCode=null;
 function stUpd(){const L=stOnline(),n=L.length;try{$('onN').textContent=n||1;}catch(e){}
   if(!$('onl').hidden)stOnlShow();if(NET.key&&NET.host)stInvShow();
@@ -3083,7 +3083,7 @@ function fmtDur(s){s=Math.round(s||0);const h=Math.floor(s/3600),m=Math.floor(s%
 function fmtAgo(t){const d=(Date.now()-t)/1000;if(d<ST_ONLINE/1000)return 'jetzt online';if(d<3600)return 'vor '+Math.round(d/60)+' Min';if(d<86400)return 'vor '+Math.round(d/3600)+' Std';return new Date(t).toLocaleDateString('de-DE');}
 async function stLoadAll(){const meta=await dbGet('/gm/st');if(!meta||typeof meta!=='object')return [];
   const ks=Object.keys(meta),recs=await Promise.all(ks.map(k=>dbGet('/gd/st/'+k)));
-  return ks.map((k,i)=>{let r={};try{r=JSON.parse(recs[i])||{};}catch(e){}return Object.assign({n:meta[k].n},r,{k,t:meta[k].t||0,v:String(meta[k].v||''),on:(meta[k].t||0)>Date.now()-ST_ONLINE});});}
+  return ks.map((k,i)=>{let r={};try{r=JSON.parse(recs[i])||{};}catch(e){}return Object.assign({n:meta[k].n},r,{k,t:meta[k].t||0,v:String(meta[k].v||''),on:(meta[k].t||0)>Date.now()-ST_ONLINE&&String(meta[k].v||'')[0]!=='X'});});}
 let statsTimer=null;
 async function statsShow(){if(!save.sbAdmin){toast('Nur für Tim.',2);return;}document.querySelectorAll('.overlay').forEach(o=>o.hidden=true);$('stats').hidden=false;
   const L=await stLoadAll(),td=todayStr();L.sort((a,b)=>(b.on-a.on)||(b.t-a.t));

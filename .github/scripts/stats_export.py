@@ -12,7 +12,7 @@ out = []
 for k, m in meta.items():
     try: rec = json.loads(get(f'/gd/st/{k}') or '{}')
     except Exception: rec = {}
-    rec.update(k=k, n=rec.get('n') or m.get('n'), t=m.get('t', 0), online=(m.get('t', 0) > now_ms - 200000), v=m.get('v', ''))
+    rec.update(k=k, n=rec.get('n') or m.get('n'), t=m.get('t', 0), online=(m.get('t', 0) > now_ms - 200000 and not str(m.get('v','')).startswith('X')), v=m.get('v', ''))
     out.append(rec)
 out.sort(key=lambda e: (-e['online'], -e['t']))
 out_dir = sys.argv[1]
