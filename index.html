@@ -2632,7 +2632,7 @@ $('ytLogout').addEventListener('click',()=>{try{if(ytTok&&window.google)google.a
 /* ---------- Supabase-Anmeldung (E-Mail + Passwort, Bestätigung per Mail) ---------- */
 const SB_URL='https://zquwffzeracrvpemlgtc.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxdXdmZnplcmFjcnZwZW1sZ3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5NDYxODYsImV4cCI6MjExMDUyMjE4Nn0.Gnfd1Cob_dlHh2HgRY9AfIO3Zkwd5PbjSxfAb3v16Gk';const SB_ON=!!(SB_URL&&SB_KEY);const SB_BACK=location.origin+location.pathname;
 let sbSess=null;try{sbSess=JSON.parse(localStorage.getItem('nfp-sb')||'null');}catch(e){}
-function sbStore(x){sbSess=x;try{if(x)localStorage.setItem('nfp-sb',JSON.stringify(x));else localStorage.removeItem('nfp-sb');}catch(e){}}
+function sbStore(x){sbSess=x;try{if(x)localStorage.setItem('nfp-sb',JSON.stringify(x));else{localStorage.removeItem('nfp-sb');localStorage.removeItem('nfp-chars');}}catch(e){}}
 async function sbFetch(path,opt){opt=opt||{};const h=Object.assign({apikey:SB_KEY,'Content-Type':'application/json'},opt.headers||{});if(opt.auth!==false&&sbSess)h.Authorization='Bearer '+sbSess.access_token;
   const r=await fetch(SB_URL+path,{method:opt.method||'GET',headers:h,body:opt.body?JSON.stringify(opt.body):undefined});let j=null;try{j=await r.json();}catch(e){}if(!r.ok){const er=new Error((j&&(j.msg||j.error_description||j.message||j.error))||('Fehler '+r.status));er.status=r.status;throw er;}return j;}
 function sbKeep(j){if(!j||!j.access_token)return null;const x={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(+j.expires_in||3600)*1000,uid:(j.user&&j.user.id)||(sbSess&&sbSess.uid),email:(j.user&&j.user.email)||(sbSess&&sbSess.email)};sbStore(x);return x;}
@@ -2643,7 +2643,7 @@ async function sbProfile(){return (await sbFetch('/rest/v1/nfp_players?select=*&
 async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textContent='Bitte melde dich neu an.';return;}
   let pr=null;try{pr=await sbProfile();if(!pr){const nm=(($('sbName').value||'').trim()||String(sbSess.email||'Spieler').split('@')[0]).slice(0,16);
       await sbFetch('/rest/v1/nfp_players',{method:'POST',headers:{Prefer:'return=minimal'},body:{id:sbSess.uid,email:sbSess.email,name:nm}});pr=await sbProfile();}}catch(e){msg.textContent='Spieler-Liste nicht erreichbar: '+sbErr(e);return;}
-  save.sbAdmin=!!(pr&&pr.admin);persist();
+  save.sbAdmin=!!(pr&&pr.admin);persist();charsLoad();
   if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Bis dahin kannst du als Gast spielen.';
     if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
   const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||slug};
@@ -2661,6 +2661,17 @@ async function sbLogin(reg){const msg=$('loginMsg'),em=($('sbMail').value||'').t
     a.onclick=async ev=>{ev.preventDefault();try{await sbFetch('/auth/v1/resend?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{type:'signup',email:em}});msg.textContent='Neue Bestätigungs-Mail an '+em+' ist unterwegs.';}catch(x){msg.textContent=sbErr(x);}};msg.appendChild(a);}}}
 async function sbForgot(){const em=($('sbMail').value||'').trim();if(!/^\S+@\S+\.\S+$/.test(em)){$('loginMsg').textContent='Gib oben deine E-Mail ein, dann tipp nochmal auf „Passwort vergessen?“.';return;}
   try{await sbFetch('/auth/v1/recover?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{email:em}});$('loginMsg').textContent='Wir haben dir einen Link geschickt. Danach kannst du ein neues Passwort setzen.';}catch(e){$('loginMsg').textContent=sbErr(e);}}
+// Blue-Chip-Figuren: liegen privat in Supabase (Tabelle nfp_chars), nur freigeschaltete Spieler bekommen sie
+function charsAdd(rows){if(!Array.isArray(rows))return;for(const r of rows){if(!r||!r.driver||!r.data||!r.data.src)continue;const k=String(r.driver);
+    if(!DORDER.some(d=>d[0]===k))DORDER.push([k,String(r.name||k).slice(0,16)]);
+    if(POSES[k]&&POSES[k].ok)continue;
+    const ps=Object.assign({},r.data);ps.r=ps.r||{};ps.img={};let n=0;const keys=Object.keys(ps.src);
+    for(const q of keys){const im=new Image();im.onload=()=>{if(++n===keys.length){ps.ok=true;POSES[k]=ps;try{if(!$('menu').hidden)showVehicle();}catch(e){}}};im.src=ps.src[q];ps.img[q]=im;}}
+  try{const a=acct();if(a&&a.d&&DORDER.some(d=>d[0]===a.d)&&(save.driver||'pete')!==a.d){save.driver=a.d;persist();}}catch(e){}
+  try{if(!$('menu').hidden)showVehicle();}catch(e){}}
+setTimeout(()=>{try{if(SB_ON&&sbSess)charsAdd(JSON.parse(localStorage.getItem('nfp-chars')||'null'));}catch(e){}},0);
+async function charsLoad(){if(!SB_ON||!sbSess)return;try{await sbFresh();const rows=await sbFetch('/rest/v1/nfp_chars?select=driver,name,nick,ord,data&order=ord.asc');
+  if(Array.isArray(rows)){charsAdd(rows);try{if(rows.length)localStorage.setItem('nfp-chars',JSON.stringify(rows));else localStorage.removeItem('nfp-chars');}catch(e){}}}catch(e){}}
 async function sbAdminShow(){const box=$('sbAdmin');if(!box)return;box.hidden=!(SB_ON&&save.sbAdmin&&sbSess);if(box.hidden)return;const L=$('sbAdmList');L.textContent='Lade …';
   try{await sbFresh();const rows=await sbFetch('/rest/v1/nfp_players?select=*&order=created_at.asc');
     L.innerHTML='<table class="sbadm"><tr><td><b>Name</b></td><td><b>Nr.</b></td><td><b>Fahrer</b></td></tr>'+rows.map(r=>'<tr data-id="'+r.id+'"><td>'+String(r.name||'').replace(/[<&]/g,'')+'<br><small>'+String(r.email||'').replace(/[<&]/g,'')+'</small></td><td><input class="sbNum" type="number" min="1" max="9999" style="width:58px" value="'+(r.num||'')+'"></td><td><select class="sbDrv"><option value="">wartet</option>'+DORDER.map(([k,n])=>'<option value="'+k+'"'+(r.driver===k?' selected':'')+'>'+n+'</option>').join('')+'</select></td></tr>').join('')+'</table>';}
