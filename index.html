@@ -2657,7 +2657,8 @@ async function sbLogin(reg){const msg=$('loginMsg'),em=($('sbMail').value||'').t
       localStorage.setItem('nfp-sbname',nm);const j=await sbFetch('/auth/v1/signup?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{email:em,password:pw,data:{name:nm}}});
       if(j&&j.access_token){sbKeep(j);return sbEnter();}msg.textContent='Fast geschafft! Wir haben dir eine E-Mail an '+em+' geschickt. Tipp auf den Link darin, dann bist du drin.';return;}
     sbKeep(await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:em,password:pw}}));await sbEnter();}
-  catch(e){msg.textContent=sbErr(e);}}
+  catch(e){msg.textContent=sbErr(e);if(/not confirmed/i.test(String(e&&e.message))){const a=document.createElement('a');a.href='#';a.style.color='inherit';a.textContent=' Mail nochmal schicken';
+    a.onclick=async ev=>{ev.preventDefault();try{await sbFetch('/auth/v1/resend?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{type:'signup',email:em}});msg.textContent='Neue Bestätigungs-Mail an '+em+' ist unterwegs.';}catch(x){msg.textContent=sbErr(x);}};msg.appendChild(a);}}}
 async function sbForgot(){const em=($('sbMail').value||'').trim();if(!/^\S+@\S+\.\S+$/.test(em)){$('loginMsg').textContent='Gib oben deine E-Mail ein, dann tipp nochmal auf „Passwort vergessen?“.';return;}
   try{await sbFetch('/auth/v1/recover?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{email:em}});$('loginMsg').textContent='Wir haben dir einen Link geschickt. Danach kannst du ein neues Passwort setzen.';}catch(e){$('loginMsg').textContent=sbErr(e);}}
 async function sbAdminShow(){const box=$('sbAdmin');if(!box)return;box.hidden=!(SB_ON&&save.sbAdmin&&sbSess);if(box.hidden)return;const L=$('sbAdmList');L.textContent='Lade …';
