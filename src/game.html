@@ -383,7 +383,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     </div>
     <div class="card glass anl">
       <h3>Anleitung 📖</h3>
-      <details><summary>Login und Spielstand</summary><p>Beim Start gibst du deine Nummer ein: <b>1 = Tim, 2 = Jonny, 3 = Sevi</b>. Ohne Nummer spielst du als Gast mit Pete. Jeder fährt nur seinen eigenen Fahrer. Dein Stand wird nach jeder Fahrt online gesichert. Auf einem anderen Handy oder am PC gibst du einfach wieder deine Nummer ein. Unter „Dein Name“ steht <b>SPIELER WECHSELN</b>.</p></details>
+      <details><summary>Login und Spielstand</summary><p>Du meldest dich mit <b>E-Mail und Passwort</b> an, dasselbe Konto wie im Blue Chip Club. Neu hier? Tipp auf NEU REGISTRIEREN und bestätige den Link in der E-Mail. Du bleibst angemeldet. Am Anfang fährst du Pete, deinen eigenen Fahrer schaltet Tim für dich frei. Dein Stand wird nach jeder Fahrt online gesichert, auf jedem Handy und PC mit derselben Anmeldung. Unter „Dein Name“ steht <b>SPIELER WECHSELN</b>.</p></details>
       <details><summary>Steuerung</summary><p><b>GAS</b> rechts, <b>BREMSE</b> links (am PC: Pfeiltasten oder D/A). In der Luft dreht Gas das Auto nach hinten und Bremse nach vorne. Der gelbe Knopf in der Mitte zündet dein Item. Unter Steuerung kannst du auf <b>NEIGEN</b> (Handy kippen) umstellen. Der <b>Jonny-Modus</b> dreht das Kippen um.</p></details>
       <details><summary>Ziel der Fahrt</summary><p>Fahr so weit wie möglich. Vorbei ist es, wenn dein Fahrer auf dem Kopf landet oder rausfliegt oder wenn der Sprit leer ist. Ohne Sprit hast du noch 5 Sekunden zum Ausrollen, oder du drückst AUFGEBEN. Unterwegs sammelst du Münzen und Sprit-Kanister. Saltos, Wheelies und Combos bringen Punkte.</p></details>
       <details><summary>Items</summary><p>Aus den <b>?-Kisten</b> kommen Items: <b>Turbo</b> (schneller), <b>Schild</b> (rettet dich einmal vor einem Crash), <b>Magnet</b> (zieht Münzen an), <b>Sprit</b> (voller Tank). Im Live-Rennen gibt es zusätzlich Fallen für die anderen: <b>Öl</b>, <b>Holzstapel</b> und <b>Blitz</b>.</p></details>
@@ -413,7 +413,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     </div>
     <div class="card glass">
       <h3>Spielstand online ☁️</h3>
-      <p class="note" style="margin-top:0">Dein Fortschritt wird nach jeder Fahrt automatisch gesichert. Auf einem anderen Handy oder am PC gibst du einfach deine Nummer ein.</p>
+      <p class="note" style="margin-top:0">Dein Fortschritt wird nach jeder Fahrt automatisch gesichert. Auf einem anderen Handy oder am PC meldest du dich einfach mit deiner E-Mail an.</p>
       <p class="note">Dein Konto: <b id="svCode" style="font-size:20px;letter-spacing:1px">…</b> <span id="svState"></span></p>
       <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><input id="svIn" maxlength="24" autocomplete="off" placeholder="Code, z. B. tim-4821" class="namein" style="max-width:220px"><button class="gbtn blue mid" id="svLoad">LADEN</button><button class="gbtn orange mid" id="svNow">JETZT SICHERN</button></div>
     </div>
@@ -2388,7 +2388,7 @@ async function dbPutStr(key,p,val){const meta=await dbGet('/gm/'+key+'/'+p),m=((
   return dbSend('/','PATCH',{['gd/'+key+'/'+p]:val,['gm/'+key+'/'+p]:{n:pName(),m,v:String(save.veh||'f1').slice(0,12),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});}
 function b64u(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';const b=atob(s),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
 async function pushEnable(silent){const note=t=>{if(!silent)$('pushNote').textContent=t;};
-  if(!acct()){note('Push geht nur mit Login (deine Nummer).');return;}
+  if(!acct()){note('Push geht nur, wenn du angemeldet bist.');return;}
   const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
   if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){note(ios&&!standalone?'iPhone: Öffne das Spiel in Safari, tippe auf Teilen → „Zum Home-Bildschirm“. Starte es dann vom Home-Bildschirm und drück hier nochmal.':'Dieser Browser kann leider keine Push-Nachrichten.');return;}
   try{const perm=silent?Notification.permission:await Notification.requestPermission();if(perm!=='granted'){note('Du hast Nachrichten nicht erlaubt. Das kannst du in den Handy-Einstellungen ändern.');return;}
@@ -2617,7 +2617,7 @@ $('ytLogout').addEventListener('click',()=>{try{if(ytTok&&window.google)google.a
 {const me=ytMine();if(me&&me.on&&Date.now()-(me.at||0)>3*3600e3)setTimeout(()=>ytFetchMine(false),4000);}
 
 /* ---------- Supabase-Anmeldung (E-Mail + Passwort, Bestätigung per Mail) ---------- */
-const SB_URL='',SB_KEY='';const SB_ON=!!(SB_URL&&SB_KEY);const SB_BACK=location.origin+location.pathname;
+const SB_URL='https://zquwffzeracrvpemlgtc.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxdXdmZnplcmFjcnZwZW1sZ3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5NDYxODYsImV4cCI6MjExMDUyMjE4Nn0.Gnfd1Cob_dlHh2HgRY9AfIO3Zkwd5PbjSxfAb3v16Gk';const SB_ON=!!(SB_URL&&SB_KEY);const SB_BACK=location.origin+location.pathname;
 let sbSess=null;try{sbSess=JSON.parse(localStorage.getItem('nfp-sb')||'null');}catch(e){}
 function sbStore(x){sbSess=x;try{if(x)localStorage.setItem('nfp-sb',JSON.stringify(x));else localStorage.removeItem('nfp-sb');}catch(e){}}
 async function sbFetch(path,opt){opt=opt||{};const h=Object.assign({apikey:SB_KEY,'Content-Type':'application/json'},opt.headers||{});if(opt.auth!==false&&sbSess)h.Authorization='Bearer '+sbSess.access_token;
@@ -2631,7 +2631,7 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
   let pr=null;try{pr=await sbProfile();if(!pr){const nm=(($('sbName').value||'').trim()||String(sbSess.email||'Spieler').split('@')[0]).slice(0,16);
       await sbFetch('/rest/v1/nfp_players',{method:'POST',headers:{Prefer:'return=minimal'},body:{id:sbSess.uid,email:sbSess.email,name:nm}});pr=await sbProfile();}}catch(e){msg.textContent='Spieler-Liste nicht erreichbar: '+sbErr(e);return;}
   save.sbAdmin=!!(pr&&pr.admin);persist();
-  if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dir noch deinen Fahrer zuweisen. Bis dahin kannst du als Gast spielen.';
+  if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Bis dahin kannst du als Gast spielen.';
     if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
   const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||slug};
   if(save.acct===num&&save.acctInfo&&save.acctInfo.d===info.d){save.acctInfo=info;acctFix();persist();$('login').hidden=true;return 'ok';}
