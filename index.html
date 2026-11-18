@@ -452,6 +452,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <div class="row" style="margin-top:12px;gap:8px"><button class="gbtn play mid" id="loginGo">LOS</button></div>
     </div>
     <p class="tag" id="loginMsg" aria-live="polite"></p>
+    <div id="pkPick" hidden><p class="tag"><b>Wer bist du im Blue Chip Club?</b><br>Das gilt dann auch im Pokerspiel und lässt sich danach nicht mehr ändern.</p><div id="pkList" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:46vh;overflow:auto"></div></div>
     <div class="row" style="margin-top:4px"><button class="big alt mid" id="loginGuest">ALS GAST (PETE)</button></div>
   </div>
 </div>
@@ -2643,7 +2644,11 @@ async function sbProfile(){return (await sbFetch('/rest/v1/nfp_players?select=*&
 async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textContent='Bitte melde dich neu an.';return;}
   let pr=null;try{pr=await sbProfile();if(!pr){const nm=(($('sbName').value||'').trim()||String(sbSess.email||'Spieler').split('@')[0]).slice(0,16);
       await sbFetch('/rest/v1/nfp_players',{method:'POST',headers:{Prefer:'return=minimal'},body:{id:sbSess.uid,email:sbSess.email,name:nm}});pr=await sbProfile();}}catch(e){msg.textContent='Spieler-Liste nicht erreichbar: '+sbErr(e);return;}
-  save.sbAdmin=!!(pr&&pr.admin);persist();charsLoad();
+  save.sbAdmin=!!(pr&&pr.admin);persist();await charsLoad();
+  // Blue-Chip-Pokerspiel ist die Quelle: wer dort schon ein Spieler ist, fährt automatisch diese Figur.
+  if(pr&&(!pr.driver||pr.driver==='pete')){let pk=null;try{pk=await pkFetch('/api/konto/ich');}catch(e){}
+    if(pk&&pk.name){pr.driver=pkDrv(pk.name);pr.name=pk.name;}
+    else if(pk&&Array.isArray(pk.frei)&&pk.frei.length){pkShow(pk.frei);return 'pick';}}
   if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Bis dahin kannst du als Gast spielen.';
     if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
   const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||slug};
@@ -2672,6 +2677,19 @@ function charsAdd(rows){if(!Array.isArray(rows))return;for(const r of rows){if(!
 // Blue-Chip-Figuren liegen öffentlich in chars.json neben dem Spiel (Tim, 18.11.: dürfen öffentlich sein)
 let charsBusy=null;function charsLoad(){if(charsBusy)return charsBusy;charsBusy=fetch('chars.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(rows=>charsAdd(rows)).catch(()=>{}).finally(()=>{charsBusy=null;});return charsBusy;}
 setTimeout(charsLoad,0);
+// Verbindung zum Blue-Chip-Pokerspiel (gleiche Supabase-Konten)
+const PK_URL='https://blue-chip-game-production.up.railway.app',PK_MAP={domi:'domic'};
+function pkDrv(n){const id=String(n||'').trim().toLowerCase(),k=PK_MAP[id]||id.replace(/[^a-z0-9]/g,'');return DORDER.some(d=>d[0]===k)?k:'pete';}
+async function pkFetch(path,opt){opt=opt||{};const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);
+  try{const r=await fetch(PK_URL+path,{method:opt.method||'GET',signal:c.signal,headers:Object.assign({Authorization:'Bearer '+sbSess.access_token},opt.body?{'Content-Type':'application/json'}:{}),body:opt.body?JSON.stringify(opt.body):undefined});
+    const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('Fehler '+r.status));return j;}finally{clearTimeout(t);}}
+function pkShow(frei){const L=$('pkList');$('sbBox').hidden=true;$('pkPick').hidden=false;$('login').hidden=false;$('loginMsg').textContent='';L.innerHTML='';
+  for(const n of frei.slice().sort((a,b)=>a.localeCompare(b))){const k=pkDrv(n),b=document.createElement('button');b.className='gbtn blue mid';b.style.cssText='display:flex;flex-direction:column;align-items:center;min-width:84px;padding:6px 8px';
+    if(POSES[k]&&POSES[k].src&&POSES[k].src.sit){const im=new Image();im.src=POSES[k].src.sit;im.style.cssText='height:64px;margin-bottom:2px';b.appendChild(im);}
+    b.appendChild(document.createTextNode(String(n).toUpperCase()));
+    b.onclick=async()=>{if(!confirm('Du bist '+n+'? Das gilt auch im Pokerspiel und lässt sich nicht mehr ändern.'))return;$('loginMsg').textContent='Einen Moment …';
+      try{await pkFetch('/api/konto/verknuepfen',{method:'POST',body:{spieler:n}});$('pkPick').hidden=true;await sbEnter();}catch(e){$('loginMsg').textContent=String(e&&e.message||e);}};
+    L.appendChild(b);}}
 async function sbAdminShow(){const box=$('sbAdmin');if(!box)return;box.hidden=!(SB_ON&&save.sbAdmin&&sbSess);if(box.hidden)return;const L=$('sbAdmList');L.textContent='Lade …';
   try{await sbFresh();const rows=await sbFetch('/rest/v1/nfp_players?select=*&order=created_at.asc');
     L.innerHTML='<table class="sbadm"><tr><td><b>Name</b></td><td><b>Nr.</b></td><td><b>Fahrer</b></td></tr>'+rows.map(r=>'<tr data-id="'+r.id+'"><td>'+String(r.name||'').replace(/[<&]/g,'')+'<br><small>'+String(r.email||'').replace(/[<&]/g,'')+'</small></td><td><input class="sbNum" type="number" min="1" max="9999" style="width:58px" value="'+(r.num||'')+'"></td><td><select class="sbDrv"><option value="">wartet</option>'+DORDER.map(([k,n])=>'<option value="'+k+'"'+(r.driver===k?' selected':'')+'>'+n+'</option>').join('')+'</select></td></tr>').join('')+'</table>';}
