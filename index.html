@@ -151,6 +151,8 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 #ytBox{position:fixed;left:0;top:0;width:10px;height:10px;overflow:hidden;background:#000}
 #ytBox[hidden],#ytSnd[hidden]{display:none}#ytFrame,#ytBox iframe{width:100%;height:100%;border:0;pointer-events:none}
 #ytSnd{position:fixed;z-index:7;transform:translate(-50%,-100%);white-space:nowrap;border:0;border-radius:999px;padding:7px 10px;font:700 12px system-ui;background:rgba(0,0,0,.7);color:#fff}
+.sbin{font:17px system-ui;width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:10px;padding:10px 12px;margin-top:8px}
+.sbadm{width:100%;border-collapse:collapse;font:14px system-ui}.sbadm td{padding:5px 4px;border-top:1px solid rgba(255,255,255,.15)}.sbadm select,.sbadm input{font:14px system-ui;border-radius:8px;padding:4px}
 .gbtn.purple{background:linear-gradient(180deg,#c48bff,#8a4dff 55%,#6a2fe0);box-shadow:0 6px 0 #3d1890,0 12px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35)}
 .gbtn.play{background:linear-gradient(180deg,#9dff6a,#3fd43a 55%,#25b02b);box-shadow:0 6px 0 #146b18,0 12px 28px rgba(60,220,60,.35),inset 0 2px 0 rgba(255,255,255,.45);font-size:34px}
 .big:disabled,.gbtn:disabled{background:#59607a;box-shadow:0 6px 0 #33384d;color:#c9cde0}
@@ -414,6 +416,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <h3>Dein Name</h3>
       <input id="pName" maxlength="16" autocomplete="off" placeholder="z. B. Tim" class="namein">
       <div class="row" style="justify-content:flex-start;margin:8px 0 0"><button class="gbtn blue mid" id="logout">SPIELER WECHSELN</button></div>
+      <div id="sbAdmin" hidden style="margin-top:12px"><p class="note" style="margin:0 0 4px"><b>Spieler verwalten</b> (nur du siehst das). Neue Spieler warten, bis du ihnen einen Fahrer gibst.</p><div id="sbAdmList"></div></div>
       <p class="note">So erscheinst du in der Tages-Bestenliste und als Geist bei deinen Freunden.</p>
     </div>
     <div class="card glass">
@@ -434,10 +437,20 @@ input#codeIn{background:rgba(255,255,255,.9)}
 <div class="overlay" id="login" hidden style="z-index:80">
   <div class="panel" style="max-width:420px;text-align:center;margin:auto">
     <h2 class="logo" style="font-size:44px">Wer bist du?</h2>
-    <p class="tag">Gib deine Nummer ein. Dann spielst du mit deinem Fahrer und dein Spielstand wird online gespeichert.</p>
-    <input id="loginIn" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="Nummer"
-      style="font-family:var(--display);font-size:40px;text-align:center;letter-spacing:.2em;width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:10px;padding:4px 10px;margin-top:6px">
-    <div class="row" style="margin-top:12px;gap:8px"><button class="gbtn play mid" id="loginGo">LOS</button></div>
+    <div id="sbBox">
+      <p class="tag" id="sbTag">Melde dich an. Dann fährst du deinen eigenen Fahrer und dein Spielstand wird online gespeichert.</p>
+      <input id="sbMail" type="email" autocomplete="email" placeholder="E-Mail" class="sbin">
+      <input id="sbPw" type="password" autocomplete="current-password" placeholder="Passwort (mind. 6 Zeichen)" class="sbin">
+      <input id="sbName" maxlength="16" autocomplete="nickname" placeholder="Dein Spielername" class="sbin" hidden>
+      <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap"><button class="gbtn play mid" id="sbGo">ANMELDEN</button><button class="gbtn blue mid" id="sbReg">NEU REGISTRIEREN</button></div>
+      <p class="tag"><a href="#" id="sbForgot" style="color:inherit">Passwort vergessen?</a></p>
+    </div>
+    <div id="numBox" hidden>
+      <p class="tag">Gib deine Nummer ein. Dann spielst du mit deinem Fahrer und dein Spielstand wird online gespeichert.</p>
+      <input id="loginIn" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="Nummer"
+        style="font-family:var(--display);font-size:40px;text-align:center;letter-spacing:.2em;width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:10px;padding:4px 10px;margin-top:6px">
+      <div class="row" style="margin-top:12px;gap:8px"><button class="gbtn play mid" id="loginGo">LOS</button></div>
+    </div>
     <p class="tag" id="loginMsg" aria-live="polite"></p>
     <div class="row" style="margin-top:4px"><button class="big alt mid" id="loginGuest">ALS GAST (PETE)</button></div>
   </div>
@@ -2367,14 +2380,14 @@ $('duelBtn').addEventListener('click',()=>{initAudio();$('menu').hidden=true;$('
 $('duelBack').addEventListener('click',()=>{leaveDuel();$('duel').hidden=true;$('menu').hidden=false;showMenuStats();});
 function leaveDuel(){if(NET.key)duelSend({type:'bye'});const k=NET.key;setTimeout(()=>{if(NET.key===k)netClose();},400);duel.active=false;duel.opps={};duel.result=null;}
 /* ---------- Accounts: a number per friend, each one owns his driver ---------- */
-function acct(){return save.acct&&ACCTS[save.acct]||null;}
+function acct(){if(!save.acct||save.acct==='guest')return null;return ACCTS[save.acct]||save.acctInfo||null;}
 function allowedDrivers(){const a=acct();if(!a)return ['pete'];return DORDER.some(d=>d[0]===a.d)?[a.d]:['pete'];}
-function acctFix(){const a=acct();if(a){save.pname=a.n;save.sk='sv-'+a.k+'-000'+save.acct;}const al=allowedDrivers();if(!al.includes(save.driver||'pete'))save.driver=al[0];}
+function acctFix(){const a=acct();if(a){save.pname=a.n;save.sk='sv-'+a.k+'-'+String(save.acct).padStart(4,'0');}const al=allowedDrivers();if(!al.includes(save.driver||'pete'))save.driver=al[0];}
 function stScore(o){return (o.level||1)*1e6+(o.xp||0)*10+(o.coins||0)/1e3;}
-async function loginWith(num){num=String(num||'').trim();const a=ACCTS[num];if(!a){$('loginMsg').textContent='Diese Nummer gibt es nicht.';return;}
-  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-000'+num,d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}if(o&&o.season!==SEASON)o=null;
+async function loginWith(num,viaSb){num=String(num||'').trim();if(SB_ON&&!viaSb){$('loginMsg').textContent='Bitte melde dich mit deiner E-Mail an.';return;}const a=ACCTS[num];if(!a){$('loginMsg').textContent='Diese Nummer gibt es nicht.';return;}
+  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-'+num.padStart(4,'0'),d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}if(o&&o.season!==SEASON)o=null;
   const local=save.acct?null:save;let next=o&&(!local||stScore(o)>stScore(local))?o:Object.assign({},local||{},{});
-  next.acct=num;next.sk=k;next.pname=a.n;next.giftSeen=true;if(!next.tutDone&&local&&local.tutDone)next.tutDone=true;
+  next.acct=num;next.sk=k;next.pname=a.n;if(save.acctInfo)next.acctInfo=save.acctInfo;next.sbAdmin=save.sbAdmin;next.giftSeen=true;if(!next.tutDone&&local&&local.tutDone)next.tutDone=true;
   localStorage.setItem('nfp-save',JSON.stringify(next));save=Object.assign(save,next);acctFix();persist();
   $('loginMsg').textContent='Hallo '+a.n+'!';if(next===o)location.reload();else{await cloudSave(true);location.reload();}}
 $('loginGo').addEventListener('click',()=>loginWith($('loginIn').value));
@@ -2615,6 +2628,59 @@ async function ytFetchMine(interactive){const inf=$('ytMeInfo');if(inf)inf.textC
 $('ytLogin').addEventListener('click',()=>ytFetchMine(true));
 $('ytLogout').addEventListener('click',()=>{try{if(ytTok&&window.google)google.accounts.oauth2.revoke(ytTok,()=>{});}catch(e){}ytTok=null;localStorage.removeItem('nfp-ytme');ytMeShow();ytInfo();});
 {const me=ytMine();if(me&&me.on&&Date.now()-(me.at||0)>3*3600e3)setTimeout(()=>ytFetchMine(false),4000);}
+
+/* ---------- Supabase-Anmeldung (E-Mail + Passwort, Bestätigung per Mail) ---------- */
+const SB_URL='',SB_KEY='';const SB_ON=!!(SB_URL&&SB_KEY);const SB_BACK=location.origin+location.pathname;
+let sbSess=null;try{sbSess=JSON.parse(localStorage.getItem('nfp-sb')||'null');}catch(e){}
+function sbStore(x){sbSess=x;try{if(x)localStorage.setItem('nfp-sb',JSON.stringify(x));else localStorage.removeItem('nfp-sb');}catch(e){}}
+async function sbFetch(path,opt){opt=opt||{};const h=Object.assign({apikey:SB_KEY,'Content-Type':'application/json'},opt.headers||{});if(opt.auth!==false&&sbSess)h.Authorization='Bearer '+sbSess.access_token;
+  const r=await fetch(SB_URL+path,{method:opt.method||'GET',headers:h,body:opt.body?JSON.stringify(opt.body):undefined});let j=null;try{j=await r.json();}catch(e){}if(!r.ok){const er=new Error((j&&(j.msg||j.error_description||j.message||j.error))||('Fehler '+r.status));er.status=r.status;throw er;}return j;}
+function sbKeep(j){if(!j||!j.access_token)return null;const x={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(+j.expires_in||3600)*1000,uid:(j.user&&j.user.id)||(sbSess&&sbSess.uid),email:(j.user&&j.user.email)||(sbSess&&sbSess.email)};sbStore(x);return x;}
+async function sbFresh(){if(!sbSess)return null;if(Date.now()<sbSess.exp-120000)return sbSess;
+  try{return sbKeep(await sbFetch('/auth/v1/token?grant_type=refresh_token',{method:'POST',auth:false,body:{refresh_token:sbSess.refresh_token}}));}catch(e){if(e.status===400||e.status===401)sbStore(null);return null;}}
+function sbErr(e){const m=String(e&&e.message||e);if(/Invalid login/i.test(m))return 'E-Mail oder Passwort falsch.';if(/not confirmed/i.test(m))return 'Bitte erst den Link in deiner E-Mail antippen.';if(/already registered/i.test(m))return 'Diese E-Mail ist schon registriert. Tipp auf ANMELDEN.';if(/Password should/i.test(m))return 'Das Passwort braucht mindestens 6 Zeichen.';if(/rate limit/i.test(m))return 'Zu viele Versuche. Warte ein paar Minuten.';return m;}
+async function sbProfile(){return (await sbFetch('/rest/v1/nfp_players?select=*&id=eq.'+sbSess.uid))[0]||null;}
+async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textContent='Bitte melde dich neu an.';return;}
+  let pr=null;try{pr=await sbProfile();if(!pr){const nm=(($('sbName').value||'').trim()||String(sbSess.email||'Spieler').split('@')[0]).slice(0,16);
+      await sbFetch('/rest/v1/nfp_players',{method:'POST',headers:{Prefer:'return=minimal'},body:{id:sbSess.uid,email:sbSess.email,name:nm}});pr=await sbProfile();}}catch(e){msg.textContent='Spieler-Liste nicht erreichbar: '+sbErr(e);return;}
+  save.sbAdmin=!!(pr&&pr.admin);persist();
+  if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dir noch deinen Fahrer zuweisen. Bis dahin kannst du als Gast spielen.';
+    if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
+  const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||slug};
+  if(save.acct===num&&save.acctInfo&&save.acctInfo.d===info.d){save.acctInfo=info;acctFix();persist();$('login').hidden=true;return 'ok';}
+  ACCTS[num]=Object.assign({},ACCTS[num]||{},info);save.acctInfo=info;return loginWith(num,true);}
+async function sbLogin(reg){const msg=$('loginMsg'),em=($('sbMail').value||'').trim(),pw=$('sbPw').value||'';
+  if(reg&&$('sbName').hidden){$('sbName').hidden=false;$('sbName').focus();msg.textContent='Gib noch deinen Spielernamen ein und tipp nochmal auf NEU REGISTRIEREN.';return;}
+  if(!/^\S+@\S+\.\S+$/.test(em)){msg.textContent='Bitte gib deine E-Mail ein.';return;}if(pw.length<6){msg.textContent='Das Passwort braucht mindestens 6 Zeichen.';return;}
+  msg.textContent=reg?'Registriere …':'Melde an …';
+  try{if(reg){const nm=($('sbName').value||'').trim().slice(0,16);if(!nm){msg.textContent='Bitte gib einen Spielernamen ein.';return;}
+      localStorage.setItem('nfp-sbname',nm);const j=await sbFetch('/auth/v1/signup?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{email:em,password:pw,data:{name:nm}}});
+      if(j&&j.access_token){sbKeep(j);return sbEnter();}msg.textContent='Fast geschafft! Wir haben dir eine E-Mail an '+em+' geschickt. Tipp auf den Link darin, dann bist du drin.';return;}
+    sbKeep(await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email:em,password:pw}}));await sbEnter();}
+  catch(e){msg.textContent=sbErr(e);}}
+async function sbForgot(){const em=($('sbMail').value||'').trim();if(!/^\S+@\S+\.\S+$/.test(em)){$('loginMsg').textContent='Gib oben deine E-Mail ein, dann tipp nochmal auf „Passwort vergessen?“.';return;}
+  try{await sbFetch('/auth/v1/recover?redirect_to='+encodeURIComponent(SB_BACK),{method:'POST',auth:false,body:{email:em}});$('loginMsg').textContent='Wir haben dir einen Link geschickt. Danach kannst du ein neues Passwort setzen.';}catch(e){$('loginMsg').textContent=sbErr(e);}}
+async function sbAdminShow(){const box=$('sbAdmin');if(!box)return;box.hidden=!(SB_ON&&save.sbAdmin&&sbSess);if(box.hidden)return;const L=$('sbAdmList');L.textContent='Lade …';
+  try{await sbFresh();const rows=await sbFetch('/rest/v1/nfp_players?select=*&order=created_at.asc');
+    L.innerHTML='<table class="sbadm"><tr><td><b>Name</b></td><td><b>Nr.</b></td><td><b>Fahrer</b></td></tr>'+rows.map(r=>'<tr data-id="'+r.id+'"><td>'+String(r.name||'').replace(/[<&]/g,'')+'<br><small>'+String(r.email||'').replace(/[<&]/g,'')+'</small></td><td><input class="sbNum" type="number" min="1" max="9999" style="width:58px" value="'+(r.num||'')+'"></td><td><select class="sbDrv"><option value="">wartet</option>'+DORDER.map(([k,n])=>'<option value="'+k+'"'+(r.driver===k?' selected':'')+'>'+n+'</option>').join('')+'</select></td></tr>').join('')+'</table>';}
+  catch(e){L.textContent='Liste nicht ladbar: '+sbErr(e);}}
+$('sbAdmList').addEventListener('change',async e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const rows=[...$('sbAdmList').querySelectorAll('.sbNum')].map(x=>+x.value||0);
+  let num=+tr.querySelector('.sbNum').value||0;const drv=tr.querySelector('.sbDrv').value||null;if(drv&&!num){num=Math.max(3,...rows)+1;tr.querySelector('.sbNum').value=num;}
+  try{await sbFresh();await sbFetch('/rest/v1/nfp_players?id=eq.'+tr.dataset.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{driver:drv,num:num||null}});toast('Gespeichert ✔',1.5);}catch(x){toast('Ging nicht: '+sbErr(x),3);}});
+$('sbGo').addEventListener('click',()=>sbLogin(false));$('sbReg').addEventListener('click',()=>sbLogin(true));$('sbForgot').addEventListener('click',e=>{e.preventDefault();sbForgot();});
+$('sbPw').addEventListener('keydown',e=>{if(e.key==='Enter')sbLogin(false);});
+if(SB_ON){$('numBox').hidden=true;$('sbBox').hidden=false;
+  // Rückkehr vom Bestätigungs- oder Passwort-Link: #access_token=…
+  const hp=new URLSearchParams(location.hash.slice(1));if(hp.get('access_token')){sbKeep({access_token:hp.get('access_token'),refresh_token:hp.get('refresh_token'),expires_in:hp.get('expires_in')});
+    try{history.replaceState(null,'',location.pathname);}catch(e){}
+    (async()=>{try{const u=await sbFetch('/auth/v1/user');sbSess.uid=u.id;sbSess.email=u.email;sbStore(sbSess);if(!$('sbName').value)$('sbName').value=localStorage.getItem('nfp-sbname')||(u.user_metadata&&u.user_metadata.name)||'';
+      if(hp.get('type')==='recovery'){const pw=prompt('Neues Passwort (mind. 6 Zeichen):');if(pw&&pw.length>=6){await sbFetch('/auth/v1/user',{method:'PUT',body:{password:pw}});toast('Passwort geändert ✔',2.5);}}
+      $('login').hidden=false;$('loginMsg').textContent='E-Mail bestätigt ✔';await sbEnter();}catch(e){$('loginMsg').textContent=sbErr(e);}})();}
+  else if(sbSess){sbEnter();}   // eingeloggt bleiben: Fahrer-Zuweisung bei jedem Start prüfen
+  else if(save.acct&&save.acct!=='guest'){save.acct=null;persist();$('login').hidden=false;}   // alte Nummern-Logins: einmal neu mit E-Mail anmelden
+}else{$('numBox').hidden=false;$('sbBox').hidden=true;}
+{const _lo=document.getElementById('logout');_lo.addEventListener('click',()=>{if(SB_ON){try{if(sbSess)fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+sbSess.access_token}});}catch(e){}sbStore(null);}},true);}
+{const _os=document.getElementById('openSettings');if(_os)_os.addEventListener('click',()=>setTimeout(sbAdminShow,50));}
 })();
 </script>
 
