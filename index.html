@@ -411,6 +411,8 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <p class="note" id="ytInfo"></p>
       <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><button class="gbtn orange mid" id="ytLogin" hidden>MEIN YOUTUBE VERBINDEN</button><button class="gbtn mid" id="ytLogout" hidden>TRENNEN</button></div>
       <p class="note" id="ytMeInfo"></p>
+      <label class="note" id="ytOnlyRow" hidden style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="ytOnly"> Nur meine YouTube-Shorts als Clips</label>
+      <details class="anl" id="ytPriv" hidden><summary>Datenschutz bei YouTube</summary><p>Wenn du dein YouTube verbindest, fragt das Spiel bei Google nur <b>lesend</b> ab, welche Kanäle du abonniert hast, und holt deren neueste Shorts. Die Liste bleibt <b>nur auf deinem Gerät</b>, sie geht nicht an unseren Server und niemand sonst sieht sie. Die Shorts laufen im offiziellen YouTube-Player, es gelten die <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube-Nutzungsbedingungen</a> und die <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google-Datenschutzerklärung</a>. Mit <b>TRENNEN</b> löschst du alles wieder und entziehst den Zugriff. Du kannst ihn auch jederzeit unter <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">Google-Konto → Drittanbieter-Zugriff</a> entfernen. Mehr: <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutz</a>.</p></details>
     </div>
         <div class="card glass">
       <h3>Motorsound</h3>
@@ -428,7 +430,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <details><summary>Daily</summary><p>Jeden Tag gibt es eine <b>komplett neue Welt</b> mit anderer Schwerkraft, anderer Rutschigkeit und manchmal mit <b>Loopings</b>. Für einen Looping brauchst du Anlauf, sonst kommt „Zu langsam“. Du hast <b>genau 10 Versuche am Tag</b>, danach ist das Daily <b>gesperrt 🔒</b> bis morgen. Die Versuche zählen pro Spieler, auch auf mehreren Geräten. Die beste Fahrt zählt für die <b>Tages-Bestenliste</b> 🏆. Wer um Mitternacht vorne liegt, gewinnt den Tag.</p></details>
       <details><summary>Geister</summary><p>Oben beim Fahren schaltest du mit <b>👻 GEISTER AN/AUS</b> die besten Fahrten deiner Freunde als Geister ein. Dein eigener Rekord fährt immer als blauer Geist mit.</p></details>
       <details><summary>Live-Rennen (2 bis 4 Leute)</summary><p>Tippe auf <b>LIVE-RENNEN</b>. Einer wählt den Modus und drückt <b>CODE ERSTELLEN</b>. Die anderen geben den Code ein und drücken BEITRETEN. Wenn alle in der Liste stehen, drückt der Gastgeber <b>RENNEN STARTEN</b>.<br><b>Rennen:</b> Wer zuerst im Ziel ist, gewinnt. Nach einem Crash geht es kurz davor weiter.<br><b>Auf Zeit 2000 m:</b> Bei 1000 m liegt ein Checkpoint. Nach einem Crash startest du am Checkpoint, wenn du ihn schon hattest, sonst ganz vorne.<br>Danach gibt es mit REVANCHE gleich die nächste Runde. Die Strecke wählt der Gastgeber im Menü, dein Auto wählst du selbst.</p></details>
-      <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen während der Fahrt am Himmel auf, und zwar immer zuerst die, die du noch nicht gesehen hast. Erst wenn du alle kennst, kommen sie wieder. Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein.</p></details>
+      <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen während der Fahrt am Himmel auf, und zwar immer zuerst die, die du noch nicht gesehen hast. Erst wenn du alle kennst, kommen sie wieder. Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein. <b>Dein YouTube:</b> In den Einstellungen unter „Überraschungskanal“ kannst du mit <b>MEIN YOUTUBE VERBINDEN</b> dein YouTube-Konto verbinden. Dann laufen als Clips die neuesten Shorts der Kanäle, die du abonniert hast (kein Algorithmus, nur deine Abos). Mit dem Haken „Nur meine YouTube-Shorts“ kommen nur noch die. <b>TRENNEN</b> löscht alles wieder.</p></details>
       <details><summary>Push-Nachrichten und App auf dem Handy</summary><p>Damit es wie eine App läuft: im iPhone-Safari auf <b>Teilen → „Zum Home-Bildschirm“</b> tippen, auf Android im Browser-Menü „App installieren“. Starte das Spiel dann immer vom Home-Bildschirm und melde dich dort einmal mit deiner E-Mail an. Danach drückst du hier <b>PUSH AN</b>. Dann kommt eine Nachricht, wenn jemand das Daily gespielt hat oder neuer Tages-Erster ist.</p></details>
     </div>
     <div class="card glass">
@@ -2731,45 +2733,68 @@ function ytEnd(){if(!meme||!meme.yt)return;let watched=meme.t>8;try{const d=ytP.
   if(watched||!meme.playing){const ss=save.ytSeen||(save.ytSeen={});ss[meme.id]=(ss[meme.id]||0)+1;persist();}try{ytP.pauseVideo();}catch(e){}$('ytBox').hidden=true;$('ytSnd').hidden=true;ytInfo();}
 $('ytSnd').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();ytMuted=false;try{ytP.unMute();ytP.setVolume(Math.min(100,clipVolume()*100));ytP.playVideo();}catch(x){}$('ytSnd').hidden=true;});
 $('ytAdd').addEventListener('click',async()=>{const r=ytParse($('ytIn').value);if(!r.v.length&&!r.l){$('ytInfo').textContent='Das sieht nicht wie ein YouTube-Link aus.';return;}
-  const o={v:[...new Set([...(ytCfg.v||[]),...r.v])].slice(-300),l:r.l||ytCfg.l||null,cid:ytCfg.cid||null};$('ytInfo').textContent='Speichere …';
+  const o=Object.assign({},ytCfg,{v:[...new Set([...(ytCfg.v||[]),...r.v])].slice(-300),l:r.l||ytCfg.l||null});$('ytInfo').textContent='Speichere …';
   if(await ytSaveCfg(o)){$('ytIn').value='';$('ytInfo').textContent='Drin ✔ '+(r.v.length?r.v.length+' Short'+(r.v.length>1?'s':''):'Playlist')+' hinzugefügt. Tipp auf TESTEN.';ytLoadApi();if(ytP&&r.l){ytP.__pl=null;try{ytP.cuePlaylist({list:r.l,listType:'playlist'});setTimeout(()=>{try{ytP.__pl=ytP.getPlaylist()||[];ytInfo();}catch(e){}},2500);}catch(e){}}}
   else $('ytInfo').textContent='Speichern hat nicht geklappt (Internet?).';});
 $('ytTest').addEventListener('click',()=>{$('settings').hidden=true;playDaily=false;startRun();state.forceYt=true;memeNextAt=20;toast('Fahr los: bei 20 m kommt das YouTube-Video.',3);});
-{const _ms=memeStart;memeStart=function(){if(!duel.active&&ytReady){const force=state&&state.forceYt;const id=ytPick(!force&&memeCount>0);
-    if(id&&(force||memeCount===0||Math.random()<.4)){if(state)state.forceYt=false;memeCount++;if(ytStart(id))return;}}return _ms();};}
+{const _ms=memeStart;memeStart=function(){if(!duel.active&&ytReady){const force=state&&state.forceYt;const m0=ytMine(),only=m0&&m0.on&&(m0.v||[]).length&&save.ytOnly;const id=ytPick(!force&&!only&&memeCount>0);
+    const mine=ytMine(),own=mine&&mine.on&&(mine.v||[]).length;
+    if(id&&(force||memeCount===0||(own&&save.ytOnly)||Math.random()<(own?.6:.4))){if(state)state.forceYt=false;memeCount++;if(ytStart(id))return;}}return _ms();};}
 {const _me=memeEnd;memeEnd=function(){if(meme&&meme.yt)ytEnd();return _me();};}
 {const _sr=startRun;startRun=function(){ytUnlock();return _sr.apply(this,arguments);};}
 setTimeout(ytLoadCfg,900);
 
-/* ---------- eigenes YouTube (Abos + Likes) ---------- */
-let ytTok=null,ytTokExp=0,ytTc=null,ytGis=false;
+/* ---------- eigenes YouTube (neueste Shorts der Abos) ---------- */
+let ytTok=null,ytTokExp=0,ytTc=null,ytGis=false,ytBusy=false;
+const YT_REFRESH=6*3600e3,YT_MAXCH=150;
 function ytMine(){try{return JSON.parse(localStorage.getItem('nfp-ytme')||'null');}catch(e){return null;}}
-function ytMeShow(){const cid=ytCfg.cid,me=ytMine();const li=$('ytLogin'),lo=$('ytLogout'),inf=$('ytMeInfo');if(!li)return;
-  li.hidden=!cid;lo.hidden=!(me&&me.on);if(!cid){inf.textContent='';return;}
-  inf.textContent=me&&me.on?'Dein YouTube ist verbunden: '+(me.v||[]).length+' Shorts aus deinen Abos und Likes'+(me.at?' (Stand '+new Date(me.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+')':'')+'. Die laufen bei dir zuerst.':'Verbinde dein YouTube, dann laufen am Himmel die neuesten Shorts deiner Abos und deine Likes.';
-  li.textContent=me&&me.on?'NEU LADEN':'MEIN YOUTUBE VERBINDEN';}
+function ytMeSet(o){try{localStorage.setItem('nfp-ytme',JSON.stringify(o));}catch(e){}}
+function ytMeShow(){const cid=ytCfg.cid,me=ytMine();const li=$('ytLogin'),lo=$('ytLogout'),inf=$('ytMeInfo'),on=$('ytOnlyRow');if(!li)return;
+  li.hidden=!cid;lo.hidden=!(me&&me.on);if(on)on.hidden=!(me&&me.on);if($('ytOnly'))$('ytOnly').checked=!!save.ytOnly;if($('ytPriv'))$('ytPriv').hidden=!cid;if(!cid){inf.textContent='';return;}
+  inf.textContent=me&&me.on?'Dein YouTube ist verbunden: '+(me.v||[]).length+' neue Shorts von '+((me.ch||[]).length)+' Kanälen, denen du folgst'+(me.at?' (Stand '+new Date(me.at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')':'')+'. Die laufen bei dir als Clips.':'Verbinde dein YouTube, dann laufen als Clips die neuesten Shorts der Kanäle, die du abonniert hast. Kein Algorithmus, nur deine Abos.';
+  li.textContent=me&&me.on?'ABOS NEU LADEN':'MEIN YOUTUBE VERBINDEN';}
 function ytGisLoad(){return new Promise(res=>{if(window.google&&google.accounts&&google.accounts.oauth2)return res(true);if(ytGis){const iv=setInterval(()=>{if(window.google&&google.accounts){clearInterval(iv);res(true);}},200);setTimeout(()=>{clearInterval(iv);res(false);},8000);return;}
   ytGis=true;const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.onload=()=>res(true);sc.onerror=()=>{ytGis=false;res(false);};document.head.appendChild(sc);});}
-async function ytAuth(interactive){if(ytTok&&Date.now()<ytTokExp-60000)return ytTok;if(!ytCfg.cid)return null;if(!await ytGisLoad())return null;
+async function ytAuth(){if(ytTok&&Date.now()<ytTokExp-60000)return ytTok;if(!ytCfg.cid)return null;if(!await ytGisLoad())return null;
   return new Promise(res=>{try{ytTc=google.accounts.oauth2.initTokenClient({client_id:ytCfg.cid,scope:'https://www.googleapis.com/auth/youtube.readonly',
     callback:r=>{if(r&&r.access_token){ytTok=r.access_token;ytTokExp=Date.now()+(+r.expires_in||3600)*1000;res(ytTok);}else res(null);},error_callback:()=>res(null)});
-    ytTc.requestAccessToken({prompt:interactive?'':'none'});}catch(e){res(null);}});}
-async function ytApiGet(path){const r=await fetch('https://www.googleapis.com/youtube/v3/'+path,{headers:{Authorization:'Bearer '+ytTok}});if(!r.ok)throw new Error('yt '+r.status);return r.json();}
+    ytTc.requestAccessToken({prompt:''});}catch(e){res(null);}});}
+/* mit Anmeldung (Token) oder ohne (öffentlicher API-Schlüssel nur für öffentliche Kanal-Listen) */
+async function ytApiGet(path){const tok=ytTok&&Date.now()<ytTokExp-30000;if(!tok&&!ytCfg.key)throw new Error('kein Zugang');
+  const r=await fetch('https://www.googleapis.com/youtube/v3/'+path+(tok?'':'&key='+encodeURIComponent(ytCfg.key)),tok?{headers:{Authorization:'Bearer '+ytTok}}:{});
+  if(!r.ok){const e=new Error('yt '+r.status);e.status=r.status;throw e;}return r.json();}
 function ytSecs(d){const m=String(d||'').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);return m?(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0):0;}
-async function ytFetchMine(interactive){const inf=$('ytMeInfo');if(inf)inf.textContent='Lade deine Shorts …';
-  if(!await ytAuth(interactive)){if(inf)inf.textContent=interactive?'Anmeldung hat nicht geklappt. Ist deine Google-Adresse als Testnutzer eingetragen?':'';ytMeShow();return;}
-  try{const cand=[];let page='';const subs=[];for(let i=0;i<2;i++){const r=await ytApiGet('subscriptions?part=snippet&mine=true&maxResults=50&order=relevance'+(page?'&pageToken='+page:''));for(const it of r.items||[])subs.push(it.snippet.resourceId.channelId);page=r.nextPageToken;if(!page)break;}
-    const ch=subs.slice(0,60);let k=0;await Promise.all([0,1,2,3,4,5].map(async()=>{while(k<ch.length){const c=ch[k++];try{const r=await ytApiGet('playlistItems?part=contentDetails&maxResults=8&playlistId=UU'+c.slice(2));for(const it of r.items||[])cand.push({id:it.contentDetails.videoId,t:Date.parse(it.contentDetails.videoPublishedAt||0)||0});}catch(e){}}}));
-    try{const r=await ytApiGet('videos?part=contentDetails,snippet&myRating=like&maxResults=50');for(const it of r.items||[])if(ytSecs(it.contentDetails.duration)<=180)cand.push({id:it.id,t:Date.now()-864e5*3,ok:true});}catch(e){}
-    const need=[...new Set(cand.filter(c=>!c.ok).map(c=>c.id))],ok=new Set(cand.filter(c=>c.ok).map(c=>c.id));
-    for(let i=0;i<need.length;i+=50){try{const r=await ytApiGet('videos?part=contentDetails,status&id='+need.slice(i,i+50).join(','));for(const it of r.items||[]){const d=ytSecs(it.contentDetails.duration);if(d>0&&d<=180&&(!it.status||it.status.embeddable!==false))ok.add(it.id);}}catch(e){}}
-    const v=[...new Map(cand.filter(c=>ok.has(c.id)).sort((a,b)=>b.t-a.t).map(c=>[c.id,c])).keys()].slice(0,200);
-    localStorage.setItem('nfp-ytme',JSON.stringify({on:true,v,at:Date.now()}));ytLoadApi();}
-  catch(e){if(inf)inf.textContent='YouTube hat abgelehnt ('+(e.message||'Fehler')+').';}
-  ytMeShow();ytInfo();}
+async function ytPool(list,n,fn){let k=0;await Promise.all(Array.from({length:n},async()=>{while(k<list.length){const x=list[k++];try{await fn(x);}catch(e){}}}));}
+/* neueste Shorts: pro Kanal die reine Shorts-Liste (UUSH…), kostet 1 Kontingent-Punkt je Kanal */
+async function ytShortsOf(ch){const cand=[];let okN=0,failN=0;
+  await ytPool(ch,6,async c=>{try{const r=await ytApiGet('playlistItems?part=contentDetails&maxResults=6&playlistId=UUSH'+c.slice(2));okN++;
+    for(const it of r.items||[])cand.push({id:it.contentDetails.videoId,t:Date.parse(it.contentDetails.videoPublishedAt||0)||0});}catch(e){failN++;}});
+  let fallback=false;if(!okN&&failN>=Math.min(5,ch.length)){fallback=true;/* Notlösung: normale Uploads, nur kurze Videos */
+    await ytPool(ch.slice(0,60),6,async c=>{const r=await ytApiGet('playlistItems?part=contentDetails&maxResults=6&playlistId=UU'+c.slice(2));
+      for(const it of r.items||[])cand.push({id:it.contentDetails.videoId,t:Date.parse(it.contentDetails.videoPublishedAt||0)||0});});}
+  const ids=[...new Set(cand.map(c=>c.id))],ok=new Set();
+  for(let i=0;i<ids.length;i+=50){try{const r=await ytApiGet('videos?part=contentDetails,status&id='+ids.slice(i,i+50).join(','));
+    for(const it of r.items||[]){const d=ytSecs(it.contentDetails.duration);if(d>0&&d<=(fallback?60:180)&&(!it.status||it.status.embeddable!==false))ok.add(it.id);}}catch(e){}}
+  return [...new Map(cand.filter(c=>ok.has(c.id)).sort((a,b)=>b.t-a.t).map(c=>[c.id,c])).keys()].slice(0,250);}
+async function ytFetchMine(interactive){if(ytBusy)return;ytBusy=true;const inf=$('ytMeInfo');
+  try{let me=ytMine()||{};let ch=me.ch||[];
+    if(interactive||!ch.length){if(inf)inf.textContent='Google-Anmeldung …';
+      if(!await ytAuth()){if(inf)inf.textContent='Anmeldung hat nicht geklappt. Ist deine Google-Adresse bei Tim als Tester eingetragen?';return;}
+      if(inf)inf.textContent='Lade deine Abos …';const subs=[];let page='';
+      for(let i=0;i<10;i++){const r=await ytApiGet('subscriptions?part=snippet&mine=true&maxResults=50&order=relevance'+(page?'&pageToken='+page:''));
+        for(const it of r.items||[])subs.push(it.snippet.resourceId.channelId);page=r.nextPageToken;if(!page)break;}
+      ch=subs.slice(0,YT_MAXCH);}
+    if(!ch.length){if(inf)inf.textContent='Du hast auf YouTube noch keine Kanäle abonniert.';ytMeSet({on:true,ch:[],v:[],at:Date.now()});return;}
+    if(inf)inf.textContent='Suche die neuesten Shorts von '+ch.length+' Kanälen …';
+    const v=await ytShortsOf(ch);ytMeSet({on:true,ch,v,at:Date.now()});ytLoadApi();}
+  catch(e){if(inf)inf.textContent='YouTube hat abgelehnt ('+(e.message||'Fehler')+'). Versuch es später nochmal.';}
+  finally{ytBusy=false;ytMeShow();ytInfo();}}
 $('ytLogin').addEventListener('click',()=>ytFetchMine(true));
-$('ytLogout').addEventListener('click',()=>{try{if(ytTok&&window.google)google.accounts.oauth2.revoke(ytTok,()=>{});}catch(e){}ytTok=null;localStorage.removeItem('nfp-ytme');ytMeShow();ytInfo();});
-{const me=ytMine();if(me&&me.on&&Date.now()-(me.at||0)>3*3600e3)setTimeout(()=>ytFetchMine(false),4000);}
+$('ytLogout').addEventListener('click',()=>{try{if(ytTok&&window.google)google.accounts.oauth2.revoke(ytTok,()=>{});}catch(e){}ytTok=null;localStorage.removeItem('nfp-ytme');save.ytOnly=false;persist();ytMeShow();ytInfo();});
+$('ytOnly').addEventListener('change',e=>{save.ytOnly=!!e.target.checked;persist();});
+/* ohne Popup aktualisieren: alle 6 Std. die neuesten Shorts derselben Kanäle (öffentliche Daten, API-Schlüssel) */
+function ytAutoRefresh(){const me=ytMine();if(me&&me.on&&(me.ch||[]).length&&ytCfg.key&&Date.now()-(me.at||0)>YT_REFRESH)ytFetchMine(false);}
+setTimeout(ytAutoRefresh,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)ytAutoRefresh();});
 
 /* ---------- Supabase-Anmeldung (E-Mail + Passwort, Bestätigung per Mail) ---------- */
 const SB_URL='https://zquwffzeracrvpemlgtc.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxdXdmZnplcmFjcnZwZW1sZ3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5NDYxODYsImV4cCI6MjExMDUyMjE4Nn0.Gnfd1Cob_dlHh2HgRY9AfIO3Zkwd5PbjSxfAb3v16Gk';const SB_ON=!!(SB_URL&&SB_KEY);const SB_BACK=location.origin+location.pathname;
