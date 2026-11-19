@@ -3,6 +3,7 @@
 # Nutzung: python3 spieler_live.py            -> alle Spieler, online zuerst
 #          python3 spieler_live.py niki       -> nur Spieler, deren Name "niki" enthält
 #          python3 spieler_live.py --json     -> Rohdaten
+#          --gaeste                           -> alte Gast-Einträge (ohne Konto) mit anzeigen
 import json, sys, urllib.request, datetime, time
 from zoneinfo import ZoneInfo
 DB = 'https://need-for-pete-default-rtdb.europe-west1.firebasedatabase.app'
@@ -17,6 +18,7 @@ now = time.time() * 1000
 out = []
 for k, m in meta.items():
     if q and q not in str(m.get('n', '')).lower(): continue
+    if k.startswith('g') and '--gaeste' not in sys.argv: continue   # Gäste (ohne Konto) gibt es seit 19.11. nicht mehr
     try: r = json.loads(get(f'/gd/st/{k}') or '{}')
     except Exception: r = {}
     age = (now - m.get('t', 0)) / 1000
