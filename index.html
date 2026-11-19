@@ -159,7 +159,7 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 #roomBan{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:95;display:flex;align-items:center;gap:8px;width:min(520px,calc(100vw - 24px));box-sizing:border-box;
   background:rgba(14,20,46,.94);color:#fff;border:2px solid #ffcf1f;border-radius:16px;padding:8px 10px 8px 14px;font:15px system-ui;box-shadow:0 8px 30px rgba(0,0,0,.45)}
 #roomBan.in{animation:banin .35s ease-out}@keyframes banin{from{transform:translate(-50%,-120%)}to{transform:translate(-50%,0)}}
-#roomBan small{opacity:.75;margin-left:4px}.banx{background:none;border:0;color:#fff;font-size:20px;cursor:pointer;padding:2px 6px}
+#roomBan small{opacity:.75;margin-left:4px}.banlist{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.banx{background:none;border:0;color:#fff;font-size:20px;cursor:pointer;padding:2px 6px}
 .gbtn.mini,#roomBan .gbtn,.onlist .gbtn,#lobbyInv .gbtn{font-size:15px!important;padding:7px 12px!important;min-height:0!important;min-width:0!important;width:auto!important;flex:none}
 #banTxt{flex:1;min-width:0;line-height:1.3}
 .onlist{list-style:none;padding:0;margin:8px 0;text-align:left}.onlist li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 4px;border-top:1px solid rgba(255,255,255,.15)}.onlist small{opacity:.75}
@@ -976,7 +976,7 @@ function memeEnd(){overClipStop();if(!meme)return;if(meme.clip){clipV.pause();co
 let skyPic=null,picNextAt=200,picLast=null;const picImg={};
 function picLoad(id){if(picImg[id])return picImg[id];const o={ok:false};picImg[id]=o;mediaOp('get','it-'+id).then(b=>{if(!b)return;const i=new Image();i.onload=()=>{o.img=i;o.ok=true;};i.src=URL.createObjectURL(b);}).catch(()=>{});return o;}
 const PIC_PAR=.35;
-function picTick(){if(duel.active||!state||state.crashed)return;let inTut=false;try{inTut=!!(tut&&tut.run);}catch(e){}if(inTut)return;const L=picList();if(!L.length)return;
+function picTick(){if(!state||state.crashed)return;let inTut=false;try{inTut=!!(tut&&tut.run);}catch(e){}if(inTut)return;const L=picList();if(!L.length)return;
   const z=cam.z,m=Math.max(0,(car.body.x-START_X)/PX_PER_M);
   if(skyPic){const sx=W*.36+(skyPic.x-cam.x)*z*PIC_PAR;if(sx<-W*.5)skyPic=null;}
   if(!skyPic&&m>=picNextAt){if(meme&&(meme.clip||meme.yt)){picNextAt=m+40;return;}picNextAt=m+260+Math.random()*340;
@@ -992,8 +992,11 @@ function drawSkyPic(){if(!skyPic||!skyPic.o.ok)return;const im=skyPic.o.img,z=ca
   ctx.drawImage(im,-w/2,-h/2,w,h);
   ctx.fillStyle='#ff5a5a';ctx.strokeStyle=INK;ctx.lineWidth=2;for(const px of [-w*.3,w*.3]){ctx.beginPath();ctx.arc(px,-h/2-4,6,0,7);ctx.fill();ctx.stroke();}
   ctx.restore();}
-function memeTick(dt){if(duel.active||!state||(tut&&tut.run))return;if(meme){meme.t+=dt;if(meme.kind===5){const n=Math.min(9,Math.floor(meme.t*3.2)+1);if(n>meme.shown){meme.shown=n;blip(300,300,.12,'square',.07);}}if(meme.t>meme.dur)memeEnd();return;}
-  const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(m>=memeNextAt){memeNextAt=m+140+Math.random()*260;if(!state.crashed)memeStart();}}
+function memeTick(dt){if(!state||(tut&&tut.run))return;if(meme){meme.t+=dt;if(meme.kind===5){const n=Math.min(9,Math.floor(meme.t*3.2)+1);if(n>meme.shown){meme.shown=n;blip(300,300,.12,'square',.07);}}if(meme.t>meme.dur)memeEnd();return;}
+  const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(m>=memeNextAt){memeNextAt=m+140+Math.random()*260;if(!state.crashed){memeStart();try{if(duel.active&&NET.key&&meme)duelSend({type:'meme',clip:meme.clip?meme.id:''});}catch(e){}}}}
+// Live-Rennen: wenn bei einem ein Clip startet, läuft er bei allen gleichzeitig (gemeinsam lachen)
+function memeShared(msg){if(!running||!state||state.crashed||meme)return;const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);memeNextAt=m+140+Math.random()*260;
+  const id=String(msg.clip||'');if(id&&surpList().includes(id)){clipPrepare(id).then(()=>{if(!running||meme)return;if(clipCur===id)state.forceClip=true;memeStart();});}else memeStart();}
 function drawBohni(x,y,s,ph,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(ph*1.3)*.12+(o.rot||0));
   const w=s*.36,h=s*.5,lw=Math.max(1.5,s*.03);ctx.lineWidth=lw;ctx.strokeStyle=INK;ctx.lineJoin='round';
   // legs
@@ -2568,6 +2571,7 @@ function onDuelData(m){
   if(m.type==='go'){duel.race=m.race;beginDuel();}
   if(m.type==='pos'){const o=duel.opps[id]=Object.assign(duel.opps[id]||{},m,{seen:performance.now(),name:nm});if(o.sx==null){o.sx=m.x;o.sy=m.y;o.sa=m.a;}}
   if(!duel.active||m.race!==duel.race){if(m.type==='again'&&!running&&NET.key){duel.race=m.race;$('over').hidden=true;beginDuel();}if(m.type==='bye'&&P)P.seen=-1e9;if(m.type==='bye')netLobby();return;}
+  if(m.type==='meme'&&running){memeShared(m);}
   if(m.type==='haz'&&running){hazards.push({t:m.t==='oil'?'oil':'logs',x:+m.x,dead:false,hit:false,fromOpp:true});}
   if(m.type==='zap'&&running&&!state.crashed&&car.body.x>(+m.x||0)){if(state.shield>0){state.shield=0;popup('GEBLOCKT!',car.body.x,car.body.y-70,'#7fe0ff');}else{state.zap=3;state.turbo=0;popup('GEBLITZT VON '+nm.toUpperCase()+'!',car.body.x,car.body.y-70,'#ffe066');cam.shake=10;blip(1400,100,.5,'sawtooth',.09);}}
   if(m.type==='win'&&!duel.result){duel.result='lost';duel.oppTime=m.t;duel.winner=nm;state.crashed=true;state.reason='lost';state.crashT=0;popup(nm.toUpperCase()+' GEWINNT!',car.body.x,car.body.y-80,'#ff5a4e');}
@@ -2690,7 +2694,7 @@ $('tutAgain').addEventListener('click',()=>{$('settings').hidden=true;tut=null;t
 $('pause').addEventListener('click',()=>{if(tut&&tut.run){tut.run=false;$('coach').hidden=true;setTimeout(()=>{if(tut)tutShow('B');},150);}});
 {const sp1=new URLSearchParams(location.search);if(!save.tutDone&&!RAUM_Q&&!((sp1.get('ch')||sp1.get('fuer'))&&!save.giftSeen))setTimeout(()=>{if($('tut').hidden&&!running)tutShow('A');},500);}
 // test hook
-window.__nfp={dailyMake,ymd,resetDaily(){dailyCache=null;},get TRK(){return TRK;},get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;},get wx(){return wx;},get skyPic(){return skyPic;}};
+window.__nfp={dailyMake,ymd,resetDaily(){dailyCache=null;},get TRK(){return TRK;},get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;},get wx(){return wx;},get skyPic(){return skyPic;},get meme(){return meme;},memeAt(v){memeNextAt=v;}};
 /* ---------- YouTube Shorts am Himmel ---------- */
 const YT_KEY='yt-cfg';let ytCfg={v:[]},ytP=null,ytReady=false,ytApi=false,ytCur=null,ytMuted=true;
 function ytParse(t){const ids=[];let l=null;for(const part of String(t||'').split(/[\s,]+/)){if(!part)continue;
@@ -3042,11 +3046,11 @@ function stRec(){const s=stObj(),days=Object.keys(s.daily).sort().slice(-21),dl=
     play:Math.round(s.play),drive:Math.round(s.drive),runs:s.runs,sess:s.sess,first:s.first,last:Date.now(),what:stWhat(),room:stRoom(),
     flips:(save.tot&&save.tot.flips)||0,dailies:(save.tot&&save.tot.dailies)||0,bests:save.bests||{},daily:dl,tr:s.tr,
     dTry:(save.dTry&&save.dTry.date===todayStr())?save.dTry.n:0,dev:(/iPhone|iPad|Android|Macintosh|Windows|Linux/.exec(navigator.userAgent)||['?'])[0],pwa:!!(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)};}
-async function stBeat(force){if(!ST_ON||stBusy)return;if(!force&&Date.now()-stLastBeat<20e3)return;stBusy=true;stLastBeat=Date.now();stTick();persist();
+let stAgain=false;async function stBeat(force){if(!ST_ON)return;if(stBusy){if(force)stAgain=true;return;}if(!force&&Date.now()-stLastBeat<20e3)return;stBusy=true;stLastBeat=Date.now();stTick();persist();
   try{const pk=stPk(),rec=JSON.stringify(stRec());
     for(let tries=0;tries<2;tries++){if(!stM||tries){const old=await dbGet('/gm/st/'+pk);stM=Math.max(stM,(old&&old.m)||0,save.stM||0);}const m=stM+1;if(m>=50000)return;
       const ok=await dbSend('/','PATCH',{['gd/st/'+pk]:rec,['gm/st/'+pk]:{n:pName(),m,v:stV(),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});
-      if(ok){stM=m;save.stM=m;persist();return;}}}catch(e){}finally{stBusy=false;}}
+      if(ok){stM=m;save.stM=m;persist();return;}}}catch(e){}finally{stBusy=false;if(stAgain){stAgain=false;setTimeout(()=>{stLastBeat=0;stBeat(true);},200);}}}
 function stRun(m){if(!ST_ON)return;try{stTick();const s=stObj();s.runs++;const sec=Math.round((state&&state.t)||0);
   if(playDaily&&!duel.active){const d=todayStr(),o=s.daily[d]=s.daily[d]||{n:0,m:0,pts:0,sec:0};o.n++;o.m=Math.max(o.m,m);o.pts=Math.max(o.pts,m*10+((state&&state.score)||0));o.sec+=sec;}
   else{const md=duel.active?'rennen':save.mode===4?'boss':save.mode?'lv'+save.mode:'frei',k=((TRK&&TRK.id)||'?')+':'+md,o=s.tr[k]=s.tr[k]||{n:0,m:0,sec:0,fin:0};o.n++;o.m=Math.max(o.m,m);o.sec+=sec;if(state&&state.reason==='finish')o.fin++;}
@@ -3062,12 +3066,16 @@ function stOnline(){const now=Date.now(),me=stPk();return Object.entries(stOn).f
 const stSeen={};let banT=null,banCode=null;
 function stUpd(){const L=stOnline(),n=L.length;try{$('onN').textContent=n||1;}catch(e){}
   if(!$('onl').hidden)stOnlShow();if(NET.key&&NET.host)stInvShow();
-  const me=stPk();for(const p of L){if(p.me||p.v[0]!=='R')continue;const code=p.v.slice(1,5),inv=p.v.split('@')[1]||'',forMe=inv===me,id=p.k+code+(forMe?'@'+p.m:'');
-    if(stSeen[id]||(NET.key&&NET.code===code)||duel.active||RENNEN)continue;if(!forMe&&stSeen[p.k+code])continue;stSeen[id]=stSeen[p.k+code]=1;
-    if(Date.now()-(p.t||0)>90e3&&!forMe)continue;stBan(p.n,code,forMe);}}
-function stBan(name,code,forMe){const b=$('roomBan');banCode=code;$('banTxt').innerHTML=(forMe?'🔔 <b>'+esc(name)+'</b> lädt dich ins Live-Rennen ein!':'🏁 <b>'+esc(name)+'</b> hat gerade einen Raum erstellt')+' <small>Code '+code+'</small>';
+  if(duel.active||RENNEN)return;const me=stPk(),rooms=[];let fresh=false,inv=null;
+  for(const p of L){if(p.me||p.v[0]!=='R')continue;const code=p.v.slice(1,5);if(NET.key&&NET.code===code)continue;const forMe=(p.v.split('@')[1]||'')===me;rooms.push({n:p.n,code});
+    if(forMe){const id=p.k+code+'@'+p.m;if(!stSeen[id]){stSeen[id]=stSeen[p.k+code]=1;inv=p;fresh=true;}}else if(!stSeen[p.k+code]){stSeen[p.k+code]=1;if(Date.now()-(p.t||0)<=90e3)fresh=true;}}
+  if(fresh&&rooms.length)stBan(rooms,inv);else if(!$('roomBan').hidden&&!rooms.length)$('roomBan').hidden=true;}
+function stBan(rooms,inv){const b=$('roomBan');banCode=(inv?inv.v.slice(1,5):rooms[0].code);
+  if(rooms.length>1&&!inv){$('banTxt').innerHTML='🏁 <b>'+rooms.length+' Räume offen</b> – such dir einen aus:<span class="banlist">'+rooms.slice(0,5).map(r=>'<button class="gbtn play mini" data-code="'+r.code+'">'+esc(r.n)+'</button>').join('')+'</span>';$('banGo').hidden=true;}
+  else{$('banTxt').innerHTML=(inv?'🔔 <b>'+esc(inv.n)+'</b> lädt dich ins Live-Rennen ein!':'🏁 <b>'+esc(rooms[0].n)+'</b> hat gerade einen Raum erstellt')+' <small>Code '+banCode+'</small>';$('banGo').hidden=false;}
   b.hidden=false;b.classList.remove('in');void b.offsetWidth;b.classList.add('in');try{blip(880,90,.35,'sine',.06);setTimeout(()=>blip(1320,120,.35,'sine',.06),110);}catch(e){}
-  clearTimeout(banT);banT=setTimeout(()=>{b.hidden=true;},forMe?25e3:14e3);}
+  clearTimeout(banT);banT=setTimeout(()=>{b.hidden=true;},inv?25e3:rooms.length>1?18e3:14e3);}
+$('banTxt').addEventListener('click',e=>{const bt=e.target.closest('button[data-code]');if(bt)stJoin(bt.dataset.code);});
 function esc(t){return String(t==null?'':t).replace(/[<>&"]/g,'');}
 function stJoin(code){$('roomBan').hidden=true;if(!code)return;
   if(running){running=false;overShown=true;try{if(duel.active)leaveDuel();}catch(e){}setPlayUI(false);try{$('giveUp').hidden=true;$('countdown').hidden=true;}catch(e){}}
