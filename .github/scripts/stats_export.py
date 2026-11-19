@@ -10,6 +10,7 @@ now = datetime.datetime.now(TZ); now_ms = now.timestamp() * 1000
 meta = get('/gm/st') or {}
 out = []
 for k, m in meta.items():
+    if k.startswith('g'): continue   # Gäste ohne Konto gibt es nicht mehr (19.11.)
     try: rec = json.loads(get(f'/gd/st/{k}') or '{}')
     except Exception: rec = {}
     rec.update(k=k, n=rec.get('n') or m.get('n'), t=m.get('t', 0), online=(m.get('t', 0) > now_ms - 200000 and not str(m.get('v','')).startswith('X')), v=m.get('v', ''))

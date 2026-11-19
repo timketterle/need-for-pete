@@ -2346,6 +2346,7 @@ function dailyTry(){const t=dTryInfo();
     try{$('over').hidden=true;$('menu').hidden=false;showMenuStats();}catch(e){}return false;}
   t.n++;persist();dTrySync(true);setTimeout(()=>toast('Daily-Versuch '+t.n+' von '+DTRY,2),300);return true;}
 function startRun(){
+  if(!RENNEN&&!acct()){$('login').hidden=false;try{toast('Bitte erst anmelden.',2.5);}catch(e){}return;}
   if(playDaily&&!duel.active&&!dailyTry())return;
   initAudio();clipUnlock();newRun();running=true;overShown=false;acc=0;try{setTimeout(()=>stBeat(true),500);}catch(e){}
   $('menu').hidden=true;$('over').hidden=true;setPlayUI(true);
@@ -2524,7 +2525,8 @@ function allowedDrivers(){const a=acct();if(!a)return ['pete'];if(save.sbAdmin)r
 function acctFix(){const a=acct();if(a){save.pname=a.n;save.sk='sv-'+a.k+'-'+String(save.acct).padStart(4,'0');}const al=allowedDrivers();if(!al.includes(save.driver||'pete'))save.driver=al[0];}
 function stScore(o){return (o.level||1)*1e6+(o.xp||0)*10+(o.coins||0)/1e3;}
 async function loginWith(num,viaSb){num=String(num||'').trim();if(SB_ON&&!viaSb){$('loginMsg').textContent='Bitte melde dich mit deiner E-Mail an.';return;}const a=ACCTS[num];if(!a){$('loginMsg').textContent='Diese Nummer gibt es nicht.';return;}
-  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-'+num.padStart(4,'0'),d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}if(o&&o.season!==SEASON){if(SEASON_KEEP.includes(num))o.season=SEASON;else o=null;}
+  $('loginMsg').textContent='Lade deinen Spielstand …';const k='sv-'+a.k+'-'+num.padStart(4,'0');let d;
+  try{const r=await fetch(DBU+'/gd/'+k+'/s.json',{cache:'no-store'});if(!r.ok)throw 0;d=await r.json();}catch(e){$('loginMsg').textContent='Keine Verbindung zum Spielstand. Bitte nochmal versuchen.';return;}let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}if(o&&o.season!==SEASON){if(SEASON_KEEP.includes(num))o.season=SEASON;else o=null;}
   const local=save.acct?null:save;let next=o&&(!local||stScore(o)>stScore(local))?o:Object.assign({},local||{},{});
   next.acct=num;next.sk=k;next.pname=a.n;if(save.acctInfo)next.acctInfo=save.acctInfo;next.sbAdmin=save.sbAdmin;next.giftSeen=true;if(!next.tutDone&&local&&local.tutDone)next.tutDone=true;
   localStorage.setItem('nfp-save',JSON.stringify(next));save=Object.assign(save,next);acctFix();persist();
@@ -2560,6 +2562,11 @@ function svCode(){return svKey().slice(3);}
 let svBusy=false,svLast=0;
 async function cloudSave(force){if(svBusy||!acct())return false;if(!force&&Date.now()-svLast<15000)return false;svBusy=true;svLast=Date.now();
   try{const k=svKey(),meta=await dbGet('/gm/'+k+'/s'),m=Math.max(save.svN||0,(meta&&meta.m)||0)+1;
+    // Wurde inzwischen auf einem anderen Gerät gespeichert? Dann erst vergleichen: der bessere Stand gewinnt, nie blind überschreiben.
+    if(meta&&(meta.m||0)>(save.svN||0)){const d=await dbGet('/gd/'+k+'/s');let o=null;try{if(typeof d==='string')o=JSON.parse(d);}catch(e){}
+      if(o&&o.acct===save.acct&&stScore(o)>stScore(save)){if(running)return false;
+        const keep={};for(const x of ['ctl','inv','leanInv','engVol','engSnd','clipVol','giftSeen','tutDone','sbAdmin','acctInfo','gid'])if(save[x]!==undefined)keep[x]=save[x];
+        save=Object.assign(o,keep,{svN:meta.m});persist();try{toast('Neuerer Spielstand von deinem anderen Gerät geladen ✔',2.5);}catch(e){}setTimeout(()=>location.reload(),1200);return false;}}
     const data=JSON.stringify(save);if(data.length>390000)return false;
     const ok=await dbSend('/','PATCH',{['gd/'+k+'/s']:data,['gm/'+k+'/s']:{n:pName(),m,v:String(save.veh||'f1').slice(0,12),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});
     if(ok){save.svN=m;save.svAt=Date.now();persist();}svShow();return ok;}catch(e){return false;}finally{svBusy=false;}}
@@ -2697,7 +2704,7 @@ $('tutPrev').addEventListener('click',()=>{if(tut.i>0)tutShow(tut.part,tut.i-1);
 $('tutSkip').addEventListener('click',()=>tutEnd());
 $('tutAgain').addEventListener('click',()=>{$('settings').hidden=true;tut=null;tutShow('A');});
 $('pause').addEventListener('click',()=>{if(tut&&tut.run){tut.run=false;$('coach').hidden=true;setTimeout(()=>{if(tut)tutShow('B');},150);}});
-{const sp1=new URLSearchParams(location.search);if(!save.tutDone&&!RAUM_Q&&!((sp1.get('ch')||sp1.get('fuer'))&&!save.giftSeen))setTimeout(()=>{if($('tut').hidden&&!running)tutShow('A');},500);}
+{const sp1=new URLSearchParams(location.search);if(!save.tutDone&&!RAUM_Q&&!((sp1.get('ch')||sp1.get('fuer'))&&!save.giftSeen))setTimeout(()=>{if($('tut').hidden&&$('login').hidden&&!running&&acct())tutShow('A');},500);}
 // test hook
 window.__nfp={dailyMake,ymd,resetDaily(){dailyCache=null;},get TRK(){return TRK;},get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;},get wx(){return wx;},get skyPic(){return skyPic;},get meme(){return meme;},memeAt(v){memeNextAt=v;}};
 /* ---------- YouTube Shorts am Himmel ---------- */
@@ -3064,12 +3071,12 @@ function stRec(){const s=stObj(),days=Object.keys(s.daily).sort().slice(-21),dl=
     play:Math.round(s.play),drive:Math.round(s.drive),runs:s.runs,sess:s.sess,first:s.first,last:Date.now(),what:stWhat(),room:stRoom(),
     flips:(save.tot&&save.tot.flips)||0,dailies:(save.tot&&save.tot.dailies)||0,bests:save.bests||{},daily:dl,tr:s.tr,
     dTry:(save.dTry&&save.dTry.date===todayStr())?save.dTry.n:0,dev:(/iPhone|iPad|Android|Macintosh|Windows|Linux/.exec(navigator.userAgent)||['?'])[0],pwa:!!(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)};}
-let stAgain=false;async function stBeat(force){if(!ST_ON)return;if(stBusy){if(force)stAgain=true;return;}if(!force&&Date.now()-stLastBeat<20e3)return;stBusy=true;stLastBeat=Date.now();stTick();persist();
+let stAgain=false;async function stBeat(force){if(!ST_ON||!acct())return;if(stBusy){if(force)stAgain=true;return;}if(!force&&Date.now()-stLastBeat<20e3)return;stBusy=true;stLastBeat=Date.now();stTick();persist();
   try{const pk=stPk(),rec=JSON.stringify(stRec());
     for(let tries=0;tries<2;tries++){if(!stM||tries){const old=await dbGet('/gm/st/'+pk);stM=Math.max(stM,(old&&old.m)||0,save.stM||0);}const m=stM+1;if(m>=50000)return;
       const ok=await dbSend('/','PATCH',{['gd/st/'+pk]:rec,['gm/st/'+pk]:{n:pName(),m,v:stV(),dr:String(save.driver||'pete').slice(0,12),t:{'.sv':'timestamp'}}});
       if(ok){stM=m;save.stM=m;persist();return;}}}catch(e){}finally{stBusy=false;if(stAgain){stAgain=false;setTimeout(()=>{stLastBeat=0;stBeat(true);},200);}}}
-function stRun(m){if(!ST_ON)return;try{stTick();const s=stObj();s.runs++;const sec=Math.round((state&&state.t)||0);
+function stRun(m){if(!ST_ON||!acct())return;try{stTick();const s=stObj();s.runs++;const sec=Math.round((state&&state.t)||0);
   if(playDaily&&!duel.active){const d=todayStr(),o=s.daily[d]=s.daily[d]||{n:0,m:0,pts:0,sec:0};o.n++;o.m=Math.max(o.m,m);o.pts=Math.max(o.pts,m*10+((state&&state.score)||0));o.sec+=sec;}
   else{const md=duel.active?'rennen':save.mode===4?'boss':save.mode?'lv'+save.mode:'frei',k=((TRK&&TRK.id)||'?')+':'+md,o=s.tr[k]=s.tr[k]||{n:0,m:0,sec:0,fin:0};o.n++;o.m=Math.max(o.m,m);o.sec+=sec;if(state&&state.reason==='finish')o.fin++;}
   persist();setTimeout(()=>stBeat(true),2500);}catch(e){}}
@@ -3080,7 +3087,7 @@ let stES=null;
 function stListen(on){if(!ST_ON)return;if(!on){try{stES&&stES.close();}catch(e){}stES=null;return;}if(stES)return;
   try{const es=new EventSource(DBU+'/gm/st.json');stES=es;const h=e=>{try{const d=JSON.parse(e.data);netPath(stOn,d.path,d.data,e.type==='patch');stUpd();}catch(x){}};
     es.addEventListener('put',h);es.addEventListener('patch',h);es.onerror=()=>{};}catch(e){}}
-function stOnline(){const now=Date.now(),me=stPk();return Object.entries(stOn).filter(([k,e])=>e&&typeof e==='object'&&(e.t||0)>now-ST_ONLINE&&String(e.v||'')[0]!=='X').map(([k,e])=>({k,me:k===me,n:e.n||k,dr:e.dr,v:String(e.v||''),t:e.t,m:e.m}));}
+function stOnline(){const now=Date.now(),me=stPk();return Object.entries(stOn).filter(([k,e])=>k[0]!=='g'&&e&&typeof e==='object'&&(e.t||0)>now-ST_ONLINE&&String(e.v||'')[0]!=='X').map(([k,e])=>({k,me:k===me,n:e.n||k,dr:e.dr,v:String(e.v||''),t:e.t,m:e.m}));}
 const stSeen={};let banT=null,banCode=null;
 function stUpd(){const L=stOnline(),n=L.length;try{$('onN').textContent=n||1;}catch(e){}
   if(!$('onl').hidden)stOnlShow();if(NET.key&&NET.host)stInvShow();
@@ -3123,7 +3130,7 @@ if(ST_ON){stListen(true);setInterval(stUpd,30e3);}
 function fmtDur(s){s=Math.round(s||0);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+' h '+String(m).padStart(2,'0')+' min':m+' min';}
 function fmtAgo(t){const d=(Date.now()-t)/1000;if(d<ST_ONLINE/1000)return 'jetzt online';if(d<3600)return 'vor '+Math.round(d/60)+' Min';if(d<86400)return 'vor '+Math.round(d/3600)+' Std';return new Date(t).toLocaleDateString('de-DE');}
 async function stLoadAll(){const meta=await dbGet('/gm/st');if(!meta||typeof meta!=='object')return [];
-  const ks=Object.keys(meta),recs=await Promise.all(ks.map(k=>dbGet('/gd/st/'+k)));
+  const ks=Object.keys(meta).filter(k=>k[0]!=='g'),recs=await Promise.all(ks.map(k=>dbGet('/gd/st/'+k)));
   return ks.map((k,i)=>{let r={};try{r=JSON.parse(recs[i])||{};}catch(e){}return Object.assign({n:meta[k].n},r,{k,t:meta[k].t||0,v:String(meta[k].v||''),on:(meta[k].t||0)>Date.now()-ST_ONLINE&&String(meta[k].v||'')[0]!=='X'});});}
 let statsTimer=null;
 async function statsShow(){if(!save.sbAdmin){toast('Nur für Tim.',2);return;}document.querySelectorAll('.overlay').forEach(o=>o.hidden=true);$('stats').hidden=false;
