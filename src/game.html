@@ -137,6 +137,7 @@ button:focus-visible{outline:3px dashed var(--night);outline-offset:3px}
 .gbtn.locked{filter:grayscale(.85) brightness(.8)}.dbuy{font:700 14px system-ui;border:0;border-radius:12px;padding:9px 12px;background:rgba(255,200,58,.18);color:#ffd76a;border:1px solid rgba(255,200,58,.5)}
 #ytBox{position:fixed;left:0;top:0;width:10px;height:10px;overflow:hidden;background:#000}
 #ytBox[hidden],#ytSnd[hidden]{display:none}#ytFrame,#ytBox iframe{width:100%;height:100%;border:0;pointer-events:none}
+#clipCtl{position:fixed;z-index:7;transform:translate(-50%,0);display:flex;gap:6px;align-items:center;white-space:nowrap;background:rgba(0,0,0,.6);border-radius:999px;padding:4px 6px;color:#fff;font:800 12px system-ui}#clipCtl button{border:0;border-radius:999px;background:rgba(255,255,255,.18);color:#fff;font:800 14px system-ui;min-width:34px;height:30px;padding:0 8px}#clipCtl b{min-width:38px;text-align:center}
 #ytSnd{position:fixed;z-index:7;transform:translate(-50%,-100%);white-space:nowrap;border:0;border-radius:999px;padding:7px 10px;font:700 12px system-ui;background:rgba(0,0,0,.7);color:#fff}
 .sbin{font:17px system-ui;width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:10px;padding:10px 12px;margin-top:8px}
 .onpill{display:inline-flex;align-items:center;gap:5px;border:0;border-radius:999px;padding:4px 9px;background:rgba(14,20,46,.6);color:#fff;font:700 12px system-ui;cursor:pointer;white-space:nowrap;flex:none}
@@ -392,6 +393,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <div class="row" style="justify-content:flex-start;gap:8px;margin:6px 0 0;flex-wrap:wrap"><label class="gbtn orange mid" style="cursor:pointer">VIDEO/BILD REIN<input type="file" id="chIn" accept="video/*,image/*" multiple hidden></label><button class="gbtn blue mid" id="chShare" hidden>LINK FÜR SEVERIN</button><button class="gbtn play mid" id="chTest" hidden>JETZT TESTEN</button></div>
       <p class="note" id="chInfo"></p>
       <label class="volrow">🔊 Lautstärke Clips <input type="range" id="clipVol" min="0" max="150" step="5" value="100"> <b id="clipVolTxt">100 %</b></label>
+      <label class="volrow">⏩ Tempo Clips <select id="clipRate" style="padding:6px 8px;border-radius:10px;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.25);font:15px system-ui"><option value="1">1× normal</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2× doppelt</option></select></label>
       <p class="note" style="margin:10px 0 4px"><b>YouTube Shorts</b> 📺 Füg Shorts-Links oder einen Playlist-Link ein. Die Videos laufen bei allen am Himmel, ungesehene zuerst.</p>
       <div class="row" style="justify-content:flex-start;gap:8px;margin:0;flex-wrap:wrap"><input id="ytIn" placeholder="https://youtube.com/shorts/…" style="flex:1;min-width:180px;padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);color:#fff;font:15px system-ui"><button class="gbtn blue mid" id="ytAdd">HINZUFÜGEN</button><button class="gbtn mid" id="ytTest" hidden>TESTEN</button></div>
       <p class="note" id="ytInfo"></p>
@@ -416,7 +418,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <details><summary>Daily</summary><p>Jeden Tag gibt es eine <b>komplett neue Welt</b> mit anderer Schwerkraft, anderer Rutschigkeit und manchmal mit <b>Loopings</b>. Für einen Looping brauchst du Anlauf, sonst kommt „Zu langsam“. Du hast <b>genau 10 Versuche am Tag</b>, danach ist das Daily <b>gesperrt 🔒</b> bis morgen. Die Versuche zählen pro Spieler, auch auf mehreren Geräten. Die beste Fahrt zählt für die <b>Tages-Bestenliste</b> 🏆. Wer um Mitternacht vorne liegt, gewinnt den Tag.</p></details>
       <details><summary>Geister</summary><p>Oben beim Fahren schaltest du mit <b>👻 GEISTER AN/AUS</b> die besten Fahrten deiner Freunde als Geister ein. Dein eigener Rekord fährt immer als blauer Geist mit.</p></details>
       <details><summary>Live-Rennen (2 bis 4 Leute)</summary><p>Tippe auf <b>LIVE-RENNEN</b>. Einer wählt den Modus und drückt <b>CODE ERSTELLEN</b>. Die anderen geben den Code ein und drücken BEITRETEN. Wenn alle in der Liste stehen, drückt der Gastgeber <b>RENNEN STARTEN</b>.<br><b>Rennen:</b> Wer zuerst im Ziel ist, gewinnt. Nach einem Crash geht es kurz davor weiter.<br><b>Auf Zeit 2000 m:</b> Bei 1000 m liegt ein Checkpoint. Nach einem Crash startest du am Checkpoint, wenn du ihn schon hattest, sonst ganz vorne.<br>Danach gibt es mit REVANCHE gleich die nächste Runde. Die Strecke wählt der Gastgeber im Menü, dein Auto wählst du selbst.</p></details>
-      <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen während der Fahrt am Himmel auf, und zwar immer zuerst die, die du noch nicht gesehen hast. Erst wenn du alle kennst, kommen sie wieder. Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein. <b>Dein YouTube:</b> In den Einstellungen unter „Überraschungskanal“ kannst du mit <b>MEIN YOUTUBE VERBINDEN</b> dein YouTube-Konto verbinden. Dann laufen als Clips die neuesten Shorts der Kanäle, die du abonniert hast (kein Algorithmus, nur deine Abos). Mit dem Haken „Nur meine YouTube-Shorts“ kommen nur noch die. <b>TRENNEN</b> löscht alles wieder.</p></details>
+      <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen während der Fahrt am Himmel auf, und zwar immer zuerst die, die du noch nicht gesehen hast. Erst wenn du alle kennst, kommen sie wieder. Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein. <b>Dein YouTube:</b> In den Einstellungen unter „Überraschungskanal“ kannst du mit <b>MEIN YOUTUBE VERBINDEN</b> dein YouTube-Konto verbinden. Dann laufen als Clips die neuesten Shorts der Kanäle, die du abonniert hast (kein Algorithmus, nur deine Abos). Mit dem Haken „Nur meine YouTube-Shorts“ kommen nur noch die. <b>TRENNEN</b> löscht alles wieder. <b>Jedes Reel kommt nur einmal</b>, erst wenn du alle gesehen hast, kommen die ältesten wieder. Unter dem Reel stellst du <b>Lautstärke</b> (🔉 🔊) und <b>Tempo</b> (1× bis 2×) ein, ⏭ springt zum nächsten.</p></details>
       <details><summary>Push-Nachrichten und App auf dem Handy</summary><p>Damit es wie eine App läuft: im iPhone-Safari auf <b>Teilen → „Zum Home-Bildschirm“</b> tippen, auf Android im Browser-Menü „App installieren“. Starte das Spiel dann immer vom Home-Bildschirm und melde dich dort einmal mit deiner E-Mail an. Danach drückst du hier <b>PUSH AN</b>. Dann kommt eine Nachricht, wenn jemand das Daily gespielt hat oder neuer Tages-Erster ist.</p></details>
     </div>
     <div class="card glass">
@@ -619,6 +621,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
 </div>
 <button class="small" id="rnStopRun" hidden style="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:40;background:#c0392b;color:#fff">⛔ RENNEN BEENDEN</button>
 <button id="ytSnd" hidden>🔇 Tippen für Ton</button>
+<div id="clipCtl" hidden><button data-a="vd">🔉</button><b id="clipCtlVol">100%</b><button data-a="vu">🔊</button><button data-a="sp" id="clipCtlSp">1×</button><button data-a="nx">⏭</button></div>
 <script>
 (()=>{
 "use strict";
@@ -899,7 +902,7 @@ async function mediaOp(mode,key,val){const db=await idb();return new Promise((re
   const rq=mode==='get'?st.get(key):mode==='put'?st.put(val,key):st.delete(key);tx.oncomplete=()=>res(rq.result);tx.onerror=()=>rej(tx.error);});}
 function rid(n){const a='abcdefghijklmnopqrstuvwxyz0123456789',b=crypto.getRandomValues(new Uint8Array(n));return Array.from(b,x=>a[x%36]).join('');}
 function b64ToBytes(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
-const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=true;
+const clipV=document.createElement('video');clipV.playsInline=true;clipV.setAttribute('playsinline','');clipV.preload='auto';clipV.loop=false;
 let clipLast=null,clipUnlocked=false,clipURL=null,clipCur=null,chBusy=false;
 const CH_POOL='nfpgemein1';
 {const q=new URLSearchParams(location.search);if(q.get('alles')==='frei'){save.allOpen=true;persist();try{history.replaceState(null,'',location.pathname);}catch(e){}}}const CLIP_BOOST={'m1lej5dt7h':2,'6oga15b8c8':2};/* clip id -> how much more often it is picked *//* shared pool: every device loads it, every upload goes there */
@@ -907,12 +910,24 @@ function picList(){return save.pics||(save.pics=[]);}
 function surpList(){return save.surp||(save.surp=[]);}
 function chInfo(msg){const el=document.getElementById('chInfo');if(el)el.textContent=msg!==undefined?msg:(surpList().length?surpList().length+' Überraschungs-Video'+(surpList().length>1?'s':'')+' auf diesem Handy.':'Noch keine Videos. Ohne Videos laufen die Bohni-Überraschungen.')+(picList().length?' '+picList().length+' Bild'+(picList().length>1?'er':'')+' für den Himmel.':'');
   const sh=document.getElementById('chShare');if(sh)sh.hidden=!save.chOwn;const te=document.getElementById('chTest');if(te)te.hidden=!surpList().length;}
+/* Reel-Verlauf: jedes Reel (Pool + YouTube) zählt ab dem Start als gesehen. Erst ungesehene, dann die am längsten nicht gesehenen. */
+function clipHist(){return save.clipHist||(save.clipHist={});}
+function clipWhen(x){const H=clipHist();if(H[x])return H[x];return ((save.surpSeen||{})[x]||(save.ytSeen||{})[x])?1:0;}
+function clipRecent(){return save.clipRecent||(save.clipRecent=[]);}
+function clipMark(id){if(!id)return;const H=clipHist();H[id]=Date.now();{const ks=Object.keys(H);if(ks.length>1500){ks.sort((a,b)=>H[a]-H[b]).slice(0,ks.length-1500).forEach(k=>delete H[k]);}}const R=clipRecent();const i=R.indexOf(id);if(i>=0)R.splice(i,1);R.push(id);if(R.length>40)R.splice(0,R.length-40);
+  if(surpList().includes(id)){const ss=save.surpSeen||(save.surpSeen={});ss[id]=(ss[id]||0)+1;}persist();}
+let clipAllSaid=false;
+function clipChoose(list,boost){if(!list.length)return null;const R=clipRecent();const ex=new Set(R.slice(-Math.min(12,list.length-1)));const C=list.filter(x=>!ex.has(x));const P=C.length?C:list;
+  const fresh=P.filter(x=>!clipWhen(x));if(fresh.length){if(!boost)return fresh[Math.floor(Math.random()*fresh.length)];let tot=0;for(const x of fresh)tot+=boost[x]||1;let r=Math.random()*tot;for(const x of fresh){r-=boost[x]||1;if(r<=0)return x;}return fresh[0];}
+  if(!clipAllSaid&&running){clipAllSaid=true;setTimeout(()=>{try{toast('Alle Reels gesehen ✔ Jetzt kommen die ältesten nochmal',3);}catch(e){}},800);}
+  const srt=[...P].sort((a,b)=>clipWhen(a)-clipWhen(b));const k=Math.max(1,Math.ceil(srt.length/3));return srt[Math.floor(Math.random()*k)];}
+function clipRate(){const r=+save.clipRate;return [1,1.25,1.5,2].includes(r)?r:1;}
 async function clipPrepare(want){const L=surpList();if(!L.length){clipCur=null;return;}const seen=save.surpSeen||(save.surpSeen={});
-  let pick=want&&L.includes(want)?want:null;if(!pick){const C=L.length>1?L.filter(x=>x!==clipLast):L;const ef=x=>(seen[x]||0)/(CLIP_BOOST[x]||1);const mn=Math.min(...C.map(ef));const B=C.filter(x=>ef(x)<=mn+1e-9);pick=B[Math.floor(Math.random()*B.length)];}
+  let pick=want&&L.includes(want)?want:null;if(!pick){pick=clipChoose(L.length>1?L.filter(x=>x!==clipLast):L,CLIP_BOOST);if(!pick)return;}
   if(pick===clipCur&&clipV.src)return;
   try{const b=await mediaOp('get','it-'+pick);if(!b){save.surp=L.filter(x=>x!==pick);persist();return clipPrepare();}
     if(clipURL)URL.revokeObjectURL(clipURL);clipURL=URL.createObjectURL(b);clipCur=pick;clipV.src=clipURL;clipV.load();clipUnlocked=false;
-    clipV.addEventListener('loadedmetadata',()=>{const pos=(save.surpPos||{})[pick]||0;if(pos<clipV.duration-1)clipV.currentTime=pos;},{once:true});}catch(e){}}
+    clipV.addEventListener('loadedmetadata',()=>{try{clipV.currentTime=0;clipV.playbackRate=clipRate();}catch(e){}},{once:true});}catch(e){}}
 async function chSync(){if(chBusy)return;chBusy=true;try{const ids=[...new Set([CH_POOL,save.chOwn,...(save.chSub||[])].filter(x=>x&&/^[a-z0-9]{10}$/.test(x)))];
   for(const id of ids){const list=await dbGet('/ch/'+id);if(!list||typeof list!=='object')continue;
     for(const [it,meta] of Object.entries(list)){if(surpList().includes(it)||picList().includes(it)||!meta||!meta.n)continue;const isPic=/^image\//.test(meta.type||'');const parts=[];let ok=true;
@@ -952,19 +967,21 @@ function clipAudio(){try{if(!clipGain&&AC){const src=AC.createMediaElementSource
 function clipUnlock(){clipAudio();if(!clipCur||clipUnlocked)return;clipUnlocked=true;clipV.muted=muted;try{const p=clipV.play();clipV.pause();if(p&&p.catch)p.catch(()=>{clipUnlocked=false;});}catch(e){clipUnlocked=false;}}
 function headline(){return '+++ EILMELDUNG +++ '+memeWords().join(' ')+' +++ '+memeWords().join(' ')+' +++';}
 function memeStart(){memeCount++;
-  const unseen=clipCur&&!((save.surpSeen||{})[clipCur]);
-  if(clipCur&&!clipV.error&&(state.forceClip||unseen||Math.random()<.8)){if(clipV.readyState<1)try{clipV.load();}catch(e){}state.forceClip=false;if(unseen){const L=surpList();setTimeout(()=>toast('📼 Neues Reel im Album! ('+(albSeen().length+1)+'/'+L.length+')',2.6),1200);}meme={t:0,clip:true,id:clipCur,words:[],dur:Math.max(6,Math.min(24,(clipV.duration||8)-(clipV.currentTime||0)))};clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{clipV.muted=true;clipV.play().catch(()=>{});});}catch(e){}return;}
+  const unseen=clipCur&&!((save.surpSeen||{})[clipCur]),fresh=clipCur&&!clipWhen(clipCur)&&!clipRecent().includes(clipCur);
+  if(clipCur&&!clipV.error&&(state.forceClip||fresh||(!clipRecent().slice(-3).includes(clipCur)&&Math.random()<.8))){if(clipV.readyState<1)try{clipV.load();}catch(e){}state.forceClip=false;if(unseen){const L=surpList();setTimeout(()=>toast('📼 Neues Reel im Album! ('+albSeen().length+'/'+L.length+')',2.6),1200);}try{clipV.currentTime=0;clipV.playbackRate=clipRate();}catch(e){}meme={t:0,clip:true,id:clipCur,words:[],dur:Math.max(6,Math.min(24,(clipV.duration||8)/clipRate()))};clipMark(clipCur);clipV.muted=muted;try{const p=clipV.play();p&&p.catch&&p.catch(()=>{clipV.muted=true;clipV.play().catch(()=>{});});}catch(e){}return;}
   let k;do{k=Math.floor(Math.random()*8);}while(k===memeLast);memeLast=k;
   if(k===5){meme={t:0,kind:5,words:[],dur:3.6,shown:0};return;}
   if(k===6){meme={t:0,kind:6,words:['UPSI'],dur:2.6};$('game').style.transition='transform .35s';$('game').style.transform='rotate(180deg)';blip(900,200,.5,'sawtooth',.06);return;}
   if(k===4){const h=headline();meme={t:0,kind:4,words:[],text:h,dur:7};say(h.replace(/\+/g,''),.9);[392,392,523].forEach((f,i)=>setTimeout(()=>blip(f,f,.18,'square',.05),i*160));return;}
   const words=memeWords();meme={t:0,kind:k,words,dur:Math.max(5,.6+words.length*.42+1)};say(words.join(' '),1.6+Math.random()*.4);
   if(!muted)[523,659,784,1046].forEach((f,i)=>setTimeout(()=>blip(f,f*1.01,.14,'square',.05),i*110));}
+clipV.addEventListener('ended',()=>{if(!meme||!meme.clip)return;if(!meme.inOver){meme.dur=Math.min(meme.dur,meme.t+.3);return;}
+  const was=meme.id;clipLast=was;clipPrepare().then(()=>{if(!meme||!meme.inOver)return;if(!clipCur||clipCur===was){overClipStop();return;}meme.id=clipCur;clipMark(clipCur);
+    try{clipV.playbackRate=clipRate();}catch(e){}clipV.muted=muted;clipV.play().catch(()=>{});});});
 let againT=null;function overClipStop(){if(againT){clearInterval(againT);againT=null;}const a=$('again');a.disabled=false;if(a.textContent.startsWith('NOCHMAL'))a.textContent='NOCHMAL';if(clipV.parentNode){clipV.parentNode.hidden=true;clipV.remove();}$('over').classList.remove('withclip');}
-function overClipStart(){if(!(meme&&meme.clip)||clipV.paused||clipV.ended)return;meme.inOver=true;meme.dur=1e9;const box=$('overClip');box.appendChild(clipV);box.hidden=false;$('over').classList.add('withclip');
+function overClipStart(){try{$('clipCtl').hidden=true;}catch(e){}if(!(meme&&meme.clip)||clipV.paused||clipV.ended)return;meme.inOver=true;meme.dur=1e9;const box=$('overClip');box.appendChild(clipV);box.hidden=false;$('over').classList.add('withclip');
   const a=$('again');let n=3;a.disabled=true;a.textContent='NOCHMAL ('+n+')';if(againT)clearInterval(againT);againT=setInterval(()=>{n--;if(n<=0){clearInterval(againT);againT=null;a.disabled=false;a.textContent='NOCHMAL';}else a.textContent='NOCHMAL ('+n+')';},1000);}
-function memeEnd(){overClipStop();if(!meme)return;if(meme.clip){clipV.pause();const sp=save.surpPos||(save.surpPos={}),ss=save.surpSeen||(save.surpSeen={});
-    const fin=clipV.currentTime>=clipV.duration-1.5,far=!(clipV.duration>0)||clipV.currentTime>=clipV.duration*.6;sp[meme.id]=fin?0:clipV.currentTime;if(fin||far||!ss[meme.id])ss[meme.id]=(ss[meme.id]||0)+(fin||far?1:0);clipLast=meme.id;persist();setTimeout(clipPrepare,50);}
+function memeEnd(){overClipStop();try{$('clipCtl').hidden=true;}catch(e){}if(!meme)return;if(meme.clip){clipV.pause();clipLast=meme.id;persist();setTimeout(clipPrepare,50);}
   if(meme.kind===6){$('game').style.transform='';}meme=null;}
 let skyPic=null,picNextAt=200,picLast=null;const picImg={};
 function picLoad(id){if(picImg[id])return picImg[id];const o={ok:false};picImg[id]=o;mediaOp('get','it-'+id).then(b=>{if(!b)return;const i=new Image();i.onload=()=>{o.img=i;o.ok=true;};i.src=URL.createObjectURL(b);}).catch(()=>{});return o;}
@@ -989,7 +1006,7 @@ function memeTick(dt){if(!state||(tut&&tut.run))return;if(meme){meme.t+=dt;if(me
   const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);if(m>=memeNextAt){memeNextAt=m+140+Math.random()*260;if(!state.crashed){memeStart();try{if(duel.active&&NET.key&&meme)duelSend({type:'meme',clip:meme.clip?meme.id:''});}catch(e){}}}}
 // Live-Rennen: wenn bei einem ein Clip startet, läuft er bei allen gleichzeitig (gemeinsam lachen)
 function memeShared(msg){if(!running||!state||state.crashed||meme)return;const m=Math.max(0,(car.body.x-START_X)/PX_PER_M);memeNextAt=m+140+Math.random()*260;
-  const id=String(msg.clip||'');if(id&&surpList().includes(id)){clipPrepare(id).then(()=>{if(!running||meme)return;if(clipCur===id)state.forceClip=true;memeStart();});}else memeStart();}
+  const id=String(msg.clip||'');if(id&&surpList().includes(id)&&!clipWhen(id)){clipPrepare(id).then(()=>{if(!running||meme)return;if(clipCur===id)state.forceClip=true;memeStart();});}else memeStart();}
 function drawBohni(x,y,s,ph,o){o=o||{};ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(ph*1.3)*.12+(o.rot||0));
   const w=s*.36,h=s*.5,lw=Math.max(1.5,s*.03);ctx.lineWidth=lw;ctx.strokeStyle=INK;ctx.lineJoin='round';
   // legs
@@ -1017,7 +1034,7 @@ function drawMemeBG(){if(!meme||meme.inOver)return;const t=meme.t,d=meme.dur,io=
       ytPlace(x,y,vw,vh,rr);ctx.restore();return;}
   if(meme.clip){if(clipV.readyState>=2&&clipV.videoWidth){const ar=clipV.videoWidth/clipV.videoHeight,vh=H*.6*(.6+.4*e),vw=vh*ar,x=W*.66-vw/2,y=H*.05+(1-e)*H*.3,rr=vh*.05;
       ctx.globalAlpha=Math.max(0,e);ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.roundRect(x+6,y+8,vw,vh,rr);ctx.fill();
-      ctx.save();ctx.beginPath();ctx.roundRect(x,y,vw,vh,rr);ctx.clip();ctx.drawImage(clipV,x,y,vw,vh);ctx.restore();
+      ctx.save();ctx.beginPath();ctx.roundRect(x,y,vw,vh,rr);ctx.clip();ctx.drawImage(clipV,x,y,vw,vh);ctx.restore();clipCtlPlace(x,y,vw,vh);
       ctx.lineWidth=Math.max(4,vh*.022);ctx.strokeStyle='#fff';ctx.beginPath();ctx.roundRect(x,y,vw,vh,rr);ctx.stroke();ctx.lineWidth=2.5;ctx.strokeStyle=INK;ctx.stroke();
       drawBohni(x-vh*.02,y+vh*.95,vh*.22,time,{rot:-.2});drawBohni(x+vw+vh*.02,y+vh*.95,vh*.22,time+2,{rot:.2,tuba:true});}
     else{const vh=H*.4*e,vw=vh*.6,x=W*.66-vw/2,y=H*.08;ctx.globalAlpha=Math.max(0,e);ctx.fillStyle='#111';ctx.beginPath();ctx.roundRect(x,y,vw,vh,10);ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#fff';ctx.stroke();
@@ -2427,8 +2444,17 @@ function showAlbum(){albStop();const L=surpList(),ss=save.surpSeen||{},seen=albS
 $('openAlbum').addEventListener('click',()=>{showAlbum();$('menu').hidden=true;$('album').hidden=false;});
 $('albBack').addEventListener('click',()=>{albStop();$('album').hidden=true;$('menu').hidden=false;showMenuStats();});
 $('albGo').addEventListener('click',()=>{albStop();$('album').hidden=true;playDaily=false;startRun();});
+function clipVolSet(v){save.clipVol=Math.max(0,Math.min(150,v));persist();try{$('clipVol').value=save.clipVol;$('clipVolTxt').textContent=save.clipVol+' %';}catch(e){}clipAudio();try{if(ytP)ytP.setVolume(Math.min(100,clipVolume()*100));}catch(e){}}
+function clipRateSet(r){save.clipRate=r;persist();try{clipV.playbackRate=r;}catch(e){}try{if(ytP)ytP.setPlaybackRate(r);}catch(e){}try{$('clipRate').value=String(r);}catch(e){}
+  if(meme&&meme.clip&&!meme.inOver&&clipV.duration>0)meme.dur=Math.min(meme.dur,meme.t+Math.max(1,(clipV.duration-clipV.currentTime)/r));}
+$('clipCtl').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
+  if(a==='vu'||a==='vd'){if(meme&&meme.clip&&clipV.muted&&!muted)clipV.muted=false;if(meme&&meme.yt){ytMuted=false;try{ytP.unMute();}catch(x){}$('ytSnd').hidden=true;}clipVolSet((save.clipVol==null?100:save.clipVol)+(a==='vu'?25:-25));}
+  else if(a==='sp'){const L=[1,1.25,1.5,2];clipRateSet(L[(L.indexOf(clipRate())+1)%L.length]);}
+  else if(a==='nx'&&meme){if(meme.inOver){try{clipV.currentTime=clipV.duration||0;}catch(x){}clipV.dispatchEvent(new Event('ended'));}else meme.dur=meme.t+.2;}
+  clipCtlTxt();});
 {const v=$('clipVol');const show=()=>{$('clipVolTxt').textContent=v.value+' %';};v.value=save.clipVol==null?100:save.clipVol;show();
   v.addEventListener('input',()=>{save.clipVol=+v.value;show();clipAudio();try{$('albV').volume=Math.min(1,clipVolume());}catch(e){}});v.addEventListener('change',persist);}
+{const r=$('clipRate');r.value=String(clipRate());r.addEventListener('change',()=>clipRateSet(+r.value));}
 {const v=$('engVol');const show=()=>{$('engVolTxt').textContent=v.value+' %';};v.value=save.engVol==null?60:save.engVol;show();
   v.addEventListener('input',()=>{save.engVol=+v.value;show();});v.addEventListener('change',()=>{persist();engPreview(engPreset===undefined?'brumm':(((save.engSnd||{})[save.veh])||ENG_DEF[save.veh]||'brumm'));});
   const L=$('engList');L.innerHTML='';for(const id of VORDER){const lb=document.createElement('label');lb.textContent=VEH[id].name;const sel=document.createElement('select');
@@ -2720,7 +2746,7 @@ function ytParse(t){const ids=[];let l=null;for(const part of String(t||'').spli
   const m=part.match(/(?:shorts\/|youtu\.be\/|[?&]v=|embed\/|live\/)([A-Za-z0-9_-]{11})/);if(m)ids.push(m[1]);else if(/^[A-Za-z0-9_-]{11}$/.test(part))ids.push(part);
   const q=part.match(/[?&]list=([A-Za-z0-9_-]{10,64})/);if(q)l=q[1];}return {v:ids,l};}
 function ytAll(){const me=ytMine();const own=me&&me.on?me.v||[]:[];const v=[...own];for(const x of (ytCfg.v||[]))if(!v.includes(x))v.push(x);if(ytP&&ytCfg.l&&ytP.__pl)for(const x of ytP.__pl)if(!v.includes(x))v.push(x);return v;}
-function ytInfo(){const el=$('ytInfo');if(!el)return;const n=(ytCfg.v||[]).length;const seen=save.ytSeen||{};const un=ytAll().filter(x=>!seen[x]).length;
+function ytInfo(){const el=$('ytInfo');if(!el)return;const n=(ytCfg.v||[]).length;const un=ytAll().filter(x=>!clipWhen(x)).length;
   el.textContent=(n||ytCfg.l)?(n?n+' Short'+(n>1?'s':''):'')+(ytCfg.l?(n?' + ':'')+'1 Playlist':'')+' drin. Für dich noch neu: '+un+'.':'Noch keine Shorts drin.';$('ytTest').hidden=!(n||ytCfg.l);}
 async function ytLoadCfg(){const d=await dbGet('/gd/'+YT_KEY+'/k');if(typeof d==='string'){try{const o=JSON.parse(d);if(o&&Array.isArray(o.v))ytCfg=o;}catch(e){}}ytInfo();ytMeShow();const me0=ytMine();if((ytCfg.v||[]).length||ytCfg.l||(me0&&me0.on))ytLoadApi();}
 async function ytSaveCfg(o){const meta=await dbGet('/gm/'+YT_KEY+'/k');const m=((meta&&meta.m)||0)+1;
@@ -2729,15 +2755,24 @@ function ytLoadApi(){if(ytApi)return;ytApi=true;window.onYouTubeIframeAPIReady=y
 function ytMake(){if(ytP||!window.YT||!YT.Player)return;
   ytP=new YT.Player('ytFrame',{host:'https://www.youtube-nocookie.com',playerVars:{playsinline:1,controls:0,disablekb:1,fs:0,rel:0,modestbranding:1,iv_load_policy:3,mute:1},
     events:{onReady:()=>{ytReady=true;if(ytCfg.l){try{ytP.cuePlaylist({list:ytCfg.l,listType:'playlist'});setTimeout(()=>{try{ytP.__pl=ytP.getPlaylist()||[];ytInfo();}catch(e){}},2500);}catch(e){}}},
-      onStateChange:e=>{if(e.data===0&&meme&&meme.yt)meme.dur=Math.min(meme.dur,meme.t+.3);if(e.data===1&&meme&&meme.yt){meme.playing=true;try{const d=ytP.getDuration();if(d>0)meme.dur=Math.min(62,meme.t+d-(ytP.getCurrentTime()||0)+.5);}catch(x){}}},
+      onStateChange:e=>{if(e.data===0&&meme&&meme.yt)meme.dur=Math.min(meme.dur,meme.t+.3);if(e.data===1&&meme&&meme.yt){meme.playing=true;try{if(ytP.getPlaybackRate()!==clipRate())ytP.setPlaybackRate(clipRate());}catch(x){}try{const d=ytP.getDuration();if(d>0)meme.dur=Math.min(62,meme.t+(d-(ytP.getCurrentTime()||0))/clipRate()+.5);}catch(x){}}},
       onError:()=>{if(meme&&meme.yt){(save.ytSeen||(save.ytSeen={}))[meme.id]=(save.ytSeen[meme.id]||0)+1;persist();meme.dur=0;}}}});}
-function ytPick(onlyNew){const me=ytMine(),seen0=save.ytSeen||{};if(me&&me.on){const o=(me.v||[]).filter(x=>!seen0[x]&&x!==ytCur);if(o.length)return o[Math.floor(Math.random()*Math.min(o.length,5))];}const L=ytAll().filter(x=>x!==ytCur);const all=L.length?L:ytAll();if(!all.length)return null;const seen=save.ytSeen||{};
-  const mn=Math.min(...all.map(x=>seen[x]||0));if(onlyNew&&mn>0)return null;const B=all.filter(x=>(seen[x]||0)===mn);return B[Math.floor(Math.random()*B.length)];}
-function ytPlace(x,y,w,h,rr){const bx=$('ytBox').style;bx.left=x+'px';bx.top=y+'px';bx.width=w+'px';bx.height=h+'px';bx.borderRadius=rr+'px';
+function ytPick(onlyNew){const me=ytMine(),own=me&&me.on?(me.v||[]):[],R=clipRecent(),fr=x=>!clipWhen(x)&&!R.includes(x)&&x!==ytCur;
+  const fo=own.filter(fr);if(fo.length)return fo[Math.floor(Math.random()*Math.min(fo.length,8))];
+  if(own.length)ytMore();
+  if(own.length&&save.ytOnly)return clipChoose(own.filter(x=>x!==ytCur));
+  const all=ytAll(),fa=all.filter(fr);if(fa.length)return fa[Math.floor(Math.random()*fa.length)];if(onlyNew||!all.length)return null;
+  return clipChoose(all.filter(x=>x!==ytCur));}
+/* alle eigenen Shorts gesehen: tiefer in die Kanäle schauen (ältere Shorts), höchstens alle 15 Min. */
+let ytMoreT=0;function ytMore(){const me=ytMine();if(!me||!me.on||!(me.ch||[]).length||ytBusy||Date.now()-ytMoreT<15*60e3)return;if((me.deep||6)>=50&&Date.now()-(me.at||0)<YT_REFRESH)return;
+  ytMoreT=Date.now();me.deep=Math.min(50,(me.deep||6)+10);ytMeSet(me);if(ytCfg.key||(ytTok&&Date.now()<ytTokExp))ytFetchMine(false);}
+function clipCtlTxt(){$('clipCtlVol').textContent=Math.round(clipVolume()*100)+'%';$('clipCtlSp').textContent=String(clipRate()).replace('.',',')+'×';}
+function clipCtlPlace(x,y,w,h){const c=$('clipCtl');if(!c)return;if(c.hidden){c.hidden=false;clipCtlTxt();}c.style.left=(x+w/2)+'px';c.style.top=Math.min(innerHeight-40,y+h+8)+'px';}
+function ytPlace(x,y,w,h,rr){clipCtlPlace(x,y,w,h);const bx=$('ytBox').style;bx.left=x+'px';bx.top=y+'px';bx.width=w+'px';bx.height=h+'px';bx.borderRadius=rr+'px';
   const sn=$('ytSnd').style;sn.left=(x+w/2)+'px';sn.top=(y+h-8)+'px';}
 function ytUnlock(){if(!ytReady)return;try{ytP.mute();ytP.playVideo();ytP.pauseVideo();}catch(e){}}
-function ytStart(id){if(!ytReady||!id)return false;ytCur=id;meme={t:0,kind:99,yt:true,id,words:[],dur:14};$('ytBox').hidden=false;
-  try{ytP.loadVideoById({videoId:id});if(ytMuted||muted)ytP.mute();else{ytP.unMute();ytP.setVolume(Math.min(100,clipVolume()*100));}}catch(e){}
+function ytStart(id){if(!ytReady||!id)return false;ytCur=id;meme={t:0,kind:99,yt:true,id,words:[],dur:14};clipMark(id);$('ytBox').hidden=false;
+  try{ytP.loadVideoById({videoId:id});try{ytP.setPlaybackRate(clipRate());}catch(x){}if(ytMuted||muted)ytP.mute();else{ytP.unMute();ytP.setVolume(Math.min(100,clipVolume()*100));}}catch(e){}
   $('ytSnd').hidden=!(ytMuted||muted);$('ytSnd').textContent='🔇 Tippen für Ton';
   setTimeout(()=>{if(!meme||!meme.yt||meme.id!==id)return;let st=-1;try{st=ytP.getPlayerState();}catch(e){}if(st!==1){try{ytP.mute();ytP.playVideo();}catch(e){}$('ytSnd').hidden=false;}},1500);return true;}
 function ytEnd(){if(!meme||!meme.yt)return;let watched=meme.t>8;try{const d=ytP.getDuration(),c=ytP.getCurrentTime();if(d>0)watched=c>=d*.6;}catch(e){}
@@ -2777,8 +2812,8 @@ async function ytApiGet(path){const tok=ytTok&&Date.now()<ytTokExp-30000;if(!tok
 function ytSecs(d){const m=String(d||'').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);return m?(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0):0;}
 async function ytPool(list,n,fn){let k=0;await Promise.all(Array.from({length:n},async()=>{while(k<list.length){const x=list[k++];try{await fn(x);}catch(e){}}}));}
 /* neueste Shorts: pro Kanal die reine Shorts-Liste (UUSH…), kostet 1 Kontingent-Punkt je Kanal */
-async function ytShortsOf(ch){const cand=[];let okN=0,failN=0;
-  await ytPool(ch,6,async c=>{try{const r=await ytApiGet('playlistItems?part=contentDetails&maxResults=6&playlistId=UUSH'+c.slice(2));okN++;
+async function ytShortsOf(ch,deep){const cand=[];let okN=0,failN=0;const per=Math.max(6,Math.min(50,deep||6));
+  await ytPool(ch,6,async c=>{try{const r=await ytApiGet('playlistItems?part=contentDetails&maxResults='+per+'&playlistId=UUSH'+c.slice(2));okN++;
     for(const it of r.items||[])cand.push({id:it.contentDetails.videoId,t:Date.parse(it.contentDetails.videoPublishedAt||0)||0});}catch(e){failN++;}});
   let fallback=false;if(!okN&&failN>=Math.min(5,ch.length)){fallback=true;/* Notlösung: normale Uploads, nur kurze Videos */
     await ytPool(ch.slice(0,60),6,async c=>{const r=await ytApiGet('playlistItems?part=contentDetails&maxResults=6&playlistId=UU'+c.slice(2));
@@ -2786,7 +2821,7 @@ async function ytShortsOf(ch){const cand=[];let okN=0,failN=0;
   const ids=[...new Set(cand.map(c=>c.id))],ok=new Set();
   for(let i=0;i<ids.length;i+=50){try{const r=await ytApiGet('videos?part=contentDetails,status&id='+ids.slice(i,i+50).join(','));
     for(const it of r.items||[]){const d=ytSecs(it.contentDetails.duration);if(d>0&&d<=(fallback?60:180)&&(!it.status||it.status.embeddable!==false))ok.add(it.id);}}catch(e){}}
-  return [...new Map(cand.filter(c=>ok.has(c.id)).sort((a,b)=>b.t-a.t).map(c=>[c.id,c])).keys()].slice(0,250);}
+  return [...new Map(cand.filter(c=>ok.has(c.id)).sort((a,b)=>b.t-a.t).map(c=>[c.id,c])).keys()].slice(0,600);}
 async function ytFetchMine(interactive){if(ytBusy)return;ytBusy=true;const inf=$('ytMeInfo');
   try{let me=ytMine()||{};let ch=me.ch||[];
     if(interactive||!ch.length){if(inf)inf.textContent='Google-Anmeldung …';
@@ -2797,7 +2832,7 @@ async function ytFetchMine(interactive){if(ytBusy)return;ytBusy=true;const inf=$
       ch=subs.slice(0,YT_MAXCH);}
     if(!ch.length){if(inf)inf.textContent='Du hast auf YouTube noch keine Kanäle abonniert.';ytMeSet({on:true,ch:[],v:[],at:Date.now()});return;}
     if(inf)inf.textContent='Suche die neuesten Shorts von '+ch.length+' Kanälen …';
-    const v=await ytShortsOf(ch);ytMeSet({on:true,ch,v,at:Date.now()});ytLoadApi();}
+    const deep=me.deep||6,v0=await ytShortsOf(ch,deep);const v=[...new Set([...v0,...(me.v||[])])].slice(0,800);ytMeSet({on:true,ch,v,deep,at:Date.now()});ytLoadApi();}
   catch(e){if(inf)inf.textContent='YouTube hat abgelehnt ('+(e.message||'Fehler')+'). Versuch es später nochmal.';}
   finally{ytBusy=false;ytMeShow();ytInfo();}}
 $('ytLogin').addEventListener('click',()=>ytFetchMine(true));
