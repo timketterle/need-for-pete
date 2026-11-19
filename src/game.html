@@ -1077,6 +1077,7 @@ function newRun(){
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
   car={body:b,wheels};car.rider=makeRider(b);{const tf=document.getElementById('trickfeed');if(tf)tf.innerHTML='';}setTimeout(loadGhost,0);
   state={rt:0,rec:[],fuel:100,coins:0,score:0,combo:{n:0,t:0,sum:0},wheelie:0,xpBonus:0,crashed:false,crashT:0,air:0,airRot:0,saltos:0,maxAir:0,wheelieMax:0,maxCombo:0,misT:0,stillT:0,reason:'',maxX:START_X,t:0,item:null,turbo:0,shield:0,magnet:0,finished:false,stars:0};
+  state.assist=assistLvl();
   wxInit();
   boss=(save.mode===4&&!playDaily&&!duel.active)?(bossNew(),boss):null;
   items=[];popups=[];parts=[];hazards=[];booms=[];flashT=0;nextCoinX=700;nextFuelX=2300;fuelGap=2300;nextBoxX=1100;nextHazX=1400;
@@ -1314,11 +1315,19 @@ let toastT=0;
 function toast(msg,sec){const el=$('toast');el.textContent=msg;el.hidden=false;toastT=sec||3;}
 
 /* ---------- Physics ---------- */
+/* Fahrhilfe (19.11., Tim: man stirbt zu oft in den leichten Leveln): haengt NUR von der Strecke ab,
+   damit Rennen, Daily und Geister fuer alle gleich bleiben. 1 = leichte Strecke, weniger auf schweren. */
+let assistOverride=null;
+function assistLvl(){if(assistOverride!=null)return assistOverride;const d=TRK.diff||1;return d<=1?1:d===2?.8:.6;}
+function angDiff(a,b){return Math.atan2(Math.sin(a-b),Math.cos(a-b));}
 function step(dt){
   if(TRK.loops&&TRK.loops.length&&loopStep(dt))return;
   const b=car.body, thr=input(); thrNow=thr;
   const gas=(state.fuel>0?thr:Math.min(0,thr))*(state.zap>0&&thr>0?.3:1);
   if(wx.wind&&!state.crashed){const air=!car.wheels.some(w=>w.contact);b.vx+=wx.wind*(air?1.1:.45)*dt;b.w+=(air?wx.wind*.0006:0)*dt;}
+  const AS=state.assist||0, nCont=car.wheels.reduce((n,w)=>n+(w.contact?1:0),0), air0=nCont===0;
+  const gB=air0&&!state.crashed?G*(1-.3*AS):G;   // in der Luft weniger Schwerkraft (schwebt laenger, mehr Zeit zum Ausgleichen)
+  const cSx=CAR.cS*(1+.7*AS);                      // weichere Landung: Federung daempft staerker
   const c=Math.cos(b.a), s=Math.sin(b.a);
   // suspension springs
   for(const wh of car.wheels){
@@ -1327,18 +1336,18 @@ function step(dt){
     const ex=wh.x-(Ax+dnx*CAR.rest), ey=wh.y-(Ay+dny*CAR.rest);
     const al=ex*dnx+ey*dny, ppx=ex-dnx*al, ppy=ey-dny*al;
     const rvx=wh.vx-avx, rvy=wh.vy-avy, ral=rvx*dnx+rvy*dny, rpx=rvx-dnx*ral, rpy=rvy-dny*ral;
-    let fa=-CAR.kS*al-CAR.cS*ral;
-    if(al<-CAR.travel)fa+=-CAR.kS*7*(al+CAR.travel)-CAR.cS*3*ral;
+    let fa=-CAR.kS*al-cSx*ral;
+    if(al<-CAR.travel)fa+=-CAR.kS*(7-3*AS)*(al+CAR.travel)-cSx*3*ral;
     if(al>CAR.travel)fa+=-CAR.kS*7*(al-CAR.travel);
     const Fx=dnx*fa-CAR.kP*ppx-CAR.cP*rpx, Fy=dny*fa-CAR.kP*ppy-CAR.cP*rpy;
     wh.vx+=Fx/wh.m*dt; wh.vy+=Fy/wh.m*dt;
     b.vx-=Fx/CAR.M*dt; b.vy-=Fy/CAR.M*dt; b.w+=(rx*(-Fy)-ry*(-Fx))/CAR.I*dt;
   }
-  b.vy+=G*dt;
+  b.vy+=gB*dt;
   // motor & brakes
   const LS=save.leanInv?-1:1;
   for(const wh of car.wheels){
-    wh.vy+=G*dt;
+    wh.vy+=gB*dt;
     if(gas>0&&wh.drive){ if(wh.w<CAR.maxSpeed*(state.turbo>0?1.45:1)/wh.r){const T=CAR.torque*gas;wh.w+=T/wh.I*dt;b.w-=T*CAR.react*(TRK.react||1)*LS/CAR.I*dt;} }
     else if(gas<0){
       if(wh.w>1.5){wh.w=Math.max(0,wh.w-CAR.brakeT*(-gas)/wh.I*dt);}
@@ -1348,8 +1357,16 @@ function step(dt){
   }
   if(state.turbo>0&&!state.crashed){const tf=car.wheels.some(w=>w.contact)?1250:450;b.vx+=Math.cos(b.a)*tf*dt;b.vy+=Math.sin(b.a)*tf*dt;}
   const airborne=!car.wheels.some(w=>w.contact);
-  if(airborne&&!state.crashed)b.w+=-thr*LS*CAR.air/CAR.I*dt;
+  if(airborne&&!state.crashed)b.w+=-thr*LS*CAR.air*(1+.25*AS)/CAR.I*dt;
   else if(LS<0&&!state.crashed&&thr!==0)b.w+=thr*CAR.air*.35/CAR.I*dt;
+  // Fahrhilfe: ohne Taste richtet sich das Auto in der Luft parallel zum Boden aus (kein Abkippen nach vorne),
+  // am Boden nur gegen echtes Ueberschlagen. Mit Taste hat der Spieler die volle Kontrolle (Saltos bleiben moeglich).
+  if(AS>0&&!state.crashed){
+    const free=1-Math.min(1,Math.abs(thr)), lx=b.x+Math.max(0,b.vx)*.25, sl=Math.max(-.45,Math.min(.45,Math.atan((groundY(lx+30)-groundY(lx-30))/60))), e=angDiff(sl,b.a);
+    if(airborne){if(free>0)b.w+=(13*e-5*b.w)*AS*free*dt;}
+    else{if(free>0&&nCont<car.wheels.length)b.w+=(6*e-2*b.w)*AS*free*dt;
+      if(Math.abs(e)>.8)b.w+=(e-Math.sign(e)*.8)*22*AS*dt;}   // Wheelies gehen, aber kein Ueberschlag nach hinten
+  }
   b.w=Math.max(-9,Math.min(9,b.w));
   // integrate
   b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.w*=1-.25*dt;b.vx*=1-.015*dt;
@@ -2077,7 +2094,7 @@ function riderStep(dt,roofHit){
   if(r.on){
     for(let i=0;i<P.length;i++){
       const w=poseWorld(b,i),q=P[i],tvx=b.vx-b.w*w[3],tvy=b.vy+b.w*w[2];
-      const k=i===0?1500:i===2?700:i>=5?1100:900, cd=i===0?55:i===2?22:30;
+      const hk=1+.5*(state.assist||0), k=(i===0?1500:i===2?700:i>=5?1100:900)*hk, cd=(i===0?55:i===2?22:30)*hk;
       q.vx+=(k*(w[0]-q.x)+cd*(tvx-q.vx))*dt; q.vy+=(k*(w[1]-q.y)+cd*(tvy-q.vy)+G)*dt;
     }
     // upside down only counts near the ground, so saltos in the air are possible
@@ -2106,8 +2123,9 @@ function riderStep(dt,roofHit){
   else if((r.fnext-=dt)<=0){const g=['grin','puff','wink'];r.face=g[Math.random()*3|0];r.ft=0;}
   if(r.on){
     const w=poseWorld(b,0),off=Math.hypot(P[0].x-w[0],P[0].y-w[1]);r.off=off;
-    if(off>(CAR.ej||22))riderEject('ABGEWORFEN!');
-    else if(r.inv>.3)riderEject('RUNTERGEFALLEN!');
+    const AS=running?(state.assist||0):0;
+    if(off>(CAR.ej||22)*(1+.4*AS))riderEject('ABGEWORFEN!');
+    else if(r.inv>.3+.3*AS)riderEject('RUNTERGEFALLEN!');
   }
 }
 const DSTYLE={
@@ -2721,7 +2739,7 @@ $('tutAgain').addEventListener('click',()=>{$('settings').hidden=true;tut=null;t
 $('pause').addEventListener('click',()=>{if(tut&&tut.run){tut.run=false;$('coach').hidden=true;setTimeout(()=>{if(tut)tutShow('B');},150);}});
 {const sp1=new URLSearchParams(location.search);if(!save.tutDone&&!RAUM_Q&&!((sp1.get('ch')||sp1.get('fuer'))&&!save.giftSeen))setTimeout(()=>{if($('tut').hidden&&$('login').hidden&&!running&&acct())tutShow('A');},500);}
 // test hook
-window.__nfp={dailyMake,ymd,resetDaily(){dailyCache=null;},get TRK(){return TRK;},get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;},get wx(){return wx;},get skyPic(){return skyPic;},get meme(){return meme;},memeAt(v){memeNextAt=v;}};
+window.__nfp={dailyMake,ymd,resetDaily(){dailyCache=null;},get TRK(){return TRK;},get car(){return car;},get state(){return state;},btn,startRun,duel,groundY,get cam(){return cam;},get wx(){return wx;},set assist(v){assistOverride=v;},get skyPic(){return skyPic;},get meme(){return meme;},memeAt(v){memeNextAt=v;}};
 /* ---------- YouTube Shorts am Himmel ---------- */
 const YT_KEY='yt-cfg';let ytCfg={v:[]},ytP=null,ytReady=false,ytApi=false,ytCur=null,ytMuted=true;
 function ytParse(t){const ids=[];let l=null;for(const part of String(t||'').split(/[\s,]+/)){if(!part)continue;
