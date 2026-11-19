@@ -384,6 +384,12 @@ input#codeIn{background:rgba(255,255,255,.9)}
 <div class="overlay" id="settings" hidden>
   <div class="panel">
     <h2 class="logo" style="font-size:40px">Einstellungen</h2>
+    <div class="card glass" id="acctCard">
+      <h3>Dein Konto 👤</h3>
+      <p class="note" style="margin-top:0" id="acctWho">…</p>
+      <div class="row" style="justify-content:flex-start;margin:6px 0 0"><button class="gbtn orange mid" id="logout">🚪 ABMELDEN</button></div>
+      <p class="note">Danach kann sich jemand anderes auf diesem Handy anmelden. Dein Spielstand bleibt online gespeichert.</p>
+    </div>
     <div class="card glass">
       <h3>Steuerung</h3>
       <div class="seg" role="group" aria-label="Steuerung wählen">
@@ -414,7 +420,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     </div>
     <div class="card glass anl">
       <h3>Anleitung 📖</h3>
-      <details><summary>Login und Spielstand</summary><p>Du meldest dich mit <b>E-Mail und Passwort</b> an, dasselbe Konto wie im Blue Chip Club. Neu hier? Tipp auf NEU REGISTRIEREN und bestätige den Link in der E-Mail. Du bleibst angemeldet. Am Anfang fährst du Pete, deinen eigenen Fahrer schaltet Tim für dich frei. Dein Stand wird nach jeder Fahrt online gesichert, auf jedem Handy und PC mit derselben Anmeldung. Unter „Dein Name“ steht <b>SPIELER WECHSELN</b>.</p></details>
+      <details><summary>Login und Spielstand</summary><p>Du meldest dich mit <b>E-Mail und Passwort</b> an, dasselbe Konto wie im Blue Chip Club. Neu hier? Tipp auf NEU REGISTRIEREN und bestätige den Link in der E-Mail. Du bleibst angemeldet. Am Anfang fährst du Pete, deinen eigenen Fahrer schaltet Tim für dich frei. Dein Stand wird nach jeder Fahrt online gesichert, auf jedem Handy und PC mit derselben Anmeldung. Ganz oben in den Einstellungen (⚙) steht <b>ABMELDEN</b>, dann kann sich jemand anderes anmelden.</p></details>
       <details><summary>Steuerung</summary><p><b>GAS</b> rechts, <b>BREMSE</b> links (am PC: Pfeiltasten oder D/A). In der Luft dreht Gas das Auto nach hinten und Bremse nach vorne. Der gelbe Knopf in der Mitte zündet dein Item. Unter Steuerung kannst du auf <b>NEIGEN</b> (Handy kippen) umstellen. Der <b>Jonny-Modus</b> dreht das Kippen um.</p></details>
       <details><summary>Ziel der Fahrt</summary><p>Fahr so weit wie möglich. Vorbei ist es, wenn dein Fahrer auf dem Kopf landet oder rausfliegt oder wenn der Sprit leer ist. Ohne Sprit hast du noch 5 Sekunden zum Ausrollen, oder du drückst AUFGEBEN. Unterwegs sammelst du Münzen und Sprit-Kanister. Saltos, Wheelies und Combos bringen Punkte.</p></details>
       <details><summary>Items</summary><p>Aus den <b>?-Kisten</b> kommen Items: <b>Turbo</b> (schneller), <b>Schild</b> (rettet dich einmal vor einem Crash), <b>Magnet</b> (zieht Münzen an), <b>Sprit</b> (voller Tank). Im Live-Rennen gibt es zusätzlich Fallen für die anderen: <b>Öl</b>, <b>Holzstapel</b> und <b>Blitz</b>.</p></details>
@@ -423,7 +429,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
       <details><summary>Geister</summary><p>Oben beim Fahren schaltest du mit <b>👻 GEISTER AN/AUS</b> die besten Fahrten deiner Freunde als Geister ein. Dein eigener Rekord fährt immer als blauer Geist mit.</p></details>
       <details><summary>Live-Rennen (2 bis 4 Leute)</summary><p>Tippe auf <b>LIVE-RENNEN</b>. Einer wählt den Modus und drückt <b>CODE ERSTELLEN</b>. Die anderen geben den Code ein und drücken BEITRETEN. Wenn alle in der Liste stehen, drückt der Gastgeber <b>RENNEN STARTEN</b>.<br><b>Rennen:</b> Wer zuerst im Ziel ist, gewinnt. Nach einem Crash geht es kurz davor weiter.<br><b>Auf Zeit 2000 m:</b> Bei 1000 m liegt ein Checkpoint. Nach einem Crash startest du am Checkpoint, wenn du ihn schon hattest, sonst ganz vorne.<br>Danach gibt es mit REVANCHE gleich die nächste Runde. Die Strecke wählt der Gastgeber im Menü, dein Auto wählst du selbst.</p></details>
       <details><summary>Videos und Bilder am Himmel</summary><p>Eure Clips tauchen während der Fahrt am Himmel auf, und zwar immer zuerst die, die du noch nicht gesehen hast. Erst wenn du alle kennst, kommen sie wieder. Bilder bleiben eine Weile stehen. Mit „VIDEO/BILD REIN“ lädst du neue hoch. Unter 📼 im Menü stehen alle Clips im <b>Reel-Album</b>. Die Lautstärke der Clips und des Motors stellst du hier in den Einstellungen ein.</p></details>
-      <details><summary>Push-Nachrichten und App auf dem Handy</summary><p>Damit es wie eine App läuft: im iPhone-Safari auf <b>Teilen → „Zum Home-Bildschirm“</b> tippen, auf Android im Browser-Menü „App installieren“. Starte das Spiel dann immer vom Home-Bildschirm und melde dich dort einmal mit deiner Nummer an. Danach drückst du hier <b>PUSH AN</b>. Dann kommt eine Nachricht, wenn jemand das Daily gespielt hat oder neuer Tages-Erster ist.</p></details>
+      <details><summary>Push-Nachrichten und App auf dem Handy</summary><p>Damit es wie eine App läuft: im iPhone-Safari auf <b>Teilen → „Zum Home-Bildschirm“</b> tippen, auf Android im Browser-Menü „App installieren“. Starte das Spiel dann immer vom Home-Bildschirm und melde dich dort einmal mit deiner E-Mail an. Danach drückst du hier <b>PUSH AN</b>. Dann kommt eine Nachricht, wenn jemand das Daily gespielt hat oder neuer Tages-Erster ist.</p></details>
     </div>
     <div class="card glass">
       <h3>Tutorial</h3>
@@ -433,7 +439,6 @@ input#codeIn{background:rgba(255,255,255,.9)}
     <div class="card glass">
       <h3>Dein Name</h3>
       <input id="pName" maxlength="16" autocomplete="off" placeholder="z. B. Tim" class="namein">
-      <div class="row" style="justify-content:flex-start;margin:8px 0 0"><button class="gbtn blue mid" id="logout">SPIELER WECHSELN</button></div>
       <div id="sbAdmin" hidden style="margin-top:12px"><p class="note" style="margin:0 0 4px"><b>Spieler verwalten</b> (nur du siehst das). Neue Spieler warten, bis du ihnen einen Fahrer gibst.</p><div id="sbAdmList"></div></div>
       <p class="note">So erscheinst du in der Tages-Bestenliste und als Geist bei deinen Freunden.</p>
     </div>
@@ -471,7 +476,7 @@ input#codeIn{background:rgba(255,255,255,.9)}
     </div>
     <p class="tag" id="loginMsg" aria-live="polite"></p>
     <div id="pkPick" hidden><p class="tag"><b>Wer bist du im Blue Chip Club?</b><br>Tipp einmal auf deinen Namen. Das gilt dann auch im Pokerspiel und in der Lounge und lässt sich danach nicht mehr ändern.</p><div id="pkList" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:46vh;overflow:auto"></div></div>
-    <div class="row" style="margin-top:4px"><button class="big alt mid" id="loginGuest">ALS GAST (PETE)</button></div>
+    <div class="row" style="margin-top:4px"><button class="big alt mid" id="loginOut" hidden>FALSCHES KONTO? ABMELDEN</button></div>
   </div>
 </div>
 <div class="overlay" id="gift" hidden>
@@ -2527,8 +2532,9 @@ async function loginWith(num,viaSb){num=String(num||'').trim();if(SB_ON&&!viaSb)
   $('loginMsg').textContent='Hallo '+a.n+'!';if(next===o)location.reload();else{await cloudSave(true);location.reload();}}
 $('loginGo').addEventListener('click',()=>loginWith($('loginIn').value));
 $('loginIn').addEventListener('keydown',e=>{if(e.key==='Enter')loginWith($('loginIn').value);});
-$('loginGuest').addEventListener('click',()=>{save.acct='guest';save.driver='pete';persist();$('login').hidden=true;});
-$('logout').addEventListener('click',async()=>{if(!confirm('Spieler wechseln? Dein Stand wird vorher online gesichert.'))return;if(acct())await cloudSave(true);localStorage.removeItem('nfp-save');location.reload();});
+$('logout').addEventListener('click',()=>doLogout(true));
+$('loginOut').addEventListener('click',()=>doLogout(true));
+if(!RENNEN&&save.acct==='guest'){save.acct=null;delete save.acctInfo;persist();}   // Gastmodus gibt es nicht mehr (Tim, 19.11.): jeder braucht ein Konto
 if(!save.acct)$('login').hidden=false;
 acctFix();
 /* ---------- Push notifications (sent by a free GitHub Action, see .github/scripts/notify.py) ---------- */
@@ -2790,8 +2796,8 @@ async function sbEnter(){const msg=$('loginMsg');if(!await sbFresh()){msg.textCo
     }
   // Ohne eigene Figur (z. B. neues Konto ohne Poker-Spieler): Chippy. Tim kann später unter Spieler verwalten eine andere Figur geben.
   if(pr&&(!pr.driver||pr.driver==='pete'))pr.driver='chippy';
-  if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Bis dahin kannst du als Gast spielen.';
-    if(save.acct&&save.acct!=='guest'){save.acct='guest';delete save.acctInfo;persist();}return 'wait';}
+  if(!pr||!pr.driver||!pr.num){$('sbBox').hidden=true;msg.innerHTML='Hallo '+(pr&&pr.name||'')+'! Du bist angemeldet ✔<br>Tim muss dich noch freischalten. Danach kannst du losfahren.';$('login').hidden=false;$('loginOut').hidden=false;
+    if(save.acct){save.acct=null;delete save.acctInfo;persist();}return 'wait';}
   const num=String(pr.num),slug=String(pr.name||'s').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'s',info={n:String(pr.name||'Spieler').slice(0,16),d:pr.driver,k:(ACCTS[num]&&ACCTS[num].k)||'p'};
   if(save.acct===num&&save.acctInfo&&save.acctInfo.d===info.d){save.acctInfo=info;acctFix();persist();$('login').hidden=true;lbPush(true);return 'ok';}
   ACCTS[num]=Object.assign({},ACCTS[num]||{},info);save.acctInfo=info;return loginWith(num,true);}
@@ -2865,8 +2871,21 @@ if(SB_ON&&!RENNEN){$('numBox').hidden=true;$('sbBox').hidden=false;
   else if(sbSess){sbEnter();}   // eingeloggt bleiben: Fahrer-Zuweisung bei jedem Start prüfen
   else if(save.acct&&save.acct!=='guest'){save.acct=null;persist();$('login').hidden=false;}   // alte Nummern-Logins: einmal neu mit E-Mail anmelden
 }else if(!RENNEN){$('numBox').hidden=false;$('sbBox').hidden=true;}
-{const _lo=document.getElementById('logout');_lo.addEventListener('click',()=>{if(SB_ON){try{if(sbSess)fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+sbSess.access_token}});}catch(e){}sbStore(null);}},true);}
-{const _os=document.getElementById('openSettings');if(_os)_os.addEventListener('click',()=>setTimeout(sbAdminShow,50));}
+// Abmelden: Stand online sichern, Supabase abmelden, alles Persönliche von diesem Gerät löschen (nur Geräte-Einstellungen bleiben)
+let outBusy=false;async function doLogout(ask){if(outBusy)return;if(ask&&!confirm('Abmelden? Dein Stand wird vorher online gesichert. Danach kann sich jemand anderes anmelden.'))return;outBusy=true;
+  try{toast('Melde ab …',3);}catch(e){}
+  try{if(acct())await Promise.race([cloudSave(true),new Promise(r=>setTimeout(r,5000))]);}catch(e){}
+  try{if(SB_ON&&sbSess&&sbSess.access_token)await Promise.race([fetch(SB_URL+'/auth/v1/logout',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+sbSess.access_token}}),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
+  sbStore(null);
+  const keep={};for(const k of ['ctl','inv','engVol','engSnd','clipVol','giftSeen','tutDone'])if(save[k]!==undefined)keep[k]=save[k];
+  save=Object.assign({best:0,coins:0,xp:0,level:1,ctl:'buttons',inv:false,veh:'f1',up:{}},keep,{season:SEASON});
+  try{for(const k of Object.keys(localStorage))if(k.startsWith('nfp-ghost-')||k==='nfp-ytme'||k==='nfp-sbname')localStorage.removeItem(k);}catch(e){}
+  try{localStorage.setItem('nfp-save',JSON.stringify(save));}catch(e){}
+  location.href=location.origin+location.pathname;}
+function acctWhoShow(){const el=$('acctWho');if(!el)return;const a=acct(),em=sbSess&&sbSess.email;
+  el.innerHTML=a||em?'Angemeldet als <b>'+String((a&&a.n)||'').replace(/[<&]/g,'')+'</b>'+(em?'<br><small>'+String(em).replace(/[<&]/g,'')+'</small>':''):'Nicht angemeldet.';}
+if(sbSess&&!RENNEN)$('loginOut').hidden=false;
+{const _os=document.getElementById('openSettings');if(_os)_os.addEventListener('click',()=>setTimeout(()=>{sbAdminShow();acctWhoShow();},50));}
 /* ---------- Blue-Chip-Pausen-Rennen (nur rennen.html?rennen=<id>, Firebase-Raum gm/pr-<id>) ----------
    Jeder Fahrer schreibt gd/pr-<id>/<p> (Info-JSON, einmal) und gm/pr-<id>/<p> (Zustand, ~6x pro Sekunde, gepackt in n/v).
    Alle hören mit EINEM Stream auf gm/pr-<id>. Nichts davon zählt für Spielstand, XP, Daily oder Bestenlisten. */
@@ -3133,9 +3152,9 @@ async function raumShare(){if(!NET.key||!NET.code)return;const code=NET.code,url
 $('raumShare').addEventListener('click',raumShare);
 $('onlShare').addEventListener('click',()=>{$('onl').hidden=true;$('menu').hidden=true;$('duel').hidden=false;$('codeOut').hidden=true;$('lobby').hidden=true;duelStatus('');if(!(NET.key&&NET.host))$('hostBtn').click();raumShare();});
 {const _nl=netLobby;netLobby=function(){_nl();try{$('raumShare').hidden=!NET.key;}catch(e){}};}
-if(RAUM_Q&&!RENNEN){try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){}let tries=0;
+if(RAUM_Q&&!RENNEN){let tries=0;
   const go=()=>{tries++;const free=$('login').hidden&&$('gift').hidden&&$('tut').hidden&&(!$('pkPick')||$('pkPick').hidden);
-    if(!free&&tries<600){setTimeout(go,700);return;}$('tut').hidden=true;toast('Du wirst ins Rennen '+RAUM_Q+' gebracht …',2.5);stJoin(RAUM_Q);};setTimeout(go,1200);}
+    if(!free&&tries<600){setTimeout(go,700);return;}try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){}$('tut').hidden=true;toast('Du wirst ins Rennen '+RAUM_Q+' gebracht …',2.5);stJoin(RAUM_Q);};setTimeout(go,1200);}
 })();
 </script>
 
