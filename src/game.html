@@ -719,10 +719,20 @@ if(RENNEN){const D0=400-START_X,cpD=1500*PX_PER_M-D0,glD=3000*PX_PER_M-D0,sm=t=>
 const TORDER=['hills','moon','glacier','dunes','jungle','junk','volcano'];
 const DAILY_T=()=>todayStr()>='2026-11-18'?TORDER:TORDER.filter(k=>k!=='junk');
 let TRK=TRACKS.hills;
-function groundY(x){
+function groundYRaw(x){
   if(x<400)return 0;
   const d=x-400, ramp=Math.min(1,d/1400), hard=Math.min(1,d/24000);
   return -TRK.gen(d,hard)*ramp;
+}
+/* 20.11. (Tim: Vulkan hatte eine 55-Grad-Wand, die kein Fahrzeug hochkommt): Boden wird auf eine maximale Steigung
+   begrenzt (leicht 38, mittel 42, schwer 46 Grad). Raster = SEG, also genau die Stuecke, die circleGround nutzt. */
+const SLOPE_MAX={1:38,2:42,3:46};
+function groundY(x){
+  if(x<0)return 0;
+  let C=TRK._gc;if(!C||C.seed!==seed){C=TRK._gc={seed,h:[],m:SEG*Math.tan((SLOPE_MAX[TRK.diff||1]||42)*Math.PI/180)};}
+  const f=x/SEG, i=Math.floor(f), H=C.h;
+  while(H.length<=i+1){const k=H.length, r=groundYRaw(k*SEG);H.push(k?Math.max(H[k-1]-C.m,Math.min(H[k-1]+C.m,r)):r);}
+  return H[i]+(H[i+1]-H[i])*(f-i);
 }
 function bestOf(id){save.bests=save.bests||{};return save.bests[id]||(id==='hills'?save.best||0:0);}
 /* 20.11. Physik 2: "unter dem Boden" wird jetzt an der echten Bodenhoehe geprueft. Vorher galt ein Rad an Kuppen/Kanten
