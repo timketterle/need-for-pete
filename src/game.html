@@ -725,19 +725,21 @@ function groundY(x){
   return -TRK.gen(d,hard)*ramp;
 }
 function bestOf(id){save.bests=save.bests||{};return save.bests[id]||(id==='hills'?save.best||0:0);}
+/* 20.11. Physik 2: "unter dem Boden" wird jetzt an der echten Bodenhoehe geprueft. Vorher galt ein Rad an Kuppen/Kanten
+   schon als tief eingesunken, wenn es nur unter der VERLAENGERTEN Linie eines Nachbarstuecks lag -> bis zu 40 px
+   Schein-Eindringen -> Feder explodiert -> Auto fliegt/kippt "aus dem Nix". */
 function circleGround(px,py,r){
-  let best=null;const i0=Math.floor((px-r-SEG)/SEG), i1=Math.ceil((px+r+SEG)/SEG);
+  let best=null;const i0=Math.floor((px-r-SEG)/SEG), i1=Math.ceil((px+r+SEG)/SEG), under=py>groundY(px);
   for(let i=i0;i<i1;i++){
     const ax=i*SEG, ay=groundY(ax), bx=ax+SEG, by=groundY(bx), ex=bx-ax, ey=by-ay, l2=ex*ex+ey*ey;
     let t=((px-ax)*ex+(py-ay)*ey)/l2; t=t<0?0:t>1?1:t;
     const cx=ax+ex*t, cy=ay+ey*t; let dx=px-cx, dy=py-cy; const d=Math.hypot(dx,dy);
-    const side=ex*(py-ay)-ey*(px-ax); let pen;
-    if(side>0){pen=r+d;dx=-dx;dy=-dy;} else pen=r-d;
-    if(pen>0&&(!best||pen>best.pen)){
-      let nx,ny; if(d>1e-6){nx=dx/d;ny=dy/d;} else {const l=Math.sqrt(l2);nx=ey/l;ny=-ex/l;}
-      best={pen,nx,ny};
-    }
+    let nx,ny; if(d>1e-6){nx=dx/d;ny=dy/d;} else {const l=Math.sqrt(l2);nx=ey/l;ny=-ex/l;}
+    if(under){ // Mittelpunkt wirklich im Boden: zur naechsten Oberflaeche hinaus
+      if(!best||d<best.d)best={pen:r+d,nx:-nx,ny:-ny,d};
+    }else{const pen=r-d; if(pen>0&&(!best||pen>best.pen))best={pen,nx,ny,d};}
   }
+  if(best&&best.ny>0){best.nx=-best.nx;best.ny=-best.ny;} // Boden drueckt nie nach unten
   return best;
 }
 
@@ -1339,6 +1341,8 @@ function step(dt){
     let fa=-CAR.kS*al-cSx*ral;
     if(al<-CAR.travel)fa+=-CAR.kS*(7-3*AS)*(al+CAR.travel)-cSx*3*ral;
     if(al>CAR.travel)fa+=-CAR.kS*7*(al-CAR.travel);
+    {const FM=CAR.M*14000;fa=fa>FM?FM:fa<-FM?-FM:fa;}   // Sicherheitsgrenze: Feder kann nie explodieren
+    wh.load=Math.max(0,fa);
     const Fx=dnx*fa-CAR.kP*ppx-CAR.cP*rpx, Fy=dny*fa-CAR.kP*ppy-CAR.cP*rpy;
     wh.vx+=Fx/wh.m*dt; wh.vy+=Fy/wh.m*dt;
     b.vx-=Fx/CAR.M*dt; b.vy-=Fy/CAR.M*dt; b.w+=(rx*(-Fy)-ry*(-Fx))/CAR.I*dt;
@@ -1346,17 +1350,33 @@ function step(dt){
   b.vy+=gB*dt;
   // motor & brakes
   const LS=save.leanInv?-1:1;
+  /* Physik 2 (20.11.): Motor/Bremse wirken nur auf Raeder mit Bodenkontakt (in der Luft lenkt nur die Luftsteuerung,
+     keine blockierten oder durchdrehenden Raeder mehr bei der Landung). Kriechgang: bei wenig Tempo bis doppeltes Drehmoment.
+     Traktionskontrolle: das Rad dreht nicht weiter durch, wenn es schon schneller ist als das Auto. Bremse ohne Blockieren,
+     direkt nach der Landung nur sanft. */
+  state.landT=(state.landT||0)+dt;
+  const hd=[Math.cos(b.a),Math.sin(b.a)];
   for(const wh of car.wheels){
     wh.vy+=gB*dt;
-    if(gas>0&&wh.drive){ if(wh.w<CAR.maxSpeed*(state.turbo>0?1.45:1)/wh.r){const T=CAR.torque*gas;wh.w+=T/wh.I*dt;b.w-=T*CAR.react*(TRK.react||1)*LS/CAR.I*dt;} }
+    const onG=wh.contact||(wh.gt||0)>0, vg=wh.vx*hd[0]+wh.vy*hd[1], surf=wh.w*wh.r;
+    if(!onG){wh.w*=1-.8*dt;continue;}
+    if(gas>0&&wh.drive){
+      if(surf<CAR.maxSpeed*(state.turbo>0?1.45:1)&&surf-Math.max(0,vg)<160){
+        const crawl=1+.7*Math.max(0,1-Math.abs(vg)/320), T=CAR.torque*gas;
+        wh.w+=T*crawl/wh.I*dt;b.w-=T*CAR.react*(TRK.react||1)*LS/CAR.I*dt;}}   // Kriechgang nur am Rad, nicht als Kippmoment
     else if(gas<0){
-      if(wh.w>1.5){wh.w=Math.max(0,wh.w-CAR.brakeT*(-gas)/wh.I*dt);}
+      const soft=state.landT<.35?.25:1;
+      if(vg>40){const lo=vg*.8/wh.r;if(wh.w>lo)wh.w=Math.max(lo,wh.w-CAR.brakeT*.5*soft*(-gas)/wh.I*dt);wh.brk=1;}
       else if(wh.drive&&wh.w>-420/wh.r){const T=CAR.torque*.4*gas;wh.w+=T/wh.I*dt;b.w-=T*CAR.react*(TRK.react||1)*LS/CAR.I*dt;}
     }
     wh.w*=1-.12*dt;
   }
   if(state.turbo>0&&!state.crashed){const tf=car.wheels.some(w=>w.contact)?1250:450;b.vx+=Math.cos(b.a)*tf*dt;b.vy+=Math.sin(b.a)*tf*dt;}
-  const airborne=!car.wheels.some(w=>w.contact);
+  const airborne=!car.wheels.some(w=>w.contact||(w.gt||0)>0);
+  if(!airborne&&state.air>.25)state.landT=0;
+  // Hoechstgeschwindigkeit fuer das ganze Auto (auch bergab, auch bei wenig Schwerkraft)
+  {const vc=CAR.maxSpeed*.75*(state.turbo>0?1.4:1), sp=Math.hypot(b.vx,b.vy);
+   if(sp>vc){const f=Math.max(vc/sp,1-2.5*dt);b.vx*=f;b.vy*=f;for(const w of car.wheels){w.vx*=f;w.vy*=f;}}}
   // Luftsteuerung (20.11. Tim: Drehung schaukelte sich exponentiell auf): Taste gibt eine feste Drehgeschwindigkeit vor,
   // die schnell erreicht und nicht ueberschritten wird -> laenger halten = gleichmaessig weiterdrehen, kein Aufschaukeln.
   if(airborne&&!state.crashed){
@@ -1367,8 +1387,7 @@ function step(dt){
   // Fahrhilfe (20.11. Tim): KEIN automatisches Ausrichten in der Luft, man lehnt sich selbst mit den Tasten.
   // Ohne Taste wird nur das Drehen in der Luft gebremst (kein endloses Kreiseln), am Boden kein Ueberschlag nach hinten.
   if(AS>0&&!state.crashed){
-    if(airborne){if(G<1200)b.vx*=1-.35*(1-G/1200)*dt;}            // Leichtschwerkraft-Welten: in der Luft etwas Luftwiderstand, nicht nur fliegen
-    else{const lx=b.x+Math.max(0,b.vx)*.25, sl=Math.max(-.45,Math.min(.45,Math.atan((groundY(lx+30)-groundY(lx-30))/60))), e=angDiff(sl,b.a);
+    if(!airborne){const lx=b.x+Math.max(0,b.vx)*.25, sl=Math.max(-.45,Math.min(.45,Math.atan((groundY(lx+30)-groundY(lx-30))/60))), e=angDiff(sl,b.a);
       if(Math.abs(e)>.8)b.w+=(e-Math.sign(e)*.8)*22*AS*dt;}   // Wheelies gehen, aber kein Ueberschlag nach hinten
   }
   if(airborne)b.w=Math.max(-7,Math.min(7,b.w));
@@ -1378,14 +1397,14 @@ function step(dt){
   // wheel ground contact
   for(const wh of car.wheels){
     wh.x+=wh.vx*dt;wh.y+=wh.vy*dt;wh.a+=wh.w*dt;
-    const hit=circleGround(wh.x,wh.y,wh.r); wh.contact=!!hit;
-    if(!hit)continue;
-    const nx=hit.nx, ny=hit.ny; wh.x+=nx*hit.pen; wh.y+=ny*hit.pen;
+    const hit=circleGround(wh.x,wh.y,wh.r); wh.contact=!!hit; wh.gt=hit?.07:Math.max(0,(wh.gt||0)-dt);
+    if(!hit){wh.brk=0;continue;}
+    const nx=hit.nx, ny=hit.ny, pc=Math.min(hit.pen,wh.r*.6); wh.x+=nx*pc; wh.y+=ny*pc;
     const vn=wh.vx*nx+wh.vy*ny; let jn=0;
     if(vn<0){jn=-vn*1.05*wh.m;wh.vx+=nx*jn/wh.m;wh.vy+=ny*jn/wh.m;wh.impact=Math.max(wh.impact,-vn);}
     const tx=-ny, ty=nx, rx=-nx*wh.r, ry=-ny*wh.r;
     const cvx=wh.vx-wh.w*ry, cvy=wh.vy+wh.w*rx, slip=cvx*tx+cvy*ty, rt=rx*ty-ry*tx;
-    let jt=-slip/(1/wh.m+rt*rt/wh.I); const mj=CAR.grip*TRK.grip*wxGrip()*(onOil(wh)?.12:1)*Math.max(jn,wh.m*G*dt*.5);
+    let jt=-slip/(1/wh.m+rt*rt/wh.I); const mj=CAR.grip*TRK.grip*wxGrip()*(onOil(wh)?.12:1)*(wh.brk?.5:1)*(wh.drive&&thrNow>0?1+.5*(state.assist||0):1)*Math.max(jn,(wh.load||0)*dt,wh.m*G*dt*.5);wh.brk=0;
     jt=jt<-mj?-mj:jt>mj?mj:jt;
     wh.vx+=tx*jt/wh.m;wh.vy+=ty*jt/wh.m;wh.w+=rt*jt/wh.I;
     if(wh.drive&&Math.abs(slip)>140&&Math.random()<.35)parts.push({x:wh.x-nx*wh.r,y:wh.y-ny*wh.r,vx:-Math.sign(wh.w)*(60+Math.random()*120),vy:-40-Math.random()*90,t:0,life:.6+Math.random()*.4,r:4+Math.random()*5});
