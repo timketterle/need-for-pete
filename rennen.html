@@ -780,7 +780,7 @@ const VEH={
     note:'Schnell wie der Blitz, gefedert wie ein Brett. Nach jedem Sprung springt er wieder hoch. Stark auf flachen, schnellen Abschnitten.'},
   truck:{id:'truck',name:'Monster-Muck',unlock:3,M:1.4,I:1600,wm:0.3,
     wheels:[{ax:-40,ay:22,r:30,drive:1},{ax:42,ay:22,r:30,drive:1}],
-    kS:190,cS:12,kP:7000,cP:60,rest:14,travel:18,torque:17000,brakeT:20000,maxSpeed:1150,grip:1.45,air:6500,react:0.4,drain:1.15,
+    kS:190,cS:12,kP:7000,cP:60,rest:14,travel:18,torque:17000,brakeT:20000,maxSpeed:1150,grip:1.45,air:6500,react:0.4,drain:1.15,crawl:2,
     hull:[[62,-4],[-60,-4],[-52,-44],[34,-42],[0,-46]],helmet:[-6,-50,9],seat:[-6,-50],ej:27,
     note:'Riesenräder und weiche Federung. Schluckt jeden Sprung und klettert steile Hänge hoch, ist aber langsam und durstig.'},
   buggy:{id:'buggy',name:'Dünen-Buggy',unlock:6,M:1,I:900,wm:0.22,
@@ -1509,14 +1509,14 @@ function step(dt){
      Traktionskontrolle: das Rad dreht nicht weiter durch, wenn es schon schneller ist als das Auto. Bremse ohne Blockieren,
      direkt nach der Landung nur sanft. */
   state.landT=(state.landT||0)+dt;
-  const hd=[Math.cos(b.a),Math.sin(b.a)];
+  const hd=[Math.cos(b.a),Math.sin(b.a)], noseUp=angDiff(Math.atan((groundY(b.x+30)-groundY(b.x-30))/60),b.a)>.45;
   for(const wh of car.wheels){
     wh.vy+=gB*dt;
     const onG=wh.contact||(wh.gt||0)>0, vg=wh.vx*hd[0]+wh.vy*hd[1], surf=wh.w*wh.r;
     if(!onG){wh.w*=1-.8*dt;continue;}
     if(gas>0&&wh.drive){
       if(surf<CAR.maxSpeed*(state.turbo>0?1.45:1)&&surf-Math.max(0,vg)<160){
-        const crawl=1+.7*Math.max(0,1-Math.abs(vg)/320), T=CAR.torque*gas;
+        const crawl=noseUp?1:1+(CAR.crawl||.7)*Math.max(0,1-Math.abs(vg)/320), T=CAR.torque*gas;
         wh.w+=T*crawl/wh.I*dt;b.w-=T*CAR.react*(TRK.react||1)*LS/CAR.I*dt;}}   // Kriechgang nur am Rad, nicht als Kippmoment
     else if(gas<0){
       const soft=state.landT<.35?.25:1;
