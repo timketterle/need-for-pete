@@ -1340,7 +1340,7 @@ function step(dt){
   const gas=(state.fuel>0?thr:Math.min(0,thr))*(state.zap>0&&thr>0?.3:1);
   if(wx.wind&&!state.crashed){const air=!car.wheels.some(w=>w.contact);b.vx+=wx.wind*(air?1.1:.45)*dt;b.w+=(air?wx.wind*.0006:0)*dt;}
   const AS=state.assist||0, nCont=car.wheels.reduce((n,w)=>n+(w.contact?1:0),0), air0=nCont===0;
-  const gB=air0&&!state.crashed?G*(1-.3*AS):G;   // in der Luft weniger Schwerkraft (schwebt laenger, mehr Zeit zum Ausgleichen)
+  const gB=G;   // 20.11. Tim: weniger Schwerkraft in der Luft war zu viel (nur noch geflogen) -> wieder normal
   const cSx=CAR.cS*(1+.7*AS);                      // weichere Landung: Federung daempft staerker
   const c=Math.cos(b.a), s=Math.sin(b.a);
   // suspension springs
@@ -1371,16 +1371,21 @@ function step(dt){
   }
   if(state.turbo>0&&!state.crashed){const tf=car.wheels.some(w=>w.contact)?1250:450;b.vx+=Math.cos(b.a)*tf*dt;b.vy+=Math.sin(b.a)*tf*dt;}
   const airborne=!car.wheels.some(w=>w.contact);
-  if(airborne&&!state.crashed)b.w+=-thr*LS*CAR.air*(1+.25*AS)/CAR.I*dt;
+  // Luftsteuerung (20.11. Tim: Drehung schaukelte sich exponentiell auf): Taste gibt eine feste Drehgeschwindigkeit vor,
+  // die schnell erreicht und nicht ueberschritten wird -> laenger halten = gleichmaessig weiterdrehen, kein Aufschaukeln.
+  if(airborne&&!state.crashed){
+    if(thr!==0){const wMax=Math.max(3.4,Math.min(4.8,CAR.air/CAR.I*.45)), tw=-thr*LS*wMax;b.w+=(tw-b.w)*Math.min(1,7*dt);}
+    else b.w*=1-1.6*dt;   // ohne Taste laeuft die Drehung langsam aus
+  }
   else if(LS<0&&!state.crashed&&thr!==0)b.w+=thr*CAR.air*.35/CAR.I*dt;
-  // Fahrhilfe: ohne Taste richtet sich das Auto in der Luft parallel zum Boden aus (kein Abkippen nach vorne),
-  // am Boden nur gegen echtes Ueberschlagen. Mit Taste hat der Spieler die volle Kontrolle (Saltos bleiben moeglich).
+  // Fahrhilfe (20.11. Tim): KEIN automatisches Ausrichten in der Luft, man lehnt sich selbst mit den Tasten.
+  // Ohne Taste wird nur das Drehen in der Luft gebremst (kein endloses Kreiseln), am Boden kein Ueberschlag nach hinten.
   if(AS>0&&!state.crashed){
-    const free=1-Math.min(1,Math.abs(thr)), lx=b.x+Math.max(0,b.vx)*.25, sl=Math.max(-.45,Math.min(.45,Math.atan((groundY(lx+30)-groundY(lx-30))/60))), e=angDiff(sl,b.a);
-    if(airborne){if(free>0)b.w+=(13*e-5*b.w)*AS*free*dt;}
-    else{if(free>0&&nCont<car.wheels.length)b.w+=(6*e-2*b.w)*AS*free*dt;
+    if(airborne){if(G<1200)b.vx*=1-.35*(1-G/1200)*dt;}            // Leichtschwerkraft-Welten: in der Luft etwas Luftwiderstand, nicht nur fliegen
+    else{const lx=b.x+Math.max(0,b.vx)*.25, sl=Math.max(-.45,Math.min(.45,Math.atan((groundY(lx+30)-groundY(lx-30))/60))), e=angDiff(sl,b.a);
       if(Math.abs(e)>.8)b.w+=(e-Math.sign(e)*.8)*22*AS*dt;}   // Wheelies gehen, aber kein Ueberschlag nach hinten
   }
+  if(airborne)b.w=Math.max(-7,Math.min(7,b.w));
   b.w=Math.max(-9,Math.min(9,b.w));
   // integrate
   b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.w*=1-.25*dt;b.vx*=1-.015*dt;
