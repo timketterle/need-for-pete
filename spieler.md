@@ -1,0 +1,55 @@
+# Need For Pete: Spieler-Statistik
+Stand: 21.11.2026 17:38 (deutsche Zeit). Online = Lebenszeichen in den letzten gut 3 Minuten.
+
+Online jetzt: 0 · Spieler gesamt: 8 · heute Daily gespielt: 0
+
+| Name | Online | Level | XP | Münzen | Spielzeit | gefahren | Fahrten | Daily heute | zuletzt | Fahrer |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Timketterleneu | nein | 11 | 505 | 1497 | 6 min | 3 min | 5 | - | 20.11. 23:42 | chippy |
+| Tim | nein | 17 | 1219 | 480 | 36 min | 10 min | 25 | - | 20.11. 15:34 | tim |
+| Kevin | nein | 73 | 3783 | 2487 | 3 h 20 min | 3 h 03 min | 339 | - | 20.11. 14:01 | kevin |
+| Philipp | nein | 5 | 312 | 295 | 1 min | 1 min | 1 | - | 20.11. 00:02 | philipp |
+| SantaClozz | nein | 3 | 90 | 117 | 1 min | 0 min | 1 | - | 19.11. 14:18 | chippy |
+| Sev | nein | 5 | 525 | 366 | 3 min | 1 min | 5 | - | 19.11. 13:21 | sev |
+| Chris | nein | 6 | 110 | 367 | 3 min | 2 min | 4 | - | 19.11. 03:10 | chris |
+| Niki | nein | 1 | 0 | 0 | 0 min | 0 min | 0 | - | 19.11. 01:28 | niki |
+
+## Details pro Spieler
+### Timketterleneu (Schlüssel a15, Konto Nr. 15)
+- Level 11 · 505 XP · 1497 Münzen · Fahrzeug bohni · 1 Saltos · 15x geöffnet · Gerät iPhone · dabei seit 19.11. 01:05
+- Daily: noch nie
+- Eigene Level: hills:frei: 4x, bis 817 m, 0x Ziel · hills:rennen: 1x, bis 539 m, 1x Ziel
+- Bestweiten: hills 817 m
+### Tim (Schlüssel a1, Konto Nr. 1)
+- Level 17 · 1219 XP · 480 Münzen · Fahrzeug bohni · 4 Saltos · 20x geöffnet · Gerät Windows · dabei seit 19.11. 00:35
+- Daily: 2026-11-20: 3x, bis 1763 m, 26080 P
+- Eigene Level: hills:lv1: 9x, bis 345 m, 2x Ziel · hills:boss: 7x, bis 598 m, 0x Ziel · hills:frei: 3x, bis 457 m, 0x Ziel · hills:lv3: 2x, bis 656 m, 0x Ziel · moon:lv1: 1x, bis 159 m, 0x Ziel
+- Bestweiten: hills 457 m
+### Kevin (Schlüssel a14, Konto Nr. 14)
+- Level 73 · 3783 XP · 2487 Münzen · Fahrzeug bohni · 105 Saltos · 10x geöffnet · Gerät Windows · dabei seit 19.11. 00:40
+- Daily: 2026-11-20: 6x, bis 906 m, 21260 P · 2026-11-19: 7x, bis 597 m, 10020 P
+- Eigene Level: glacier:boss: 72x, bis 769 m, 0x Ziel · moon:frei: 44x, bis 2455 m, 0x Ziel · dunes:frei: 29x, bis 1535 m, 0x Ziel · jungle:lv2: 28x, bis 617 m, 1x Ziel · glacier:lv2: 20x, bis 632 m, 2x Ziel · moon:lv3: 18x, bis 1028 m, 1x Ziel · hills:lv3: 15x, bis 1007 m, 1x Ziel · junk:lv3: 13x, bis 1052 m, 1x Ziel · hills:frei: 12x, bis 764 m, 0x Ziel · dunes:boss: 11x, bis 857 m, 2x Ziel · glacier:frei: 8x, bis 1355 m, 0x Ziel · glacier:lv3: 6x, bis 1025 m, 1x Ziel · junk:boss: 6x, bis 826 m, 1x Ziel · moon:lv2: 5x, bis 620 m, 1x Ziel · jungle:lv1: 5x, bis 338 m, 2x Ziel · volcano:frei: 5x, bis 347 m, 0x Ziel · moon:boss: 4x, bis 661 m, 0x Ziel · junk:frei: 4x, bis 711 m, 0x Ziel · dunes:lv3: 3x, bis 1017 m, 1x Ziel · hills:lv1: 2x, bis 345 m, 2x Ziel · junk:lv1: 2x, bis 356 m, 1x Ziel · hills:boss: 2x, bis 615 m, 2x Ziel · volcano:lv1: 2x, bis 100 m, 0x Ziel · jungle:lv3: 2x, bis 416 m, 0x Ziel · jungle:frei: 2x, bis 964 m, 0x Ziel · hills:lv2: 1x, bis 613 m, 1x Ziel · moon:lv1: 1x, bis 330 m, 1x Ziel · glacier:lv1: 1x, bis 346 m, 1x Ziel · dunes:lv1: 1x, bis 358 m, 1x Ziel · dunes:lv2: 1x, bis 661 m, 1x Ziel · junk:lv2: 1x, bis 640 m, 1x Ziel
+- Bestweiten: hills 764 m, moon 2455 m, volcano 347 m, jungle 964 m, dunes 1535 m, junk 711 m, glacier 1355 m
+### Philipp (Schlüssel a19, Konto Nr. 19)
+- Level 5 · 312 XP · 295 Münzen · Fahrzeug truck · 0 Saltos · 4x geöffnet · Gerät Macintosh · dabei seit 19.11. 01:27
+- Daily: noch nie
+- Eigene Level: hills:frei: 1x, bis 1032 m, 0x Ziel
+- Bestweiten: hills 1032 m
+### SantaClozz (Schlüssel a18, Konto Nr. 18)
+- Level 3 · 90 XP · 117 Münzen · Fahrzeug f1 · 0 Saltos · 2x geöffnet · Gerät iPhone · dabei seit 19.11. 13:59
+- Daily: noch nie
+- Eigene Level: hills:frei: 1x, bis 296 m, 0x Ziel
+- Bestweiten: hills 296 m
+### Sev (Schlüssel a10, Konto Nr. 10)
+- Level 5 · 525 XP · 366 Münzen · Fahrzeug truck · 0 Saltos · 3x geöffnet · Gerät iPhone · dabei seit 19.11. 13:12
+- Daily: noch nie
+- Eigene Level: hills:lv1: 5x, bis 334 m, 1x Ziel
+### Chris (Schlüssel a17, Konto Nr. 17)
+- Level 6 · 110 XP · 367 Münzen · Fahrzeug f1 · 0 Saltos · 4x geöffnet · Gerät Macintosh · dabei seit 19.11. 01:11
+- Daily: noch nie
+- Eigene Level: hills:frei: 4x, bis 817 m, 0x Ziel
+- Bestweiten: hills 817 m
+### Niki (Schlüssel a16, Konto Nr. 16)
+- Level 1 · 0 XP · 0 Münzen · Fahrzeug f1 · 0 Saltos · 2x geöffnet · Gerät iPhone · dabei seit 19.11. 01:28
+- Daily: noch nie
+- Eigene Level: noch keine
