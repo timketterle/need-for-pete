@@ -1103,6 +1103,7 @@ function newRun(){
   if(!TRACKS[save.trk]||TRACKS[save.trk].unlock>lvlCap())save.trk='hills';
   TRK=TRACKS[save.trk];seed=TRK.seed;G=TRK.g;
   if(playDaily){const di=dailyInfo();TRK=TRACKS[di.trk];seed=di.seed;G=TRK.g;}
+  if(duel.active&&!RENNEN&&duel.trk&&TRACKS[duel.trk]){TRK=TRACKS[duel.trk];seed=TRK.seed;G=TRK.g;}
   memeEnd();try{$('giveUp').hidden=true;}catch(e){}memeNextAt=60+Math.random()*100;skyPic=null;picNextAt=90+Math.random()*120;try{window.speechSynthesis&&speechSynthesis.cancel();clipV.pause();}catch(e){}
   const b={x:START_X,y:-34,a:0,vx:0,vy:0,w:0};
   const wheels=CAR.wheels.map(d=>{const m=CAR.wm;return {...d,m,I:.5*m*d.r*d.r,x:b.x+d.ax,y:b.y+d.ay+CAR.rest,vx:0,vy:0,a:0,w:0,contact:false,impact:0};});
@@ -1166,7 +1167,7 @@ function drawBoss(){if(!boss)return;const B=boss,sC=CAR,sc=car,c=Math.cos(B.a),s
     ctx.beginPath();ctx.moveTo(hx-8,by+14);ctx.lineTo(hx,by+26);ctx.lineTo(hx+8,by+14);ctx.fill();ctx.fillStyle=INK;ctx.fillText(B.msg,hx,by+7);ctx.globalAlpha=1;}
 }
 let drawingGhost=false;
-const duel={active:false,lv:null,opps:{},race:0,host:false,goal:800,result:null,mode:'race'};let CP_M=1000;
+const duel={active:false,lv:null,opps:{},race:0,host:false,goal:800,result:null,mode:'race',trk:null};let CP_M=1000;
 function starsOf(t){save.stars=save.stars||{};return save.stars[t]=save.stars[t]||[0,0,0];}
 function rollItem(){if(duel.active&&!RENNEN)return duelRoll();const lv=curLevel(),hz=lv?lv.haz:0;const pool=[['turbo',40],['shield',12+hz*25],['magnet',25],['fuel',15]];
   let tot=pool.reduce((a,x)=>a+x[1],0),r=Math.random()*tot;for(const [k,w] of pool){if((r-=w)<0)return k;}return 'turbo';}
@@ -2714,10 +2715,10 @@ async function netSend(){if(!NET.key)return;NET.busy=true;NET.dirty=false;NET.la
 function netKick(){if(!NET.key)return;if(NET.busy){NET.dirty=true;return;}netSend();}
 function duelSend(m){if(RENNEN)return rnSend(m);if(!NET.key)return;m=Object.assign({race:duel.race},m);if(m.type==='pos'){NET.pos=m;}else{NET.ev.push(Object.assign({id:++NET.evId,at:Date.now()},m));if(NET.ev.length>30)NET.ev.splice(0,NET.ev.length-30);}netKick();}
 function duelStatus(t){$('duelStatus').textContent=t;}
-function netPlayers(){const now=performance.now(),L=[{id:NET.me,name:pName(),me:true,host:NET.host}];for(const id in NET.peers){const P=NET.peers[id];if(now-P.seen<9000)L.push({id,name:(P.info&&P.info.name)||'?',host:P.host});}return L;}
+function netPlayers(){const now=performance.now(),L=[{id:NET.me,name:pName(),me:true,host:NET.host}];for(const id in NET.peers){const P=NET.peers[id];if(now-P.seen<9000)L.push({id,name:(P.info&&P.info.name)||'?',host:P.host,trk:P.info&&P.info.trk});}return L;}
 function netLobby(){if(!NET.key||duel.active)return;const L=netPlayers();
   $('lobby').hidden=false;$('lobbyList').innerHTML=L.map(p=>'<li>'+(p.host?'👑 ':'🏎️ ')+String(p.name).replace(/[<>&]/g,'')+(p.me?' (du)':'')+'</li>').join('');
-  $('raceStart').hidden=!NET.host;$('raceStart').disabled=L.length<2;
+  $('raceStart').hidden=!NET.host;$('raceStart').disabled=L.length<2;try{const hp=L.find(p=>p.host),tk=NET.host?save.trk:hp&&hp.trk;$('duelInfo').textContent=TRACKS[tk]?'Strecke: '+TRACKS[tk].name+' (alle fahren dieselbe).':'Fahrt live gegeneinander, zu zweit oder bis zu viert. Einer erstellt das Rennen, die anderen geben den Code ein.';}catch(e){}
   duelStatus(NET.host?(L.length<2?'Schick den Code '+NET.code+' an deine Leute. Sobald jemand drin ist, kannst du starten (bis 4 Fahrer).':L.length+' Fahrer drin. Starte, wenn alle da sind!'):'Du bist drin! Warte, bis '+((L.find(p=>p.host)||{}).name||'der Gastgeber')+' startet.');}
 $('duelMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duel.mode=b.dataset.m;[...$('duelMode').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
   $('duelGoal').hidden=duel.mode==='zeit';$('duelGoalTxt').textContent=duel.mode==='zeit'?'2000 m, mit Checkpoint bei 1000 m':duel.goal+' m';});
@@ -2730,10 +2731,10 @@ $('joinBtn').addEventListener('click',()=>{
   const code=$('codeIn').value.trim().toUpperCase();if(code.length!==4){duelStatus('Der Code hat 4 Zeichen.');return;}
   duel.host=false;netOpen(code,false);duelStatus('Suche das Rennen '+code+' …');
   setTimeout(()=>{if(NET.key&&!Object.keys(NET.peers).length&&!duel.active)duelStatus('Noch niemand gefunden. Stimmt der Code? Der Gastgeber muss das Spiel offen haben.');},8000);});
-$('raceStart').addEventListener('click',()=>{if(!NET.host)return;const race=Date.now()%1e9;duelSend({type:'setup',trk:save.trk,goal:duel.mode==='zeit'?2000:duel.goal,mode:duel.mode,race});setTimeout(()=>{duelSend({type:'go',race});},250);setTimeout(()=>{duel.race=race;beginDuel();},900);});
-$('duelBtn').addEventListener('click',()=>{initAudio();$('menu').hidden=true;$('duel').hidden=false;$('codeOut').hidden=true;$('lobby').hidden=true;duelStatus('');});
+$('raceStart').addEventListener('click',()=>{if(!NET.host)return;const race=Date.now()%1e9;duel.trk=TRACKS[save.trk]&&save.trk!=='daily'&&save.trk!=='bluechip'?save.trk:'hills';duelSend({type:'setup',trk:duel.trk,goal:duel.mode==='zeit'?2000:duel.goal,mode:duel.mode,race});setTimeout(()=>{duelSend({type:'go',race});},250);setTimeout(()=>{duel.race=race;beginDuel();},900);});
+$('duelBtn').addEventListener('click',()=>{initAudio();$('duelInfo').textContent='Fahrt live gegeneinander, zu zweit oder bis zu viert. Einer erstellt das Rennen, die anderen geben den Code ein.';$('menu').hidden=true;$('duel').hidden=false;$('codeOut').hidden=true;$('lobby').hidden=true;duelStatus('');});
 $('duelBack').addEventListener('click',()=>{leaveDuel();$('duel').hidden=true;$('menu').hidden=false;showMenuStats();});
-function leaveDuel(){if(NET.key)duelSend({type:'bye'});const k=NET.key;setTimeout(()=>{if(NET.key===k)netClose();},400);duel.active=false;duel.opps={};duel.result=null;}
+function leaveDuel(){if(NET.key)duelSend({type:'bye'});const k=NET.key;setTimeout(()=>{if(NET.key===k)netClose();},400);duel.active=false;duel.opps={};duel.result=null;duel.trk=null;}
 /* ---------- Accounts: a number per friend, each one owns his driver ---------- */
 function acct(){if(!save.acct||save.acct==='guest')return null;return ACCTS[save.acct]||save.acctInfo||null;}
 function allowedDrivers(){const a=acct();if(!a)return ['pete'];if(save.sbAdmin)return DORDER.map(d=>d[0]);   // Admin (Tim): alle Fahrer
@@ -2792,10 +2793,10 @@ async function cloudLoad(code){code=String(code||'').trim().toLowerCase().replac
   let o;try{o=JSON.parse(d);}catch(e){toast('Spielstand kaputt.',3);return;}
   if(!confirm('Spielstand von „'+(o.pname||code)+'“ laden? Level '+(o.level||1)+', '+(o.coins||0)+' Münzen. Der Stand auf diesem Gerät wird ersetzt.'))return;
   o.sk='sv-'+code;localStorage.setItem('nfp-save',JSON.stringify(o));location.reload();}
-function myInfo(){return {veh:save.veh,driver:save.driver||'pete',name:(DORDER.find(d=>d[0]===(save.driver||'pete'))||[0,'Pete'])[1]};}
+function myInfo(){return {veh:save.veh,driver:save.driver||'pete',trk:save.trk,name:(DORDER.find(d=>d[0]===(save.driver||'pete'))||[0,'Pete'])[1]};}
 function onDuelData(m){
   if(!m||typeof m!=='object')return;const id=m.from||'x',P=NET.peers[id],nm=(P&&P.info&&P.info.name)||'Gegner';
-  if(m.type==='setup'){if(TRACKS[m.trk])save.trk=m.trk;duel.goal=+m.goal||800;duel.mode=m.mode==='zeit'?'zeit':'race';}
+  if(m.type==='setup'){duel.trk=TRACKS[m.trk]&&m.trk!=='daily'&&m.trk!=='bluechip'?m.trk:'hills';if(!duel.active)toast('Strecke: '+TRACKS[duel.trk].name,2.5);duel.goal=+m.goal||800;duel.mode=m.mode==='zeit'?'zeit':'race';}
   if(m.type==='go'){duel.race=m.race;beginDuel();}
   if(m.type==='pos'){const o=duel.opps[id]=Object.assign(duel.opps[id]||{},m,{seen:performance.now(),name:nm});if(o.sx==null){o.sx=m.x;o.sy=m.y;o.sa=m.a;}}
   if(!duel.active||m.race!==duel.race){if(m.type==='again'&&!running&&NET.key){duel.race=m.race;$('over').hidden=true;beginDuel();}if(m.type==='bye'&&P)P.seen=-1e9;if(m.type==='bye')netLobby();return;}
@@ -2807,7 +2808,7 @@ function onDuelData(m){
 }
 function beginDuel(){
   if(duel.active&&running)return;
-  if(duel.mode==='zeit')duel.goal=2000;duel.active=true;duel.result=null;duel.winner=null;duel.opps={};$('lobby').hidden=true;duel.lv={goal:duel.goal,time:999,drain:.7,haz:.35};
+  if(duel.mode==='zeit')duel.goal=2000;playDaily=false;duel.active=true;duel.result=null;duel.winner=null;duel.opps={};$('lobby').hidden=true;duel.lv={goal:duel.goal,time:999,drain:.7,haz:.35};
   $('duel').hidden=true;$('over').hidden=true;
   startRun();
   // countdown: frozen car for 3 seconds
