@@ -1,0 +1,657 @@
+{
+ "stand": "2026-11-28T18:43+01:00",
+ "spieler": [
+  {
+   "n": "Schröder",
+   "pk": "a20",
+   "num": "20",
+   "guest": false,
+   "dr": "patrick",
+   "lv": 19,
+   "xp": 1945,
+   "coins": 836,
+   "veh": "bohni",
+   "play": 971,
+   "drive": 785,
+   "runs": 27,
+   "sess": 7,
+   "first": 1795508274763,
+   "last": 1795702875807,
+   "what": "Menü",
+   "room": null,
+   "flips": 2,
+   "dailies": 20,
+   "bests": {
+    "hills": 2784
+   },
+   "daily": {
+    "2026-11-24": {
+     "n": 10,
+     "m": 649,
+     "pts": 6590,
+     "sec": 0
+    },
+    "2026-11-26": {
+     "n": 10,
+     "m": 734,
+     "pts": 14690,
+     "sec": 0
+    }
+   },
+   "tr": {
+    "hills:rennen": {
+     "n": 2,
+     "m": 1549,
+     "sec": 121,
+     "fin": 1
+    },
+    "hills:frei": {
+     "n": 5,
+     "m": 2784,
+     "sec": 0,
+     "fin": 0
+    }
+   },
+   "dTry": 10,
+   "dev": "iPhone",
+   "pwa": true,
+   "k": "a20",
+   "t": 1795702875917,
+   "online": false,
+   "v": "M19"
+  },
+  {
+   "n": "Timketterleneu",
+   "pk": "a15",
+   "num": "15",
+   "guest": false,
+   "dr": "chippy",
+   "lv": 11,
+   "xp": 505,
+   "coins": 1497,
+   "veh": "bohni",
+   "play": 415,
+   "drive": 200,
+   "runs": 5,
+   "sess": 17,
+   "first": 1795046756541,
+   "last": 1795601911796,
+   "what": "Menü",
+   "room": null,
+   "flips": 1,
+   "dailies": 1,
+   "bests": {
+    "hills": 817
+   },
+   "daily": {},
+   "tr": {
+    "hills:frei": {
+     "n": 4,
+     "m": 817,
+     "sec": 0,
+     "fin": 0
+    },
+    "hills:rennen": {
+     "n": 1,
+     "m": 539,
+     "sec": 21,
+     "fin": 1
+    }
+   },
+   "dTry": 0,
+   "dev": "iPhone",
+   "pwa": false,
+   "k": "a15",
+   "t": 1795601912050,
+   "online": false,
+   "v": "X11"
+  },
+  {
+   "n": "Tim",
+   "pk": "a1",
+   "num": "1",
+   "guest": false,
+   "dr": "tim",
+   "lv": 24,
+   "xp": 1553,
+   "coins": 993,
+   "veh": "bohni",
+   "play": 3122,
+   "drive": 1292,
+   "runs": 35,
+   "sess": 31,
+   "first": 1795044909334,
+   "last": 1795591836371,
+   "what": "Menü",
+   "room": null,
+   "flips": 6,
+   "dailies": 11,
+   "bests": {
+    "hills": 457
+   },
+   "daily": {
+    "2026-11-20": {
+     "n": 3,
+     "m": 1763,
+     "pts": 26080,
+     "sec": 0
+    },
+    "2026-11-23": {
+     "n": 1,
+     "m": 151,
+     "pts": 1510,
+     "sec": 0
+    },
+    "2026-11-24": {
+     "n": 6,
+     "m": 4211,
+     "pts": 59460,
+     "sec": 0
+    }
+   },
+   "tr": {
+    "hills:frei": {
+     "n": 3,
+     "m": 457,
+     "sec": 0,
+     "fin": 0
+    },
+    "hills:lv3": {
+     "n": 2,
+     "m": 656,
+     "sec": 37,
+     "fin": 0
+    },
+    "hills:boss": {
+     "n": 7,
+     "m": 598,
+     "sec": 66,
+     "fin": 0
+    },
+    "hills:lv1": {
+     "n": 9,
+     "m": 345,
+     "sec": 92,
+     "fin": 2
+    },
+    "moon:lv1": {
+     "n": 1,
+     "m": 159,
+     "sec": 7,
+     "fin": 0
+    },
+    "moon:rennen": {
+     "n": 3,
+     "m": 1254,
+     "sec": 147,
+     "fin": 2
+    }
+   },
+   "dTry": 0,
+   "dev": "Windows",
+   "pwa": false,
+   "k": "a1",
+   "t": 1795591836461,
+   "online": false,
+   "v": "X24"
+  },
+  {
+   "n": "Kevin",
+   "pk": "a14",
+   "num": "14",
+   "guest": false,
+   "dr": "kevin",
+   "lv": 96,
+   "xp": 2989,
+   "coins": 1559,
+   "veh": "bohni",
+   "play": 19965,
+   "drive": 18380,
+   "runs": 628,
+   "sess": 16,
+   "first": 1795045201549,
+   "last": 1795528620761,
+   "what": "Menü",
+   "room": null,
+   "flips": 219,
+   "dailies": 19,
+   "bests": {
+    "hills": 764,
+    "moon": 2969,
+    "volcano": 347,
+    "jungle": 964,
+    "dunes": 1535,
+    "junk": 711,
+    "glacier": 1355
+   },
+   "daily": {
+    "2026-11-19": {
+     "n": 7,
+     "m": 597,
+     "pts": 10020,
+     "sec": 0
+    },
+    "2026-11-20": {
+     "n": 6,
+     "m": 906,
+     "pts": 21260,
+     "sec": 0
+    },
+    "2026-11-23": {
+     "n": 3,
+     "m": 1176,
+     "pts": 26010,
+     "sec": 0
+    },
+    "2026-11-24": {
+     "n": 3,
+     "m": 1398,
+     "pts": 18830,
+     "sec": 0
+    }
+   },
+   "tr": {
+    "hills:frei": {
+     "n": 12,
+     "m": 764,
+     "sec": 0,
+     "fin": 0
+    },
+    "hills:lv1": {
+     "n": 2,
+     "m": 345,
+     "sec": 26,
+     "fin": 2
+    },
+    "hills:lv2": {
+     "n": 1,
+     "m": 613,
+     "sec": 35,
+     "fin": 1
+    },
+    "hills:lv3": {
+     "n": 15,
+     "m": 1007,
+     "sec": 533,
+     "fin": 1
+    },
+    "moon:frei": {
+     "n": 93,
+     "m": 2969,
+     "sec": 0,
+     "fin": 0
+    },
+    "moon:lv1": {
+     "n": 1,
+     "m": 330,
+     "sec": 16,
+     "fin": 1
+    },
+    "moon:lv2": {
+     "n": 14,
+     "m": 635,
+     "sec": 215,
+     "fin": 4
+    },
+    "glacier:lv1": {
+     "n": 1,
+     "m": 346,
+     "sec": 16,
+     "fin": 1
+    },
+    "glacier:lv2": {
+     "n": 20,
+     "m": 632,
+     "sec": 235,
+     "fin": 2
+    },
+    "dunes:lv1": {
+     "n": 1,
+     "m": 358,
+     "sec": 14,
+     "fin": 1
+    },
+    "dunes:lv2": {
+     "n": 1,
+     "m": 661,
+     "sec": 23,
+     "fin": 1
+    },
+    "jungle:lv1": {
+     "n": 5,
+     "m": 338,
+     "sec": 61,
+     "fin": 2
+    },
+    "jungle:lv2": {
+     "n": 44,
+     "m": 617,
+     "sec": 644,
+     "fin": 4
+    },
+    "junk:lv1": {
+     "n": 2,
+     "m": 356,
+     "sec": 47,
+     "fin": 1
+    },
+    "junk:lv2": {
+     "n": 1,
+     "m": 640,
+     "sec": 25,
+     "fin": 1
+    },
+    "glacier:lv3": {
+     "n": 6,
+     "m": 1025,
+     "sec": 286,
+     "fin": 1
+    },
+    "glacier:boss": {
+     "n": 105,
+     "m": 815,
+     "sec": 1468,
+     "fin": 1
+    },
+    "hills:boss": {
+     "n": 2,
+     "m": 615,
+     "sec": 48,
+     "fin": 2
+    },
+    "moon:boss": {
+     "n": 12,
+     "m": 807,
+     "sec": 124,
+     "fin": 1
+    },
+    "dunes:lv3": {
+     "n": 3,
+     "m": 1017,
+     "sec": 47,
+     "fin": 1
+    },
+    "dunes:boss": {
+     "n": 11,
+     "m": 857,
+     "sec": 169,
+     "fin": 2
+    },
+    "junk:lv3": {
+     "n": 13,
+     "m": 1052,
+     "sec": 163,
+     "fin": 1
+    },
+    "volcano:lv1": {
+     "n": 23,
+     "m": 320,
+     "sec": 353,
+     "fin": 3
+    },
+    "moon:lv3": {
+     "n": 19,
+     "m": 1028,
+     "sec": 437,
+     "fin": 2
+    },
+    "volcano:frei": {
+     "n": 5,
+     "m": 347,
+     "sec": 0,
+     "fin": 0
+    },
+    "junk:boss": {
+     "n": 6,
+     "m": 826,
+     "sec": 77,
+     "fin": 1
+    },
+    "jungle:lv3": {
+     "n": 9,
+     "m": 1025,
+     "sec": 195,
+     "fin": 1
+    },
+    "jungle:frei": {
+     "n": 3,
+     "m": 964,
+     "sec": 0,
+     "fin": 0
+    },
+    "dunes:frei": {
+     "n": 30,
+     "m": 1535,
+     "sec": 0,
+     "fin": 0
+    },
+    "junk:frei": {
+     "n": 4,
+     "m": 711,
+     "sec": 0,
+     "fin": 0
+    },
+    "glacier:frei": {
+     "n": 8,
+     "m": 1355,
+     "sec": 0,
+     "fin": 0
+    },
+    "volcano:lv2": {
+     "n": 109,
+     "m": 613,
+     "sec": 1752,
+     "fin": 4
+    },
+    "jungle:boss": {
+     "n": 28,
+     "m": 797,
+     "sec": 583,
+     "fin": 0
+    }
+   },
+   "dTry": 3,
+   "dev": "Windows",
+   "pwa": false,
+   "k": "a14",
+   "t": 1795528620939,
+   "online": false,
+   "v": "M96"
+  },
+  {
+   "n": "Sev",
+   "pk": "a10",
+   "num": "10",
+   "guest": false,
+   "dr": "sev",
+   "lv": 5,
+   "xp": 565,
+   "coins": 496,
+   "veh": "truck",
+   "play": 300,
+   "drive": 185,
+   "runs": 6,
+   "sess": 4,
+   "first": 1795090376293,
+   "last": 1795452780941,
+   "what": "Menü",
+   "room": null,
+   "flips": 0,
+   "dailies": 0,
+   "bests": {},
+   "daily": {},
+   "tr": {
+    "hills:lv1": {
+     "n": 5,
+     "m": 334,
+     "sec": 50,
+     "fin": 1
+    },
+    "moon:rennen": {
+     "n": 1,
+     "m": 797,
+     "sec": 41,
+     "fin": 0
+    }
+   },
+   "dTry": 0,
+   "dev": "iPhone",
+   "pwa": false,
+   "k": "a10",
+   "t": 1795452781007,
+   "online": false,
+   "v": "X5"
+  },
+  {
+   "n": "Philipp",
+   "pk": "a19",
+   "num": "19",
+   "guest": false,
+   "dr": "philipp",
+   "lv": 5,
+   "xp": 312,
+   "coins": 295,
+   "veh": "truck",
+   "play": 114,
+   "drive": 77,
+   "runs": 1,
+   "sess": 4,
+   "first": 1795048075942,
+   "last": 1795129355241,
+   "what": "Menü",
+   "room": null,
+   "flips": 0,
+   "dailies": 0,
+   "bests": {
+    "hills": 1032
+   },
+   "daily": {},
+   "tr": {
+    "hills:frei": {
+     "n": 1,
+     "m": 1032,
+     "sec": 0,
+     "fin": 0
+    }
+   },
+   "dTry": 0,
+   "dev": "Macintosh",
+   "pwa": false,
+   "k": "a19",
+   "t": 1795129355261,
+   "online": false,
+   "v": "M5"
+  },
+  {
+   "n": "SantaClozz",
+   "pk": "a18",
+   "num": "18",
+   "guest": false,
+   "dr": "chippy",
+   "lv": 3,
+   "xp": 90,
+   "coins": 117,
+   "veh": "f1",
+   "play": 74,
+   "drive": 31,
+   "runs": 1,
+   "sess": 2,
+   "first": 1795093162418,
+   "last": 1795094291137,
+   "what": "Menü",
+   "room": null,
+   "flips": 0,
+   "dailies": 0,
+   "bests": {
+    "hills": 296
+   },
+   "daily": {},
+   "tr": {
+    "hills:frei": {
+     "n": 1,
+     "m": 296,
+     "sec": 0,
+     "fin": 0
+    }
+   },
+   "dTry": 0,
+   "dev": "iPhone",
+   "pwa": false,
+   "k": "a18",
+   "t": 1795094291433,
+   "online": false,
+   "v": "M3"
+  },
+  {
+   "n": "Chris",
+   "pk": "a17",
+   "num": "17",
+   "guest": false,
+   "dr": "chris",
+   "lv": 6,
+   "xp": 110,
+   "coins": 367,
+   "veh": "f1",
+   "play": 181,
+   "drive": 137,
+   "runs": 4,
+   "sess": 4,
+   "first": 1795047078040,
+   "last": 1795054223259,
+   "what": "Menü",
+   "room": null,
+   "flips": 0,
+   "dailies": 0,
+   "bests": {
+    "hills": 817
+   },
+   "daily": {},
+   "tr": {
+    "hills:frei": {
+     "n": 4,
+     "m": 817,
+     "sec": 0,
+     "fin": 0
+    }
+   },
+   "dTry": 0,
+   "dev": "Macintosh",
+   "pwa": false,
+   "k": "a17",
+   "t": 1795054223465,
+   "online": false,
+   "v": "M6"
+  },
+  {
+   "n": "Niki",
+   "pk": "a16",
+   "num": "16",
+   "guest": false,
+   "dr": "niki",
+   "lv": 1,
+   "xp": 0,
+   "coins": 0,
+   "veh": "f1",
+   "play": 10,
+   "drive": 4,
+   "runs": 0,
+   "sess": 2,
+   "first": 1795048084819,
+   "last": 1795048095419,
+   "what": "Hügelland frei",
+   "room": null,
+   "flips": 0,
+   "dailies": 0,
+   "bests": {},
+   "daily": {},
+   "tr": {},
+   "dTry": 0,
+   "dev": "iPhone",
+   "pwa": false,
+   "k": "a16",
+   "t": 1795048095471,
+   "online": false,
+   "v": "P1"
+  }
+ ]
+}
